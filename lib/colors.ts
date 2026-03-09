@@ -1,0 +1,15 @@
+export const Colors = {
+  green: '#2FBF71',
+  greenBright: '#49D17D',
+  deepBlue: '#163A59',
+  blueTeal: '#1F5673',
+  cream: '#F4EFE6',
+  warmWhite: '#FBF8F2',
+  charcoal: '#14212B',
+  amber: '#F59E0B',
+  red: '#EF4444',
+  white: '#FFFFFF',
+  gray100: '#F5F5F5',
+  gray400: '#9CA3AF',
+  gray600: '#4B5563',
+};

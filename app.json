@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Chadakoin Now",
+    "slug": "chadakoin-now",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#163A59"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#163A59"
+      },
+      "package": "com.chadakoinnow"
+    },
+    "scheme": "chadakoin-now",
+    "plugins": ["expo-router"]
+  }
+}
