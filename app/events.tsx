@@ -43,6 +43,7 @@ const CATEGORY_ACCENT: Record<string, AccentSlot> = {
   'Local':               'acc',
   'RTPI':                'acc3',
   'Fenton':              'acc2',
+  'Farmers Market':      'acc2',
 };
 
 function getEventColor(event: EventItem, theme: { acc: string; acc2: string; acc3: string }): string {
