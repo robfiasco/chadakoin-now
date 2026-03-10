@@ -1,110 +1,112 @@
-// Vercel serverless function — fetches Buffalo Sabres data from ESPN
-// Running server-side avoids CORS and gives us reliable logs.
-
-const SABRES_ID = '7';
-
-function parseGame(event) {
-  try {
-    const comp = event.competitions?.[0];
-    if (!comp) return null;
-    const competitors = comp.competitors ?? [];
-    const us   = competitors.find(c => String(c.team?.id) === SABRES_ID);
-    const them = competitors.find(c => String(c.team?.id) !== SABRES_ID);
-    if (!us || !them) return null;
-
-    const completed = comp.status?.type?.completed ?? false;
-    const state     = comp.status?.type?.state ?? '';
-    const status    = completed ? 'final' : state === 'in' ? 'live' : 'upcoming';
-
-    return {
-      date: event.date,
-      status,
-      opponentAbbr: them.team?.abbreviation ?? '???',
-      opponentName: them.team?.displayName ?? 'Opponent',
-      opponentLogo: them.team?.logo ?? '',
-      ourScore:   String(us.score   ?? ''),
-      theirScore: String(them.score ?? ''),
-      isHome: us.homeAway === 'home',
-      won: completed ? (us.winner === true) : null,
-      venue: comp.venue?.fullName ?? '',
-      broadcast: comp.broadcasts?.[0]?.names?.[0] ?? '',
-    };
-  } catch (e) {
-    console.error('parseGame error', e);
-    return null;
-  }
-}
+// Vercel serverless function — Buffalo Sabres data via NHL official API
+// api-web.nhle.com is publicly accessible from server environments.
 
 export default async function handler(req, res) {
   try {
-    console.log('Fetching Sabres data from ESPN...');
+    console.log('Fetching Sabres from NHL API...');
 
-    // 8-second timeout — Vercel hobby functions allow 10s max
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    let schedRes, newsRes;
+    let schedRes, standRes;
     try {
-      [schedRes, newsRes] = await Promise.all([
-        fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule', { signal: controller.signal }),
-        fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news',     { signal: controller.signal }),
+      [schedRes, standRes] = await Promise.all([
+        fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now', { signal: controller.signal }),
+        fetch('https://api-web.nhle.com/v1/standings/now', { signal: controller.signal }),
       ]);
     } finally {
       clearTimeout(timeout);
     }
 
-    console.log('Schedule status:', schedRes.status, '| News status:', newsRes.status);
-
-    const schedText = await schedRes.text();
-    console.log('Schedule response (first 200):', schedText.slice(0, 200));
+    console.log('Schedule:', schedRes.status, '| Standings:', standRes.status);
 
     if (!schedRes.ok) {
-      return res.status(502).json({ error: 'ESPN schedule fetch failed', status: schedRes.status, body: schedText.slice(0, 300) });
+      return res.status(502).json({ error: 'NHL API failed', status: schedRes.status });
     }
 
-    let schedJson;
-    try {
-      schedJson = JSON.parse(schedText);
-    } catch (e) {
-      console.error('JSON parse failed:', e.message);
-      return res.status(502).json({ error: 'ESPN returned non-JSON', body: schedText.slice(0, 300) });
-    }
+    const schedJson = await schedRes.json();
+    const standJson = standRes.ok ? await standRes.json() : null;
 
-    const newsJson = newsRes.ok ? await newsRes.json().catch(() => ({ articles: [] })) : { articles: [] };
-
-    const record   = schedJson.team?.record?.items?.[0]?.summary ?? '';
-    const standing = schedJson.team?.standingSummary ?? '';
-    const events   = schedJson.events ?? [];
-
-    console.log(`Got ${events.length} schedule events, record: "${record}"`);
+    const games = schedJson.games ?? [];
+    console.log('Total games:', games.length);
 
     const now = new Date();
-    const past = events
-      .filter(e => e.competitions?.[0]?.status?.type?.completed)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    const upcoming = events
-      .filter(e => !e.competitions?.[0]?.status?.type?.completed && new Date(e.date) >= now)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    console.log(`Past: ${past.length}, Upcoming: ${upcoming.length}`);
+    const past = games
+      .filter(g => g.gameState === 'FINAL' || g.gameState === 'OFF')
+      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
 
-    const news = (newsJson.articles ?? []).slice(0, 5).map(a => ({
-      title:   a.headline    ?? '',
-      link:    a.links?.web?.href ?? '',
-      date:    a.published   ?? '',
-      summary: a.description ?? '',
-    }));
+    const upcoming = games
+      .filter(g => g.gameState === 'FUT' || g.gameState === 'PRE')
+      .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
 
-    const recentGame = past[0]    ? parseGame(past[0])    : null;
-    const nextGame   = upcoming[0] ? parseGame(upcoming[0]) : null;
+    const live = games.filter(g => g.gameState === 'LIVE' || g.gameState === 'CRIT');
 
-    console.log(`recentGame: ${recentGame?.opponentName ?? 'none'}, nextGame: ${nextGame?.opponentName ?? 'none'}`);
+    console.log(`Past: ${past.length}, Upcoming: ${upcoming.length}, Live: ${live.length}`);
 
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    // Sabres record from standings
+    let record = '';
+    let standing = '';
+    if (standJson?.standings) {
+      const sabres = standJson.standings.find(t => t.teamAbbrev?.default === 'BUF');
+      if (sabres) {
+        record = `${sabres.wins}-${sabres.losses}-${sabres.otLosses}`;
+        standing = sabres.wildCardSequence
+          ? `${sabres.conferenceName} WC${sabres.wildcardSequence ?? ''}`
+          : `${sabres.divisionName} · ${sabres.divisionSequence ?? ''}`;
+      }
+    }
+
+    function parseGame(g) {
+      if (!g) return null;
+      const isBufHome = g.homeTeam?.abbrev === 'BUF';
+      const us   = isBufHome ? g.homeTeam : g.awayTeam;
+      const them = isBufHome ? g.awayTeam : g.homeTeam;
+      const state = g.gameState ?? '';
+      const status = (state === 'FINAL' || state === 'OFF') ? 'final'
+                   : (state === 'LIVE' || state === 'CRIT') ? 'live'
+                   : 'upcoming';
+      const ourScore   = us?.score   != null ? String(us.score)   : '';
+      const theirScore = them?.score != null ? String(them.score) : '';
+      const won = status === 'final' ? Number(ourScore) > Number(theirScore) : null;
+
+      return {
+        date:          g.startTimeUTC ?? `${g.gameDate}T19:00:00Z`,
+        status,
+        opponentAbbr:  them?.abbrev ?? '???',
+        opponentName:  them?.commonName?.default ?? them?.placeName?.default ?? 'Opponent',
+        opponentLogo:  them?.logo ?? '',
+        ourScore,
+        theirScore,
+        isHome:        isBufHome,
+        won,
+        venue:         g.venue?.default ?? '',
+        broadcast:     g.tvBroadcasts?.[0]?.network ?? '',
+        periodDesc:    g.periodDescriptor?.periodType ?? '',
+        clock:         g.clock?.timeRemaining ?? '',
+      };
+    }
+
+    // Prioritize live game, then next upcoming, then most recent past
+    const displayNext   = live[0] ?? upcoming[0];
+    const displayRecent = past[0];
+
+    const result = {
+      record,
+      standing,
+      recentGame: parseGame(displayRecent),
+      nextGame:   parseGame(displayNext),
+      news: [], // NHL API doesn't provide news — use Sabres-specific RSS in future
+    };
+
+    console.log(`record: "${record}", recent: ${result.recentGame?.opponentName}, next: ${result.nextGame?.opponentName}`);
+
+    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.status(200).json({ record, standing, recentGame, nextGame, news });
+    res.status(200).json(result);
+
   } catch (err) {
-    console.error('Sabres handler error:', err.message);
+    console.error('Sabres error:', err.message);
     res.status(502).json({ error: err.message });
   }
 }
