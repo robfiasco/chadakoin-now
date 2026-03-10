@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       ? Math.round(Math.max(...periods.map(f => (f.pop ?? 0) * 100)))
       : 0;
 
-    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 min
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60'); // 5 min edge cache
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({
       temp: `${temp}°`,

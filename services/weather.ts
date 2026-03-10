@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 const LAT = 42.097;
 const LON = -79.2353;
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — ~288 OWM calls/day, well within 2000 free limit
 
 export interface WeatherData {
   temp: string;
