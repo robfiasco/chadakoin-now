@@ -53,23 +53,23 @@ export const THEMES: Theme[] = [
     id: 'solar',
     label: 'Pearl City',
     sub: 'Jamestown\'s old nickname',
-    description: 'Jamestown\'s historic nickname, most likely derived from pearl ash — potassium carbonate produced by burning hardwood and refining the ash. It was one of early America\'s most valuable exports, used in soap, glass, and as a leavening agent, and Jamestown\'s vast hardwood forests made it a natural center for production. The warm amber and gold tones reflect those early fires and the industry they built.',
-    swatchColor: '#ffaa00',
-    bg: '#0d0900',
-    // Primary: amber
-    acc: '#ffaa00',
-    acc55: 'rgba(255,170,0,0.55)',
-    acc45: 'rgba(255,170,0,0.45)',
-    accRGB: '255,160,0',
-    // Secondary: ember orange-red
-    acc2: '#ff6b35',
-    acc2RGB: '255,107,53',
-    // Tertiary: warm gold
-    acc3: '#ffe066',
-    acc3RGB: '255,224,102',
-    orb1: 'rgba(255,140,0,0.15)',
-    orb2: 'rgba(255,107,53,0.12)',
-    warmWarn: { bg: 'rgba(255,80,0,0.1)', text: '#ff8855', borderColor: 'rgba(255,80,0,0.22)' },
+    description: 'Jamestown earned the nickname "The Pearl City" in the early 19th century due to its massive production of pearl ash — a refined form of potash used in glassmaking. By the mid-1820s the region was one of North America\'s largest producers. Settlers burned cleared hardwood, leeched the ashes to create lye, and processed it into pearl ash. Converting timber to ash made it cheap to transport, turning land clearing into one of Jamestown\'s first profitable industries.',
+    swatchColor: '#f0e0b0',
+    bg: '#0a0800',
+    // Primary: warm pearl/ivory — the refined crystalline product
+    acc: '#f0e0b0',
+    acc55: 'rgba(240,224,176,0.55)',
+    acc45: 'rgba(240,224,176,0.45)',
+    accRGB: '240,224,176',
+    // Secondary: ember amber — the hardwood fires
+    acc2: '#e89020',
+    acc2RGB: '232,144,32',
+    // Tertiary: ash grey — the residue
+    acc3: '#a09070',
+    acc3RGB: '160,144,112',
+    orb1: 'rgba(232,144,32,0.14)',
+    orb2: 'rgba(240,224,176,0.08)',
+    warmWarn: { bg: 'rgba(232,144,32,0.1)', text: '#e89020', borderColor: 'rgba(232,144,32,0.25)' },
   },
   {
     id: 'dahlstrom',
