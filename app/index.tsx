@@ -14,6 +14,7 @@ import { fetchWeather, WeatherData } from '../services/weather';
 import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
+import { PLACES, PLACE_CATEGORIES, PlaceCategory } from '../data/places';
 import { Audio } from 'expo-av';
 
 interface NowPlaying {
@@ -410,6 +411,112 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {visitorMode ? (
+          /* ═══════════════════════════════════════════
+             VISITOR MODE
+          ═══════════════════════════════════════════ */
+          <>
+            {/* Featured places */}
+            {PLACES.filter(p => p.featured).map(place => (
+              <TouchableOpacity
+                key={place.id}
+                activeOpacity={0.75}
+                onPress={() => place.website && Linking.openURL(place.website)}
+                // @ts-ignore
+                style={[styles.card, {
+                  borderRadius: 20, borderWidth: 1.5,
+                  backgroundColor: `rgba(${theme.acc2RGB},0.1)`,
+                  borderColor: `rgba(${theme.acc2RGB},0.35)`,
+                  ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)' } : {}),
+                }]}
+              >
+                <View style={styles.featuredBadge}>
+                  <Text style={[styles.featuredBadgeText, { color: theme.acc2 }]}>⭐ FEATURED</Text>
+                </View>
+                <View style={styles.placeRow}>
+                  <Text style={styles.placeEmoji}>{place.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.placeName, { color: theme.acc2 }]}>{place.name}</Text>
+                    {place.featuredNote && <Text style={styles.placeFeaturedNote}>{place.featuredNote}</Text>}
+                    <Text style={styles.placeDesc} numberOfLines={2}>{place.description}</Text>
+                    {place.hours && <Text style={[styles.placeHours, { color: `rgba(${theme.acc2RGB},0.5)` }]}>{place.hours}</Text>}
+                  </View>
+                  {place.website && <Ionicons name="open-outline" size={14} color={`rgba(${theme.acc2RGB},0.4)`} />}
+                </View>
+              </TouchableOpacity>
+            ))}
+
+            {/* Places by category */}
+            {PLACE_CATEGORIES.map(cat => {
+              const items = PLACES.filter(p => p.category === cat.key && !p.featured);
+              if (items.length === 0) return null;
+              return (
+                <View key={cat.key}>
+                  <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)` }]}>
+                    {cat.emoji} {cat.label.toUpperCase()}
+                  </Text>
+                  {/* @ts-ignore */}
+                  <View style={[styles.card, panel, { padding: 0, overflow: 'hidden' }]}>
+                    {items.map((place, i) => (
+                      <TouchableOpacity
+                        key={place.id}
+                        activeOpacity={place.website ? 0.7 : 1}
+                        onPress={() => place.website && Linking.openURL(place.website)}
+                        style={[styles.placeListRow, i < items.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
+                      >
+                        <Text style={{ fontSize: 18 }}>{place.emoji}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.placeListName}>{place.name}</Text>
+                          <Text style={styles.placeListDesc} numberOfLines={1}>{place.description}</Text>
+                        </View>
+                        {place.website && <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
+
+            {/* Weekend events */}
+            {(() => {
+              const now = new Date();
+              const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+              const weekend = civic.events.filter(e => {
+                const d = new Date(e.startDate);
+                return d >= now && d <= soon;
+              }).slice(0, 4);
+              if (weekend.length === 0) return null;
+              return (
+                <>
+                  <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>🗓 THIS WEEKEND</Text>
+                  {weekend.map((e, i) => {
+                    const d = new Date(e.startDate);
+                    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    return (
+                      // @ts-ignore
+                      <TouchableOpacity key={i} activeOpacity={e.link ? 0.7 : 1} onPress={() => e.link && Linking.openURL(e.link)}
+                        style={[styles.card, panel, { flexDirection: 'row', gap: 12, alignItems: 'flex-start' }]}>
+                        <View style={{ minWidth: 52 }}>
+                          <Text style={[styles.sectionLabel, { color: theme.acc3, margin: 0, fontSize: 11 }]}>{dateStr}</Text>
+                          <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{timeStr}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff' }} numberOfLines={2}>{e.title}</Text>
+                          <Text style={{ fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }} numberOfLines={1}>{e.location}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </>
+              );
+            })()}
+          </>
+        ) : (
+          /* ═══════════════════════════════════════════
+             RESIDENT MODE (original content)
+          ═══════════════════════════════════════════ */
+          <>
         {/* ─── Parking Today ────────────────────────── */}
         {parking.isWinter && (
           <>
@@ -575,7 +682,7 @@ export default function HomeScreen() {
 
           {/* Track info */}
           <View style={{ flex: 1 }}>
-            <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR Radio</Text>
+            <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR</Text>
             {nowPlaying?.title ? (
               <>
                 <Text style={styles.cdirNowLabel}>NOW PLAYING</Text>
@@ -583,7 +690,7 @@ export default function HomeScreen() {
                 <Text style={styles.cdirArtist} numberOfLines={1}>{nowPlaying.artist}</Text>
               </>
             ) : (
-              <Text style={styles.cdirSub}>Jamestown local music archive · 24/7</Text>
+              <Text style={styles.cdirSub}>Chadakoin Digital Internet Radio · 24/7</Text>
             )}
           </View>
 
@@ -599,11 +706,13 @@ export default function HomeScreen() {
         </View>
 
 
-        <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.3)` }]}>
-          {civic.lastUpdated
-            ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-            : 'Loading…'}
-        </Text>
+          <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.3)` }]}>
+            {civic.lastUpdated
+              ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : 'Loading…'}
+          </Text>
+          </>
+        )}
       </ScrollView>
     </ThemedBackground>
   );
@@ -683,6 +792,19 @@ const styles = StyleSheet.create({
   snowBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fff' },
   snowBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
+
+  // Visitor mode
+  featuredBadge: { marginBottom: 8 },
+  featuredBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
+  placeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  placeEmoji: { fontSize: 28, marginTop: 2 },
+  placeName: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  placeFeaturedNote: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 4, fontStyle: 'italic' },
+  placeDesc: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
+  placeHours: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4 },
+  placeListRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  placeListName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
+  placeListDesc: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
 
   // History fact
   factCard: { borderLeftWidth: 3 },
