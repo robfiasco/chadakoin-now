@@ -116,7 +116,7 @@ export const PLACES: Place[] = [
     name: 'Jamestown Farmers Market',
     category: 'food',
     emoji: '🥬',
-    description: 'Fresh local produce, artisan goods, and community vendors every Saturday morning. Look for Durow Farms — farm-fresh eggs, hand-tapped maple syrup, small-batch coffee, and seasonal goods straight from their land. Winter market runs 2nd & 4th Saturdays at 410 N Main St. Summer market moves to 17 W 3rd St.',
+    description: 'Fresh local produce, artisan goods, and community vendors every Saturday morning. Look for Durow Farms — farm-fresh eggs, hand-tapped maple syrup, small-batch coffee, and and more from a local family farm. Winter market runs 2nd & 4th Saturdays at 410 N Main St. Summer market moves to 17 W 3rd St.',
     address: '410 N Main St, Jamestown (winter) · 17 W 3rd St (summer)',
     website: 'https://jfmny.org/',
     hours: 'Saturdays 9am–1pm',
