@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (!currentRes.ok) throw new Error('OWM current fetch failed');
 
     const current = await currentRes.json();
-    const forecast = forecastRes.ok ? await forecastRes.json() : null;
+    const forecastJson = forecastRes.ok ? await forecastRes.json() : null;
 
     const temp    = Math.round(current.main.temp);
     const feels   = Math.round(current.main.feels_like);
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     const icon = codeToIcon(current.weather[0].id, current.weather[0].icon);
 
     // High/low + precip from 24h forecast
-    const periods = forecast?.list ?? [];
+    const periods = forecastJson?.list ?? [];
     const high = periods.length
       ? Math.round(Math.max(...periods.map(f => f.main.temp_max)))
       : Math.round(current.main.temp_max ?? temp);
