@@ -68,10 +68,17 @@ function parseGame(event: any): GameResult | null {
   }
 }
 
+function espnProxy(url: string): string {
+  if (Platform.OS === 'web') {
+    return `/api/proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
 async function fetchSabres(): Promise<SabresData> {
   const [schedRes, newsRes] = await Promise.all([
-    fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule'),
-    fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news'),
+    fetch(espnProxy('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule')),
+    fetch(espnProxy('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news')),
   ]);
 
   const schedJson = await schedRes.json();
