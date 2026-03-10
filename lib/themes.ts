@@ -1,4 +1,4 @@
-export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent';
+export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent' | 'aldos';
 
 export interface Theme {
   id: ThemeId;
@@ -136,6 +136,32 @@ export const THEMES: Theme[] = [
     warmWarn: { bg: 'rgba(255,200,50,0.08)', text: '#d4a820', borderColor: 'rgba(255,200,50,0.18)' },
     tabBarBg: 'rgba(6,6,6,0.97)',
     bgGradient: 'linear-gradient(180deg, #050505 0%, #101010 50%, #1c1c1c 100%)',
+  },
+];
+
+  {
+    id: 'aldos',
+    label: "Aldo's",
+    sub: 'Late night diner',
+    description: "Aldo's was the kind of place that didn't need to advertise. After the bars closed and the bands played their last set, everyone just knew — you ended up at Aldo's. Teens, musicians, bartenders, and anyone who needed eggs and coffee at 2am. Warm, loud, greasy, and exactly what you needed. This theme is for them.",
+    swatchColor: '#ffd060',
+    bg: '#1a1008',
+    // Primary: diner fluorescent yellow
+    acc: '#ffd060',
+    acc55: 'rgba(255,208,96,0.55)',
+    acc45: 'rgba(255,208,96,0.45)',
+    accRGB: '255,208,96',
+    // Secondary: neon orange — like a sign in the window
+    acc2: '#ff8c42',
+    acc2RGB: '255,140,66',
+    // Tertiary: coffee cream
+    acc3: '#e8c89a',
+    acc3RGB: '232,200,154',
+    orb1: 'rgba(255,160,50,0.15)',
+    orb2: 'rgba(255,208,96,0.08)',
+    warmWarn: { bg: 'rgba(255,140,66,0.12)', text: '#ff8c42', borderColor: 'rgba(255,140,66,0.28)' },
+    tabBarBg: 'rgba(14,8,2,0.97)',
+    bgGradient: 'linear-gradient(180deg, #1a1008 0%, #261508 50%, #1a1008 100%)',
   },
 ];
 
