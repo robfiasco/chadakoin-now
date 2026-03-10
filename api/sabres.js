@@ -20,12 +20,11 @@ async function fetchJCC(signal) {
         return match ? (match[1] ?? match[2] ?? '').trim() : '';
       };
 
-      const score     = get('ps:score');
-      const pubDate   = get('pubDate');
-      const opponent  = get('ps:opponent');
-      const category  = get('category');
-      const link      = get('link');
-      const desc      = get('description');
+      const score    = get('ps:score');
+      const pubDate  = get('pubDate');
+      const opponent = get('ps:opponent');
+      const category = get('category');
+      const link     = get('link');
 
       if (!pubDate) continue;
       const date = new Date(pubDate);
@@ -44,7 +43,7 @@ async function fetchJCC(signal) {
           sport:    category,
           opponent: opponent.replace(/^(at|vs\.?)\s*/i, ''),
           isHome:   !opponent.toLowerCase().startsWith('at '),
-          result:   wl,   // "W" or "L"
+          result:   wl,
           score:    final,
           won:      wl === 'W',
           link,
@@ -52,7 +51,7 @@ async function fetchJCC(signal) {
       }
     }
 
-    // Most recent 5 completed games across all sports, newest first
+    // Most recent 6 completed games across all sports, newest first
     return items
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 6);
@@ -63,8 +62,6 @@ async function fetchJCC(signal) {
 
 export default async function handler(req, res) {
   try {
-    console.log('Fetching Sabres from NHL API...');
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -79,8 +76,6 @@ export default async function handler(req, res) {
     } finally {
       clearTimeout(timeout);
     }
-
-    console.log('Schedule:', schedRes.status, '| Standings:', standRes.status, '| Stats:', statsRes.status);
 
     if (!schedRes.ok) {
       return res.status(502).json({ error: 'NHL API failed', status: schedRes.status });
@@ -104,8 +99,6 @@ export default async function handler(req, res) {
       }));
 
     const games = schedJson.games ?? [];
-    console.log('Total games:', games.length);
-
     const now = new Date();
 
     const past = games
@@ -117,8 +110,6 @@ export default async function handler(req, res) {
       .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
 
     const live = games.filter(g => g.gameState === 'LIVE' || g.gameState === 'CRIT');
-
-    console.log(`Past: ${past.length}, Upcoming: ${upcoming.length}, Live: ${live.length}`);
 
     // Sabres record from standings
     let record = '';
@@ -147,44 +138,36 @@ export default async function handler(req, res) {
       const won = status === 'final' ? Number(ourScore) > Number(theirScore) : null;
 
       return {
-        date:          g.startTimeUTC ?? `${g.gameDate}T19:00:00Z`,
+        date:         g.startTimeUTC ?? `${g.gameDate}T19:00:00Z`,
         status,
-        opponentAbbr:  them?.abbrev ?? '???',
-        opponentName:  them?.commonName?.default ?? them?.placeName?.default ?? 'Opponent',
-        opponentLogo:  them?.logo ?? '',
+        opponentAbbr: them?.abbrev ?? '???',
+        opponentName: them?.commonName?.default ?? them?.placeName?.default ?? 'Opponent',
+        opponentLogo: them?.logo ?? '',
         ourScore,
         theirScore,
-        isHome:        isBufHome,
+        isHome:       isBufHome,
         won,
-        venue:         g.venue?.default ?? '',
-        broadcast:     g.tvBroadcasts?.[0]?.network ?? '',
-        periodDesc:    g.periodDescriptor?.periodType ?? '',
-        clock:         g.clock?.timeRemaining ?? '',
+        venue:        g.venue?.default ?? '',
+        broadcast:    g.tvBroadcasts?.[0]?.network ?? '',
       };
     }
 
     // Prioritize live game, then next upcoming, then most recent past
-    const displayNext   = live[0] ?? upcoming[0];
-    const displayRecent = past[0];
-
     const result = {
       record,
       standing,
-      recentGame: parseGame(displayRecent),
-      nextGame:   parseGame(displayNext),
+      recentGame: parseGame(past[0]),
+      nextGame:   parseGame(live[0] ?? upcoming[0]),
       topScorers,
+      jcc: jccResults,
       news: [],
     };
-
-    result.jcc = jccResults;
-    console.log(`record: "${record}", recent: ${result.recentGame?.opponentName}, next: ${result.nextGame?.opponentName}, jcc: ${jccResults.length} results`);
 
     res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json(result);
 
   } catch (err) {
-    console.error('Sabres error:', err.message);
     res.status(502).json({ error: err.message });
   }
 }
