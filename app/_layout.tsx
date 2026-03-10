@@ -48,6 +48,13 @@ function ThemedTabs() {
       <Tabs.Screen name="parking" options={{ href: null }} />
       <Tabs.Screen name="alerts" options={{ href: null }} />
       <Tabs.Screen
+        name="sports"
+        options={{
+          title: 'Sports',
+          tabBarIcon: tabIcon('trophy', 'trophy-outline'),
+        }}
+      />
+      <Tabs.Screen
         name="events"
         options={{
           title: 'Events',

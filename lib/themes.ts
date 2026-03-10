@@ -1,4 +1,4 @@
-export type ThemeId = 'green' | 'solar' | 'blood' | 'violet' | 'crescent';
+export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent';
 
 export interface Theme {
   id: ThemeId;
@@ -69,25 +69,26 @@ export const THEMES: Theme[] = [
     warmWarn: { bg: 'rgba(255,80,0,0.1)', text: '#ff8855', borderColor: 'rgba(255,80,0,0.22)' },
   },
   {
-    id: 'blood',
-    label: 'Steelworks',
-    sub: 'Industrial heritage',
-    swatchColor: '#ff4466',
-    bg: '#0a0003',
-    // Primary: crimson
-    acc: '#ff4466',
-    acc55: 'rgba(255,50,80,0.55)',
-    acc45: 'rgba(255,50,80,0.45)',
-    accRGB: '255,50,80',
-    // Secondary: tangerine
-    acc2: '#ff9f43',
-    acc2RGB: '255,159,67',
-    // Tertiary: soft violet
-    acc3: '#c490ff',
-    acc3RGB: '196,144,255',
-    orb1: 'rgba(220,0,50,0.15)',
-    orb2: 'rgba(255,159,67,0.1)',
-    warmWarn: { bg: 'rgba(255,100,30,0.12)', text: '#ff8855', borderColor: 'rgba(255,100,30,0.22)' },
+    id: 'dahlstrom',
+    label: 'Dahlstrom',
+    sub: 'Steel doors since 1904',
+    swatchColor: '#5ba8d4',
+    bg: '#080d12',
+    // Primary: bright steel blue
+    acc: '#5ba8d4',
+    acc55: 'rgba(91,168,212,0.55)',
+    acc45: 'rgba(91,168,212,0.45)',
+    accRGB: '91,168,212',
+    // Secondary: Dahlstrom brand blue
+    acc2: '#3b7296',
+    acc2RGB: '59,114,150',
+    // Tertiary: cool steel grey
+    acc3: '#8aa8b8',
+    acc3RGB: '138,168,184',
+    orb1: 'rgba(59,114,150,0.18)',
+    orb2: 'rgba(91,168,212,0.1)',
+    warmWarn: { bg: 'rgba(255,190,40,0.09)', text: '#ffd060', borderColor: 'rgba(255,190,40,0.2)' },
+    tabBarBg: 'rgba(4,8,14,0.97)',
   },
   {
     id: 'violet',
