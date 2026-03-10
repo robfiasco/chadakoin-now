@@ -24,7 +24,7 @@ export const PLACES: Place[] = [
     name: 'Labyrinth Press Co.',
     category: 'coffee',
     emoji: '☕',
-    description: 'Downtown coffee shop with full espresso bar and a fresh vegetarian & vegan restaurant. 🌱 Vegan-friendly.',
+    description: 'Full espresso bar, fresh vegetarian & vegan restaurant, and a seasonal outdoor patio. One of the best spots downtown for food and coffee. 🌱 Vegan-friendly.',
     address: '10-12 E. 4th St, Jamestown',
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 8am–9pm',
