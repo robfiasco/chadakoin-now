@@ -569,25 +569,31 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
 // ─── Eventbrite events ────────────────────────────────────────────
 
 async function fetchEventbriteEvents(): Promise<EventItem[]> {
-  // Requires EXPO_PUBLIC_EVENTBRITE_TOKEN in .env
-  // Get a free key at developer.eventbrite.com
-  const token = process.env.EXPO_PUBLIC_EVENTBRITE_TOKEN;
-  if (!token || Platform.OS === 'web') return []; // auth headers can't go through allorigins proxy
-
   try {
-    const url =
-      'https://www.eventbriteapi.com/v3/events/search/' +
-      '?location.address=Jamestown%2C%20NY%2014701' +
-      '&location.within=10mi' +
-      '&expand=venue,category' +
-      '&status=live' +
-      '&sort_by=date';
+    // On web: use our server-side Vercel proxy (token added server-side)
+    // On native: call Eventbrite directly with the token
+    let json: any;
 
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/eventbrite');
+      if (!res.ok) return [];
+      json = await res.json();
+    } else {
+      const token = process.env.EXPO_PUBLIC_EVENTBRITE_TOKEN;
+      if (!token) return [];
+      const today = new Date().toISOString().split('T')[0];
+      const url =
+        'https://www.eventbriteapi.com/v3/events/search/' +
+        '?location.address=Jamestown%2C%20NY%2014701' +
+        '&location.within=10mi' +
+        '&expand=venue,category' +
+        '&status=live' +
+        '&sort_by=date' +
+        `&start_date.range_start=${today}T00:00:00`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return [];
+      json = await res.json();
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
