@@ -6,8 +6,16 @@ export default async function handler(req, res) {
   const token = process.env.EXPO_PUBLIC_EVENTBRITE_TOKEN || process.env.EVENTBRITE_TOKEN;
   if (!token) return res.status(401).json({ error: 'Eventbrite token not configured' });
 
+  // First verify the token is valid
+  const meRes = await fetch(`https://www.eventbriteapi.com/v3/users/me/?token=${token}`);
+  const meBody = await meRes.json();
+  console.log('Eventbrite token check:', meRes.status, JSON.stringify(meBody).slice(0, 100));
+
+  if (!meRes.ok) {
+    return res.status(401).json({ error: 'Eventbrite token invalid', detail: meBody });
+  }
+
   const today = new Date().toISOString().split('T')[0];
-  // No trailing slash, token in query param (most reliable for Eventbrite v3)
   const url =
     'https://www.eventbriteapi.com/v3/events/search' +
     `?token=${token}` +
@@ -18,7 +26,7 @@ export default async function handler(req, res) {
     '&sort_by=date' +
     `&start_date.range_start=${today}T00%3A00%3A00`;
 
-  console.log('Fetching Eventbrite:', url.replace(token, 'REDACTED'));
+  console.log('Fetching Eventbrite search...');
 
   try {
     const upstream = await fetch(url);
