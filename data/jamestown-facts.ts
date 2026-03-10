@@ -1,0 +1,75 @@
+// Jamestown, NY — History Facts of the Day
+// Sourced from the City of Jamestown Historical Marker Book (2022 ed.)
+// One fact is shown per day, cycling deterministically by day-of-year.
+
+export const JAMESTOWN_FACTS: string[] = [
+  "In 1739, French officer Baron de Longueuil led 442 soldiers and Native Americans down the Chadakoin River toward the Mississippi — the first recorded expedition through what is now Jamestown.",
+  "The first professional map of Chautauqua Lake was made in 1739 by 18-year-old engineer Gaspard-Joseph Chaussegros de Léry — and it's the first document to use the word 'Chautauqua'.",
+  "In 1749, French Captain Céloron de Blainville camped on the banks of the Chadakoin outlet — possibly within present-day city limits — while claiming the entire watershed for France.",
+  "Pre-historic Native Americans may have passed through the Jamestown area as many as 14,000 years ago, not long after the last glaciers receded.",
+  "Glaciers carved the Jamestown valley, pointed all the hills to the southeast, and built the ridge that impounds Chautauqua Lake — the lake itself is a product of the last Ice Age.",
+  "The famous Seneca chief Cornplanter led several hundred Native Americans back into Chautauqua County in May 1782, after the Revolutionary War's Sullivan-Clinton Expedition had displaced them.",
+  "In the fall of 1810, John Blowers built the first log cabin in Jamestown and operated a tavern for keelboatmen trading between Pittsburgh and Mayville.",
+  "Mary Blowers, born in 1811, was the first white child born in Jamestown. She later moved to Illinois, where she died on June 2, 1888.",
+  "James Prendergast purchased 1,000 acres of land in 1806 and founded the settlement that became Jamestown, also serving as its first postmaster and judge.",
+  "Prendergast's first sawmill and house were both destroyed in the same fire on September 8, 1812 — one of many fires that shaped early Jamestown.",
+  "Jamestown's first store was built in 1813 by Jediah and Martin Prendergast. The original ledger, dated November 1813, still exists at the Fenton History Center.",
+  "Jamestown's first gristmill, built by James Prendergast in 1814, attracted settlers from as far as Warren, Pennsylvania — long lines of wagons could often be seen waiting to have their grain milled.",
+  "Jacob Fenton, a Revolutionary War veteran and potter, built Jamestown's first official tavern in 1814. He made plain redware pottery out back — giving Potters Alley its name.",
+  "The First Congregational Church was organized June 16, 1816, by just nine men and women guided by a circuit-riding minister from the Connecticut Missionary Society. It is Jamestown's oldest surviving church building.",
+  "James Prendergast personally paid all expenses of public education in Jamestown for its first two decades, building the first schoolhouse in 1816.",
+  "The first schoolhouse at Main and Fifth Streets taught English, Grammar, and Latin. Students were each asked to bring their own tallow candle.",
+  "Daniel Hazeltine built Jamestown's first woolen mill in 1816, canoe-paddling the parts up from Pittsburgh himself. By that first winter, he had dressed 2,500 yards of cloth.",
+  "Royal Keyes arrived from Vermont in 1815 and began making simple furniture in his carpenter shop — the humble origin of what became Jamestown's world-famous furniture industry.",
+  "In 1825, brothers William and John Breed built the first factory in Jamestown dedicated exclusively to furniture manufacturing. Jamestown would later rank second in the nation for wood furniture production.",
+  "Captain Gilbert Ballard launched the first regular stagecoach run between Jamestown and Mayville in 1823, completing the round trip in a single day — initially just once a week.",
+  "Long, shallow-draft keelboats propelled by setting poles carried supplies up from Pittsburgh to Jamestown's keelboat landing, connecting the frontier village to markets as far as New Orleans.",
+  "Jamestown's first bank, the Chautauqua County Bank, was chartered April 18, 1831. Banking operated on that Main Street site continuously until 2002.",
+  "Catherine Dickes Harris, a free-born Black woman, came to Jamestown in 1831 and sheltered as many as seventeen runaway slaves at a time in her tiny 16-foot house — one of the few African Americans known to have run an Underground Railroad station.",
+  "Judge Elial Todd Foote, Jamestown's first physician, bought 350 acres east of Main Street in 1822 and developed it into an entire half of the city. He also convinced county officials in 1859 to change the spelling from 'Chautauque' to 'Chautauqua'.",
+  "The Dexterville Tavern, built in 1826 by the Dexter brothers, is the oldest building in Jamestown still standing in its original location.",
+  "The first issue of the Jamestown Journal was printed on a wooden press on June 21, 1826. Subscribers paid $2.50 a year for Wednesday delivery.",
+  "Jamestown's first sash factory, built in 1826, eventually shipped its windows and doors south by flatboat as far as New Orleans.",
+  "Silas Shearman's home on Pine and Fourth Streets was a principal Jamestown station of the Underground Railroad in the 1850s. He would often come downstairs to find his kitchen full of escaped slaves who had arrived in the night.",
+  "The first train arrived in Jamestown on August 25, 1860, after 29 years of effort. The Jamestown Cornet Band boarded in Kennedy and played 'Ain't I Glad to Get Out of the Wilderness' as it rolled into town.",
+  "An arson fire on January 31, 1861 — known as the Great Fire — destroyed most buildings on both sides of North Main Street between Second and Third Streets.",
+  "Reuben E. Fenton, born July 4, 1819, was a founder of the Republican Party, a friend of Abraham Lincoln, and served as both Governor of New York (1865–1869) and U.S. Senator. He earned the title 'The Soldier's Friend' for championing veteran pensions.",
+  "Reuben Fenton's Jamestown mansion served as the final national headquarters of the Grand Army of the Republic, the Union veterans organization.",
+  "William Broadhead came to Jamestown in 1843 as a blacksmith from Yorkshire, England, and built a business empire that included worsted mills, electric trolley lines, steamboats, amusement parks, and a commercial rose greenhouse.",
+  "The first worsted mill west of Philadelphia was established in Jamestown in 1873. Its machinery was imported from England, and so were many of the skilled workers who ran it.",
+  "The Fenton Guards, organized in August 1875 primarily by Swedish immigrants, became Jamestown's National Guard unit. Its founders were a newspaper editor and a haberdasher.",
+  "Allen's Opera House, opened September 3, 1874, seated up to 1,500 people. W.C. Fields, Boris Karloff, John Philip Sousa, and a young Gypsy Rose Lee all performed there.",
+  "Jamestown's Gustavus Adolphus Children's Home admitted its first 12 orphans on January 27, 1886 — all children of Swedish immigrants who had died en route to or shortly after arriving in America.",
+  "The Art Metal Company, founded in Jamestown in 1888, at its 1950s peak employed over 1,500 people across four plants making metal office furniture.",
+  "Beginning in 1828, fifteen two- and three-deck steamboats plied Chautauqua Lake. In the 1907 season alone, they carried 279,924 passengers. The last coal-fueled steamer made its final run in 1958.",
+  "President Ulysses S. Grant was the first of nine U.S. presidents to visit Chautauqua Institution, arriving by boat on August 15, 1875, during the Institution's second year.",
+  "The American Aristotype Company, founded in Jamestown in 1889, produced one of the world's first commercially successful photographic papers. George Eastman eventually acquired it, and it was later folded into Eastman Kodak.",
+  "Samuel A. Carlson served as Jamestown's mayor for 26 years across multiple terms between 1908 and 1937. He championed municipally-owned utilities — a legacy that still gives Jamestown some of the lowest electric rates in New York State.",
+  "A fire at the Gokey Shoe building on March 12, 1910 killed two volunteer firefighters and destroyed 60 businesses. The tragedy directly led to the creation of Jamestown's paid fire department on March 1, 1911.",
+  "Jamestown manufactured mechanical voting machines starting in 1895. By the 1950s, Jamestown-built machines were in use in 32 states, and the company eventually produced over 100,000 units.",
+  "The Ahlstrom Piano Company, founded by Swedish immigrant brothers in 1875, invented a left-pedal mechanism for softening bass tones that is still standard on virtually every upright piano made in the world today.",
+  "Charles Dahlstrom, a Swedish immigrant who taught himself tool-and-die making at age 12 in Stockholm, invented the world's first fireproof metal door in Jamestown in 1904. His doors were later installed in the Empire State Building, Rockefeller Center, and the U.S. Capitol.",
+  "Roger Tory Peterson, born in Jamestown on August 28, 1908, published his first Field Guide to the Birds in 1934 — 2,000 copies that sold out in two weeks after five publishers had rejected the manuscript.",
+  "The Chautauqua County Political Equality Club, organized October 31, 1888, was New York State's first countywide women's suffrage organization. By 1891 it had over 1,000 members — the largest county suffrage org in the nation.",
+  "Jamestown suffragist Edith Ainge was arrested five times in Washington, D.C. for peaceful protest in 1917 and sentenced to 60 days in a workhouse. She later served as treasurer of the National Woman's Party alongside Alice Paul.",
+  "Jamestown Community College, founded in 1950, was the first institution in the United States to officially be called a 'community college.'",
+  "Walter Edward Washington grew up on Jamestown's Washington Street and graduated from Jamestown High School in 1933. He became the first elected mayor of Washington, D.C. in 1974, sworn in by Supreme Court Justice Thurgood Marshall.",
+  "Robert H. Jackson practiced law in Jamestown for over 20 years before becoming a U.S. Supreme Court Justice and chief U.S. prosecutor at the Nuremberg war crimes trials.",
+  "The Jamestown Shale Paving Brick Company produced up to 15 million bricks per year and paved streets in Jamestown, Brooklyn, and even the tunnels into New York City.",
+  "The Broadhead family's West Ellicott rose greenhouse was, at the time of its construction, the largest greenhouse in the nation.",
+  "Hope's Windows, founded in Jamestown in 1912 with just seven employees, grew into the world's largest manufacturer of custom steel and bronze windows — still operating in Jamestown today.",
+  "The urban renewal project of the 1970s demolished 150 buildings in Brooklyn Square, displaced 125 businesses, and erased a close-knit Italian-American neighborhood of nearly 100 families.",
+  "In February 1934, 18 Jamestown-area men formed the Astronomers Guild and built their own observatory on Marlow Road, grinding the lenses by hand. Free public open houses attracted more than 20,000 visitors.",
+  "Jamestown teachers and students spent three years fundraising from 1913 to 1916 to save a patch of old-growth forest from timbering. The Hundred Acre Lot became one of the first school parks in the United States.",
+  "Gurney Ball Bearing, founded in Jamestown in 1903, designed bearings that enabled variable-pitch aircraft propellers — a breakthrough that changed aviation. The company still operates in Jamestown today as part of SKF Group.",
+  "Hall-of-Famer Nellie Fox played for the Jamestown Falcons minor league team in 1944, making him the first former Jamestown player elected to the Baseball Hall of Fame.",
+  "A white oak tree on Buffalo Street, which sprouted around 1820 within a decade of the city's founding, became the first tree in Jamestown named to the New York State Historic Tree Registry.",
+];
+
+// Returns today's fact, consistent for all users on the same day
+export function getTodaysFact(): string {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  return JAMESTOWN_FACTS[dayOfYear % JAMESTOWN_FACTS.length];
+}

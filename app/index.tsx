@@ -12,6 +12,7 @@ import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
 import { fetchWeather, WeatherData } from '../services/weather';
 import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
+import { getTodaysFact } from '../data/jamestown-facts';
 
 function getDateBadge() {
   const d = new Date();
@@ -372,6 +373,13 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ─── Jamestown history fact ───────────────── */}
+        <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>DID YOU KNOW</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.card, panel3]}>
+          <Text style={styles.factText}>{getTodaysFact()}</Text>
+        </View>
+
         {/* ─── City News ────────────────────────────── */}
         {/* acc3 zone */}
         {(civic.loading || news.length > 0) && (
@@ -579,6 +587,9 @@ const styles = StyleSheet.create({
   snowBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fff' },
   snowBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
+
+  // History fact
+  factText: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 },
 
   // City news
   newsCard: { overflow: 'hidden' },
