@@ -457,6 +457,11 @@ export default function HomeScreen() {
                   <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)` }]}>
                     {cat.emoji} {cat.label.toUpperCase()}
                   </Text>
+                  {cat.note && (
+                    <Text style={[styles.categoryNote, { color: `rgba(${theme.accRGB},0.45)` }]}>
+                      {cat.note}
+                    </Text>
+                  )}
                   {/* @ts-ignore */}
                   <View style={[styles.card, panel, { padding: 0, overflow: 'hidden' }]}>
                     {items.map((place, i) => (
@@ -796,6 +801,7 @@ const styles = StyleSheet.create({
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
 
   // Visitor mode
+  categoryNote: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17, marginBottom: 8, paddingHorizontal: 2 },
   featuredBadge: { marginBottom: 8 },
   featuredBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   placeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },

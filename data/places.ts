@@ -71,7 +71,7 @@ export const PLACES: Place[] = [
     name: 'Lifted Dispensary',
     category: 'cannabis',
     emoji: '🌿',
-    description: 'New York State legalized recreational cannabis for adults 21+ in 2021. You can purchase and consume legally here. Consumption in public or in a vehicle is not permitted. Note: laws vary by state — check your home state\'s rules before traveling with any product.',
+    description: 'Cannabis dispensary serving Jamestown.',
     address: 'Jamestown',
     website: 'https://www.liftedispensary.com/',
     featured: false,
@@ -176,11 +176,14 @@ export const PLACES: Place[] = [
   },
 ];
 
-export const PLACE_CATEGORIES: { key: PlaceCategory; label: string; emoji: string }[] = [
+export const PLACE_CATEGORIES: { key: PlaceCategory; label: string; emoji: string; note?: string }[] = [
   { key: 'coffee',   label: 'Coffee',       emoji: '☕' },
   { key: 'food',     label: 'Pizza & Food',  emoji: '🍕' },
   { key: 'drinks',   label: 'Drinks',       emoji: '🍺' },
-  { key: 'cannabis', label: 'Cannabis',     emoji: '🌿' },
+  {
+    key: 'cannabis', label: 'Cannabis', emoji: '🌿',
+    note: 'Recreational cannabis is legal in New York State for adults 21+. Public and in-vehicle consumption is not permitted. Laws vary — check your home state before traveling with any product.',
+  },
   { key: 'activity', label: 'Things to Do', emoji: '🎯' },
   { key: 'arts',     label: 'Arts',         emoji: '🎭' },
   { key: 'stay',     label: 'Stay',         emoji: '🏨' },
