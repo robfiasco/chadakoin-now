@@ -31,12 +31,13 @@ export const PLACES: Place[] = [
     featured: false,
   },
   {
-    id: 'shawbucks',
-    name: 'Shawbucks',
+    id: 'crown-street-roasting',
+    name: 'Crown Street Roasting Co.',
     category: 'coffee',
     emoji: '☕',
-    description: 'Local coffee shop and bar, home of weekly Trivia Nights.',
-    address: 'Downtown Jamestown',
+    description: 'Specialty coffee roasted right here in Jamestown. Café, beans, and merchandise.',
+    address: 'Jamestown, NY',
+    website: 'https://www.crownstreetroasting.com/',
     featured: false,
   },
 
