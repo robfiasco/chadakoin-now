@@ -110,6 +110,19 @@ export const PLACES: Place[] = [
     featured: false,
   },
 
+  // ─── Food / Market ────────────────────────────────────────────
+  {
+    id: 'jamestown-farmers-market',
+    name: 'Jamestown Farmers Market',
+    category: 'food',
+    emoji: '🥬',
+    description: 'Fresh local produce, goods, and vendors. Winter market runs 2nd & 4th Saturdays at 410 N Main St. Summer market moves to 17 W 3rd St. Both run 9am–1pm.',
+    address: '410 N Main St, Jamestown (winter) · 17 W 3rd St (summer)',
+    website: 'https://jfmny.org/',
+    hours: 'Saturdays 9am–1pm',
+    featured: false,
+  },
+
   // ─── Arts & Entertainment ─────────────────────────────────────
   {
     id: 'comedy-center',
