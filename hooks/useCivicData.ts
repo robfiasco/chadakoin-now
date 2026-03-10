@@ -451,11 +451,10 @@ async function fetchEvents(): Promise<EventItem[]> {
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [wrfaEvents, libraryContent, regLennaEvents, eventbriteEvents] = await Promise.all([
+  const [wrfaEvents, libraryContent, regLennaEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
     fetchRegLennaEvents(),
-    fetchEventbriteEvents(),
   ]);
   const libraryEvents = libraryContent.events;
 
@@ -490,8 +489,8 @@ async function fetchEvents(): Promise<EventItem[]> {
   const seen = new Set<string>();
   const merged: EventItem[] = [];
 
-  // Priority: Reg Lenna (structured) → Eventbrite → Library → WRFA → BPU
-  for (const e of [...regLennaEvents, ...eventbriteEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
+  // Priority: Reg Lenna (structured) → Library → WRFA → BPU
+  for (const e of [...regLennaEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
     const key = dedupeKey(e);
     if (!seen.has(key)) {
       seen.add(key);
@@ -562,53 +561,6 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
     if (stale) {
       try { return JSON.parse(stale).data ?? []; } catch { return []; }
     }
-    return [];
-  }
-}
-
-// ─── Eventbrite events ────────────────────────────────────────────
-
-async function fetchEventbriteEvents(): Promise<EventItem[]> {
-  try {
-    // On web: use our server-side Vercel proxy (token added server-side)
-    // On native: call Eventbrite directly with the token
-    let json: any;
-
-    if (Platform.OS === 'web') {
-      const res = await fetch('/api/eventbrite');
-      if (!res.ok) return [];
-      json = await res.json();
-    } else {
-      const token = process.env.EXPO_PUBLIC_EVENTBRITE_TOKEN;
-      if (!token) return [];
-      const today = new Date().toISOString().split('T')[0];
-      const url =
-        'https://www.eventbriteapi.com/v3/events/search/' +
-        '?location.address=Jamestown%2C%20NY%2014701' +
-        '&location.within=10mi' +
-        '&expand=venue,category' +
-        '&status=live' +
-        '&sort_by=date' +
-        `&start_date.range_start=${today}T00:00:00`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) return [];
-      json = await res.json();
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return (json.events ?? [])
-      .filter((e: any) => new Date(e.start?.local ?? '') >= today)
-      .map((e: any) => ({
-        title: stripHtml(e.name?.text ?? ''),
-        startDate: e.start?.local ?? '',
-        endDate: e.end?.local ?? '',
-        location: e.venue?.name ?? e.venue?.address?.localized_address_display ?? 'Jamestown, NY',
-        category: e.category?.name ?? 'Event',
-        tags: ['Eventbrite'],
-      }));
-  } catch {
     return [];
   }
 }

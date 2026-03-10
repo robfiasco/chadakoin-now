@@ -374,10 +374,10 @@ export default function HomeScreen() {
         )}
 
         {/* ─── Jamestown history fact ───────────────── */}
-        <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>DID YOU KNOW</Text>
+        <Text style={[styles.sectionLabel, { color: theme.acc }]}>DID YOU KNOW?</Text>
         {/* @ts-ignore */}
-        <View style={[styles.card, panel3]}>
-          <Text style={styles.factText}>{getTodaysFact()}</Text>
+        <View style={[styles.card, panelGlow, styles.factCard, { borderLeftColor: theme.acc }]}>
+          <Text style={[styles.factText, { color: 'rgba(255,255,255,0.88)' }]}>{getTodaysFact()}</Text>
         </View>
 
         {/* ─── City News ────────────────────────────── */}
@@ -589,7 +589,8 @@ const styles = StyleSheet.create({
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
 
   // History fact
-  factText: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 },
+  factCard: { borderLeftWidth: 3 },
+  factText: { fontFamily: 'Outfit', fontSize: 14, lineHeight: 22 },
 
   // City news
   newsCard: { overflow: 'hidden' },
