@@ -168,7 +168,7 @@ function StatChip({ label, value, accRGB, loading }: { label: string; value: str
 
 // ─── Home Screen ─────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { theme } = useTheme();
+  const { theme, themeId, setThemeId } = useTheme();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const civic = useCivicData();
 
@@ -209,8 +209,28 @@ export default function HomeScreen() {
             <Text style={[styles.dateBadgeText, { color: theme.acc }]}>{dateBadge}</Text>
           </View>
         </View>
-        <View style={styles.themeRow}>
-          <ThemeSelector />
+        {/* Theme dots — tap to cycle, full details in Settings */}
+        <View style={styles.themeDots}>
+          {THEMES.map(t => (
+            <TouchableOpacity
+              key={t.id}
+              onPress={() => setThemeId(t.id as ThemeId)}
+              activeOpacity={0.7}
+              style={styles.dotWrap}
+            >
+              <View style={[
+                styles.dot,
+                {
+                  backgroundColor: t.swatchColor,
+                  opacity: themeId === t.id ? 1 : 0.25,
+                  transform: [{ scale: themeId === t.id ? 1.35 : 1 }],
+                  shadowColor: themeId === t.id ? t.swatchColor : 'transparent',
+                  shadowOpacity: themeId === t.id ? 0.8 : 0,
+                  shadowRadius: 5,
+                },
+              ]} />
+            </TouchableOpacity>
+          ))}
         </View>
       </SafeAreaView>
 
@@ -479,7 +499,9 @@ const styles = StyleSheet.create({
   appCity: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1.2 },
   dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   dateBadgeText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' },
-  themeRow: { marginTop: 12 },
+  themeDots: { flexDirection: 'row', gap: 12, marginTop: 14, alignItems: 'center' },
+  dotWrap: { padding: 4 },
+  dot: { width: 10, height: 10, borderRadius: 5, shadowOffset: { width: 0, height: 0 } },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 6, paddingBottom: 40 },

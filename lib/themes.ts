@@ -4,6 +4,7 @@ export interface Theme {
   id: ThemeId;
   label: string;
   sub: string;
+  description: string;   // shown in Settings
   swatchColor: string;
   bg: string;
   // Primary accent — weather, date badge, dominant glow
@@ -30,6 +31,7 @@ export const THEMES: Theme[] = [
     id: 'green',
     label: 'Chadakoin',
     sub: 'The river through downtown',
+    description: 'Named for the Chadakoin River, which flows through the heart of Jamestown connecting Chautauqua Lake to the Conewango Creek. In 1739, French explorer Baron de Longueuil traveled its banks on an expedition to the Mississippi — producing the first professional map of Chautauqua Lake and the first recorded use of the word "Chautauqua."',
     swatchColor: '#00d4ff',
     bg: '#020c14',
     // Primary: electric cyan
@@ -51,6 +53,7 @@ export const THEMES: Theme[] = [
     id: 'solar',
     label: 'Pearl City',
     sub: 'Jamestown\'s old nickname',
+    description: 'Jamestown\'s historic nickname, earned during its 19th century reign as a furniture manufacturing powerhouse. At its peak the city ranked second in the nation for wood furniture production, and its craftsmen shipped pieces across the country. The warm amber and gold tones reflect the polished hardwoods that made Jamestown famous.',
     swatchColor: '#ffaa00',
     bg: '#0d0900',
     // Primary: amber
@@ -72,6 +75,7 @@ export const THEMES: Theme[] = [
     id: 'dahlstrom',
     label: 'Dahlstrom',
     sub: 'Steel doors since 1904',
+    description: 'Named for Charles Dahlstrom, a Swedish immigrant who taught himself tool-and-die making at age 12 and went on to invent the world\'s first fireproof metal door in Jamestown in 1904. His doors were later installed in the Empire State Building, Rockefeller Center, and the U.S. Capitol. The company still operates in Jamestown today.',
     swatchColor: '#5ba8d4',
     bg: '#080d12',
     // Primary: bright steel blue
@@ -94,6 +98,7 @@ export const THEMES: Theme[] = [
     id: 'violet',
     label: 'Lucy',
     sub: 'Born in Jamestown',
+    description: 'A tribute to Lucille Ball, born in Jamestown on August 6, 1911, and widely considered the greatest comedian in television history. The city celebrates her legacy through the National Comedy Center and the Lucille Ball Desi Arnaz Museum. The purple and rose tones nod to the vibrant, theatrical world she helped create.',
     swatchColor: '#bf7fff',
     bg: '#08041a',
     // Primary: soft purple
@@ -115,6 +120,7 @@ export const THEMES: Theme[] = [
     id: 'crescent',
     label: 'Crescent Tool',
     sub: 'Made in Jamestown',
+    description: 'The Crescent adjustable wrench was invented and manufactured in Jamestown, and its name became the universal term for adjustable wrenches worldwide. The Jamestown factory shipped tools to every corner of the globe. This premium monochrome theme reflects the precision, craftsmanship, and industrial heritage that defined the city.',
     swatchColor: '#e8e8e8',
     bg: '#080808',
     acc: '#f0f0f0',

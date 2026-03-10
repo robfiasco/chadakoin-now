@@ -62,6 +62,13 @@ function ThemedTabs() {
         }}
       />
       <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: tabIcon('settings', 'settings-outline'),
+        }}
+      />
+      <Tabs.Screen
         name="events"
         options={{
           title: 'Events',
