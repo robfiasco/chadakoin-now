@@ -7,6 +7,42 @@ import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivicData, EventItem } from '../hooks/useCivicData';
 
+// Color accent per category/tag — gives each event visual identity
+const CATEGORY_COLORS: Record<string, string> = {
+  'Theater':        '#c490ff',  // violet
+  'Arts':           '#c490ff',
+  'Arts & Entertainment': '#c490ff',
+  'Music':          '#2dffb4',  // mint
+  'Community':      '#2FBF71',  // green
+  "St. Patrick's Day": '#2FBF71',
+  'Annual':         '#2FBF71',
+  'Family':         '#2FBF71',
+  'Sports':         '#ff6b35',  // orange
+  'Athletics':      '#ff6b35',
+  'JPS':            '#ff6b35',
+  'Civic':          '#5ba8d4',  // steel blue
+  'BPU':            '#5ba8d4',
+  'Government':     '#5ba8d4',
+  'Jackson Center': '#f59e0b',  // amber
+  'Education':      '#f59e0b',
+  'Lecture':        '#f59e0b',
+  'Library':        '#00d4ff',  // cyan
+  'WRFA':           '#ff9f43',  // tangerine
+  'Local':          '#ff9f43',
+  'Reg Lenna':      '#bf7fff',  // purple
+  'Festival':       '#ff4466',  // red
+  'Tarp Skunks':    '#2FBF71',
+  'Baseball':       '#2FBF71',
+};
+
+function getEventColor(event: EventItem): string {
+  for (const tag of event.tags) {
+    if (CATEGORY_COLORS[tag]) return CATEGORY_COLORS[tag];
+  }
+  if (CATEGORY_COLORS[event.category]) return CATEGORY_COLORS[event.category];
+  return '#9CA3AF'; // neutral grey fallback
+}
+
 function formatEventDate(iso: string): { date: string; time: string } {
   if (!iso) return { date: '—', time: '' };
   const d = new Date(iso);
@@ -92,11 +128,12 @@ export default function EventsScreen() {
         ) : (
           filtered.map((event, i) => {
             const { date, time } = formatEventDate(event.startDate);
+            const accentColor = getEventColor(event);
             return (
               // @ts-ignore
-              <TouchableOpacity key={i} style={[styles.eventCard, panel]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)}>
+              <TouchableOpacity key={i} style={[styles.eventCard, panel, { borderLeftColor: accentColor, borderLeftWidth: 3 }]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)}>
                 <View style={styles.eventLeft}>
-                  <Text style={[styles.eventDate, { color: theme.acc }]}>{date}</Text>
+                  <Text style={[styles.eventDate, { color: accentColor }]}>{date}</Text>
                   <Text style={styles.eventTime}>{time}</Text>
                 </View>
                 <View style={styles.dividerV} />

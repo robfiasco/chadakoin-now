@@ -319,7 +319,7 @@ export default function SportsScreen() {
               </>
             )}
 
-            <Text style={[styles.source, { color: `rgba(${theme.accRGB},0.25)` }]}>Data via ESPN</Text>
+            <Text style={[styles.source, { color: `rgba(${theme.accRGB},0.25)` }]}>Data via NHL</Text>
           </>
         )}
       </ScrollView>
