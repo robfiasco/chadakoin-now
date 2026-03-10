@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   try {
     const [currentRes, forecastRes] = await Promise.all([
       fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&units=imperial&appid=${key}`),
-      fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&units=imperial&cnt=8&appid=${key}`),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&units=imperial&appid=${key}`),
     ]);
 
     if (!currentRes.ok) throw new Error('OWM current fetch failed');
@@ -55,6 +55,38 @@ export default async function handler(req, res) {
       ? Math.round(Math.max(...periods.map(f => (f.pop ?? 0) * 100)))
       : 0;
 
+    // Build 5-day daily forecast from 3-hour intervals
+    const dailyMap = {};
+    for (const p of periods) {
+      const date = p.dt_txt.split(' ')[0]; // "2026-03-11"
+      if (!dailyMap[date]) {
+        dailyMap[date] = { temps: [], pops: [], codes: [], icons: [] };
+      }
+      dailyMap[date].temps.push(p.main.temp_max, p.main.temp_min);
+      dailyMap[date].pops.push(p.pop ?? 0);
+      dailyMap[date].codes.push(p.weather[0].id);
+      dailyMap[date].icons.push(p.weather[0].icon);
+    }
+
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const forecast = Object.entries(dailyMap)
+      .filter(([date]) => date >= today)
+      .slice(0, 5)
+      .map(([date, d]) => {
+        // Pick daytime icon if available (ends in 'd'), else first
+        const dayIcon = d.icons.find(i => i.endsWith('d')) ?? d.icons[0];
+        const dominantCode = d.codes.reduce((a, b) =>
+          d.codes.filter(c => c === a).length >= d.codes.filter(c => c === b).length ? a : b
+        );
+        return {
+          date,
+          high: Math.round(Math.max(...d.temps)),
+          low:  Math.round(Math.min(...d.temps)),
+          precip: Math.round(Math.max(...d.pops) * 100),
+          icon: codeToIcon(dominantCode),
+        };
+      });
+
     // Find when significant precip arrives (first period with pop >= 0.4)
     let precipAt = null;
     const currentWeatherId = current.weather[0].id;
@@ -80,7 +112,8 @@ export default async function handler(req, res) {
       high: `${high}°`,
       low: `${low}°`,
       precip: `${precip}%`,
-      precipAt,           // e.g. "3 PM" or null if raining now / no rain expected
+      precipAt,
+      forecast,
       wind: `${windMph} mph`,
       humidity: `${humidity}%`,
       icon,

@@ -404,6 +404,26 @@ export default function HomeScreen() {
                 <StatChip label="H / L" value={`${weather.high} / ${weather.low}`} accRGB={theme.acc2RGB} />
                 {weather.humidity && <StatChip label="HUMIDITY" value={weather.humidity} accRGB={theme.acc2RGB} />}
               </View>
+
+              {/* 5-day forecast strip */}
+              {weather.forecast && weather.forecast.length > 1 && (
+                <View style={[styles.forecastStrip, { borderTopColor: `rgba(${theme.acc2RGB},0.12)` }]}>
+                  {weather.forecast.map((day, i) => {
+                    const d = new Date(day.date + 'T12:00:00');
+                    const label = i === 0 ? 'Today'
+                      : i === 1 ? 'Tmrw'
+                      : d.toLocaleDateString('en-US', { weekday: 'short' });
+                    return (
+                      <View key={day.date} style={styles.forecastDay}>
+                        <Text style={[styles.forecastLabel, { color: `rgba(${theme.acc2RGB},0.5)` }]}>{label}</Text>
+                        <Text style={styles.forecastIcon}>{day.icon}</Text>
+                        <Text style={[styles.forecastHigh, { color: theme.acc2 }]}>{day.high}°</Text>
+                        <Text style={[styles.forecastLow, { color: `rgba(${theme.acc2RGB},0.38)` }]}>{day.low}°</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </>
           ) : (
             <View style={styles.weatherLoading}>
@@ -758,6 +778,12 @@ const styles = StyleSheet.create({
   weatherRight: { alignItems: 'flex-end', gap: 6, paddingTop: 4 },
   weatherIcon: { fontSize: 36 },
   weatherHL: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
+  forecastStrip: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, paddingTop: 14, marginTop: 14 },
+  forecastDay: { flex: 1, alignItems: 'center', gap: 4 },
+  forecastLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
+  forecastIcon: { fontSize: 20 },
+  forecastHigh: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700' },
+  forecastLow: { fontFamily: 'Outfit', fontSize: 11 },
   weatherLoading: { gap: 8 },
   statRow: { flexDirection: 'row', gap: 8 },
   statChip: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center', gap: 4 },

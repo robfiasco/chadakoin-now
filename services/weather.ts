@@ -4,6 +4,14 @@ const LAT = 42.097;
 const LON = -79.2353;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — ~288 OWM calls/day, well within 2000 free limit
 
+export interface ForecastDay {
+  date: string;    // YYYY-MM-DD
+  high: number;
+  low: number;
+  precip: number;  // percentage 0–100
+  icon: string;
+}
+
 export interface WeatherData {
   temp: string;
   feelsLike?: string;
@@ -11,10 +19,11 @@ export interface WeatherData {
   high: string;
   low: string;
   precip: string;
-  precipAt?: string | null;  // e.g. "3 PM" — when rain is expected to arrive
+  precipAt?: string | null;
   wind: string;
   humidity?: string;
   icon: string;
+  forecast?: ForecastDay[];
 }
 
 let cache: { data: WeatherData; timestamp: number } | null = null;
