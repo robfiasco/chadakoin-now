@@ -549,28 +549,6 @@ export default function HomeScreen() {
           <Ionicons name="radio-outline" size={20} color={`rgba(${theme.accRGB},0.5)`} />
         </TouchableOpacity>
 
-        {/* ─── Tarp Skunks ──────────────────────────── */}
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={() => WebBrowser.openBrowserAsync('https://www.jamestowntarpskunks.com/sports/bsb/2024-25/releases/202501232it6bg')}
-          // @ts-ignore
-          style={[styles.cdirCard, {
-            borderRadius: 20, borderWidth: 1,
-            backgroundColor: `rgba(${theme.accRGB},0.06)`,
-            borderColor: `rgba(${theme.accRGB},0.18)`,
-            ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
-            marginTop: 10,
-          }]}
-        >
-          <View style={styles.cdirLeft}>
-            <Text style={{ fontSize: 20 }}>⚾</Text>
-            <View>
-              <Text style={[styles.cdirTitle, { color: theme.acc }]}>Tarp Skunks</Text>
-              <Text style={styles.cdirSub}>2026 season tickets on sale · Diethrick Park</Text>
-            </View>
-          </View>
-          <Ionicons name="ticket-outline" size={20} color={`rgba(${theme.accRGB},0.5)`} />
-        </TouchableOpacity>
 
         <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.3)` }]}>
           {civic.lastUpdated
@@ -690,12 +668,12 @@ const styles = StyleSheet.create({
 
   // CDIR
   cdirCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 18, marginTop: 18,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    padding: 16, marginTop: 10,
   },
   cdirLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cdirArt: { width: 44, height: 44, borderRadius: 8 },
-  cdirDotWrap: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  cdirArt: { width: 52, height: 52, borderRadius: 10 },
+  cdirDotWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   cdirDot: {
     width: 10, height: 10, borderRadius: 5,
     shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 6, elevation: 4,

@@ -188,6 +188,26 @@ export default function SportsScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+        {/* ── Tarp Skunks banner ────────────────────── */}
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={() => Linking.openURL('https://www.jamestowntarpskunks.com/sports/bsb/2024-25/releases/202501232it6bg')}
+          // @ts-ignore
+          style={[styles.skunksBanner, {
+            borderRadius: 16, borderWidth: 1,
+            backgroundColor: `rgba(${theme.acc2RGB},0.1)`,
+            borderColor: `rgba(${theme.acc2RGB},0.3)`,
+            ...glassWeb,
+          }]}
+        >
+          <Text style={styles.skunksEmoji}>⚾</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.skunksTitle, { color: theme.acc2 }]}>Tarp Skunks 2026</Text>
+            <Text style={styles.skunksSub}>Season tickets on sale · Diethrick Park</Text>
+          </View>
+          <Ionicons name="ticket-outline" size={18} color={`rgba(${theme.acc2RGB},0.5)`} />
+        </TouchableOpacity>
+
         {/* ── Buffalo Sabres ─────────────────────────── */}
         <TeamSection
           id="sabres" logo={SABRES_LOGO}
@@ -287,6 +307,12 @@ const styles = StyleSheet.create({
   title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
   subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 12 },
+
+  // Tarp Skunks banner
+  skunksBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  skunksEmoji: { fontSize: 22 },
+  skunksTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700' },
+  skunksSub: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
 
   // Team section
   teamRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
