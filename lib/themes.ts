@@ -137,8 +137,6 @@ export const THEMES: Theme[] = [
     tabBarBg: 'rgba(6,6,6,0.97)',
     bgGradient: 'linear-gradient(180deg, #050505 0%, #101010 50%, #1c1c1c 100%)',
   },
-];
-
   {
     id: 'aldos',
     label: "Aldo's",
