@@ -188,18 +188,12 @@ export default function HomeScreen() {
   // News / subtle panel — acc3 (tertiary)
   const panel3    = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.acc3RGB},0.04)`, borderColor: `rgba(${theme.acc3RGB},0.12)`, ...glassWeb };
 
-  const { parking, recycling, alerts, news } = civic;
+  const { parking, recycling, alerts } = civic;
 
   // Snow emergency: any active alert containing "snow emergency"
   const snowEmergency = alerts.activeAlerts.find(a =>
     a.title.toLowerCase().includes('snow emergency')
   );
-
-  function formatNewsDate(dateStr: string) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
 
   return (
     <ThemedBackground>
@@ -380,44 +374,6 @@ export default function HomeScreen() {
           <Text style={[styles.factText, { color: 'rgba(255,255,255,0.88)' }]}>{getTodaysFact()}</Text>
         </View>
 
-        {/* ─── City News ────────────────────────────── */}
-        {/* acc3 zone */}
-        {(civic.loading || news.length > 0) && (
-          <>
-            <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>LOCAL NEWS</Text>
-            {/* @ts-ignore */}
-            <View style={[styles.newsCard, panel3]}>
-              {civic.loading ? (
-                <View style={{ gap: 14 }}>
-                  {[1, 2, 3].map(i => (
-                    <View key={i} style={{ gap: 6 }}>
-                      <SkeletonPulse width="85%" height={14} borderRadius={4} accRGB={theme.acc3RGB} />
-                      <SkeletonPulse width={60} height={10} borderRadius={4} accRGB={theme.acc3RGB} />
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                news.map((item, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => item.link && Linking.openURL(item.link)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.newsItem,
-                      i < news.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.acc3RGB},0.1)` },
-                    ]}
-                  >
-                    <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
-                    {item.excerpt ? (
-                      <Text style={styles.newsExcerpt} numberOfLines={2}>{item.excerpt}</Text>
-                    ) : null}
-                    <Text style={[styles.newsDate, { color: `rgba(${theme.acc3RGB},0.5)` }]}>{formatNewsDate(item.pubDate)}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
-          </>
-        )}
 
         {/* ─── LOTD latest episode ──────────────────── */}
         {(civic.loading || civic.latestEpisode) && (

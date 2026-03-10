@@ -55,6 +55,13 @@ function ThemedTabs() {
         }}
       />
       <Tabs.Screen
+        name="news"
+        options={{
+          title: 'News',
+          tabBarIcon: tabIcon('newspaper', 'newspaper-outline'),
+        }}
+      />
+      <Tabs.Screen
         name="events"
         options={{
           title: 'Events',

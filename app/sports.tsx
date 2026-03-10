@@ -1,150 +1,159 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
+import {
+  View, Text, ScrollView, StyleSheet, Platform,
+  TouchableOpacity, Linking, Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
-import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 
-// ─── Types ────────────────────────────────────────────────────────
+const SABRES_ID = '7';
+const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
+const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
 
 interface GameResult {
-  id: string;
   date: string;
-  status: string;        // 'final' | 'live' | 'upcoming'
-  homeTeam: string;
-  homeScore: string;
-  awayTeam: string;
-  awayScore: string;
-  isHome: boolean;       // is the "our" team home?
-  won: boolean | null;   // null if upcoming
-  venue?: string;
-  broadcast?: string;
+  status: 'final' | 'live' | 'upcoming';
+  opponentAbbr: string;
+  opponentName: string;
+  opponentLogo: string;
+  ourScore: string;
+  theirScore: string;
+  isHome: boolean;
+  won: boolean | null;
+  venue: string;
+  broadcast: string;
 }
 
-interface TeamData {
-  name: string;
-  abbr: string;
-  record?: string;
+interface SabresData {
+  record: string;
+  standing: string;
   recentGame?: GameResult;
   nextGame?: GameResult;
-  sport: string;
-  espnUrl: string;
+  news: { title: string; link: string; date: string; summary: string }[];
 }
 
-// ─── ESPN API helpers ─────────────────────────────────────────────
-
-const TEAMS = [
-  { key: 'bills',    sport: 'football',    league: 'nfl',                     id: 'buf',  label: 'Buffalo Bills',         abbr: 'BUF' },
-  { key: 'sabres',   sport: 'hockey',      league: 'nhl',                     id: 'buf',  label: 'Buffalo Sabres',        abbr: 'BUF' },
-  { key: 'syracuse', sport: 'basketball',  league: 'mens-college-basketball', id: '183',  label: 'Syracuse Orange',       abbr: 'SYR' },
-  { key: 'bonaventure', sport: 'basketball', league: 'mens-college-basketball', id: '179', label: 'St. Bonaventure',      abbr: 'SBU' },
-  { key: 'ub',       sport: 'basketball',  league: 'mens-college-basketball', id: '56',   label: 'UB Bulls',              abbr: 'UB'  },
-];
-
-function espnUrl(sport: string, league: string, id: string) {
-  return `https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/teams/${id}/schedule`;
-}
-
-function parseGame(event: any, teamId: string): GameResult | null {
+function parseGame(event: any): GameResult | null {
   try {
     const comp = event.competitions?.[0];
     if (!comp) return null;
-    const competitors = comp.competitors ?? [];
-    const us   = competitors.find((c: any) => c.team?.id === teamId || c.team?.abbreviation?.toLowerCase() === teamId.toLowerCase());
-    const them = competitors.find((c: any) => c.team?.id !== (us?.team?.id));
+    const competitors: any[] = comp.competitors ?? [];
+    const us   = competitors.find(c => String(c.team?.id) === SABRES_ID);
+    const them = competitors.find(c => String(c.team?.id) !== SABRES_ID);
     if (!us || !them) return null;
 
-    const status = event.status?.type?.completed
+    const status: GameResult['status'] = comp.status?.type?.completed
       ? 'final'
-      : event.status?.type?.state === 'in'
+      : comp.status?.type?.state === 'in'
       ? 'live'
       : 'upcoming';
 
     return {
-      id: event.id,
       date: event.date,
       status,
-      homeTeam: comp.homeAway === 'home' ? us.team.abbreviation : them.team.abbreviation,
-      awayTeam: comp.homeAway === 'away' ? us.team.abbreviation : them.team.abbreviation,
-      homeScore: us.homeAway === 'home' ? (us.score ?? '—') : (them.score ?? '—'),
-      awayScore: us.homeAway === 'away' ? (us.score ?? '—') : (them.score ?? '—'),
+      opponentAbbr: them.team?.abbreviation ?? '???',
+      opponentName: them.team?.displayName ?? 'Opponent',
+      opponentLogo: them.team?.logo ?? `https://a.espncdn.com/i/teamlogos/nhl/500/${them.team?.abbreviation?.toLowerCase()}.png`,
+      ourScore:   us.score   ?? '—',
+      theirScore: them.score ?? '—',
       isHome: us.homeAway === 'home',
-      won: status === 'final' ? us.winner === true : null,
-      venue: comp.venue?.fullName,
-      broadcast: comp.broadcasts?.[0]?.names?.[0],
+      won: status === 'final' ? (us.winner === true) : null,
+      venue: comp.venue?.fullName ?? '',
+      broadcast: comp.broadcasts?.[0]?.names?.[0] ?? '',
     };
   } catch {
     return null;
   }
 }
 
-async function fetchTeamData(team: typeof TEAMS[0]): Promise<TeamData> {
-  const url = espnUrl(team.sport, team.league, team.id);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Fetch failed for ${team.label}`);
-  const json = await res.json();
+async function fetchSabres(): Promise<SabresData> {
+  const [schedRes, newsRes] = await Promise.all([
+    fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule'),
+    fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news'),
+  ]);
 
-  const record = json.team?.record?.items?.[0]?.summary ?? '';
-  const events: any[] = json.events ?? [];
+  const schedJson = await schedRes.json();
+  const newsJson  = newsRes.ok ? await newsRes.json() : { articles: [] };
+
+  const record   = schedJson.team?.record?.items?.[0]?.summary ?? '';
+  const standing = schedJson.team?.standingSummary ?? '';
+  const events: any[] = schedJson.events ?? [];
   const now = new Date();
 
   const past = events
-    .filter(e => e.status?.type?.completed)
+    .filter(e => e.competitions?.[0]?.status?.type?.completed)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const upcoming = events
-    .filter(e => !e.status?.type?.completed && new Date(e.date) > now)
+    .filter(e => !e.competitions?.[0]?.status?.type?.completed && new Date(e.date) >= now)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const news = (newsJson.articles ?? []).slice(0, 5).map((a: any) => ({
+    title: a.headline ?? '',
+    link: a.links?.web?.href ?? '',
+    date: a.published ?? '',
+    summary: a.description ?? '',
+  }));
+
   return {
-    name: team.label,
-    abbr: team.abbr,
     record,
-    recentGame: past[0] ? parseGame(past[0], team.id) ?? undefined : undefined,
-    nextGame: upcoming[0] ? parseGame(upcoming[0], team.id) ?? undefined : undefined,
-    sport: team.sport,
-    espnUrl: `https://www.espn.com/${team.sport}/team/_/id/${team.id}`,
+    standing,
+    recentGame: past[0] ? (parseGame(past[0]) ?? undefined) : undefined,
+    nextGame:   upcoming[0] ? (parseGame(upcoming[0]) ?? undefined) : undefined,
+    news,
   };
 }
 
 // ─── Game card ────────────────────────────────────────────────────
 
-function GameCard({ game, teamAbbr, accRGB, acc, glassStyle }: {
-  game: GameResult; teamAbbr: string; accRGB: string; acc: string; glassStyle: any;
+function GameCard({ game, label, acc, accRGB, glassStyle }: {
+  game: GameResult; label: string; acc: string; accRGB: string; glassStyle: any;
 }) {
   const d = new Date(game.date);
-  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const timeStr = game.status === 'upcoming'
+  const dateStr  = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr  = game.status === 'upcoming'
     ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     : game.status === 'live' ? 'LIVE' : 'Final';
-
-  const isWin = game.won === true;
-  const isLoss = game.won === false;
-  const resultColor = isWin ? '#2FBF71' : isLoss ? '#ef4444' : acc;
+  const resultColor = game.won === true ? '#2FBF71' : game.won === false ? '#ef4444' : acc;
 
   return (
     // @ts-ignore
     <View style={[styles.gameCard, glassStyle]}>
+      <Text style={[styles.gameLabel, { color: `rgba(${accRGB},0.5)` }]}>{label.toUpperCase()}</Text>
       <View style={styles.gameRow}>
-        <View style={styles.gameTeams}>
-          <Text style={[styles.gameTeam, game.isHome ? styles.gameTeamBold : {}]}>
-            {game.awayTeam} @ {game.homeTeam}
+        {/* Opponent logo */}
+        <Image
+          source={{ uri: game.opponentLogo }}
+          style={styles.oppLogo}
+          resizeMode="contain"
+        />
+        {/* Matchup */}
+        <View style={styles.gameCenter}>
+          <Text style={styles.matchup}>
+            {game.isHome
+              ? `BUF vs ${game.opponentAbbr}`
+              : `BUF @ ${game.opponentAbbr}`}
           </Text>
-          {game.venue ? <Text style={styles.gameVenue}>{game.venue}</Text> : null}
+          <Text style={styles.opponentName}>{game.opponentName}</Text>
+          {game.venue ? <Text style={[styles.venue, { color: `rgba(${accRGB},0.4)` }]}>{game.venue}</Text> : null}
+          {game.broadcast ? <Text style={[styles.broadcast, { color: `rgba(${accRGB},0.35)` }]}>{game.broadcast}</Text> : null}
         </View>
-        <View style={styles.gameScore}>
+        {/* Score / time */}
+        <View style={styles.gameRight}>
           {game.status !== 'upcoming' ? (
-            <Text style={[styles.scoreText, { color: resultColor }]}>
-              {game.awayScore} – {game.homeScore}
+            <Text style={[styles.score, { color: resultColor }]}>
+              {game.ourScore}–{game.theirScore}
             </Text>
           ) : null}
-          <Text style={[styles.gameStatus, { color: game.status === 'live' ? '#2FBF71' : `rgba(${accRGB},0.5)` }]}>
-            {timeStr}
-          </Text>
+          <Text style={[styles.gameTime, {
+            color: game.status === 'live' ? '#2FBF71' : `rgba(${accRGB},0.6)`,
+            fontWeight: game.status === 'live' ? '700' : '500',
+          }]}>{timeStr}</Text>
+          <Text style={[styles.gameDate, { color: `rgba(${accRGB},0.35)` }]}>{dateStr}</Text>
         </View>
       </View>
-      <Text style={[styles.gameDate, { color: `rgba(${accRGB},0.4)` }]}>{dateStr}</Text>
     </View>
   );
 }
@@ -153,98 +162,137 @@ function GameCard({ game, teamAbbr, accRGB, acc, glassStyle }: {
 
 export default function SportsScreen() {
   const { theme } = useTheme();
-  const [teams, setTeams] = useState<TeamData[]>([]);
+  const [data, setData]     = useState<SabresData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]   = useState(false);
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
     : {};
-  const panel = { borderRadius: 16, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
+  const card = {
+    borderRadius: 18, borderWidth: 1,
+    backgroundColor: `rgba(${theme.accRGB},0.12)`,
+    borderColor: `rgba(${theme.accRGB},0.28)`,
+    ...glassWeb,
+  };
 
   useEffect(() => {
-    Promise.allSettled(TEAMS.map(fetchTeamData))
-      .then(results => {
-        const loaded = results
-          .filter(r => r.status === 'fulfilled')
-          .map(r => (r as PromiseFulfilledResult<TeamData>).value);
-        setTeams(loaded);
-        if (loaded.length === 0) setError('Could not load sports data.');
-      })
+    fetchSabres()
+      .then(setData)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
-        <Text style={styles.title}>Local Sports</Text>
-        <Text style={[styles.subhead, { color: theme.acc55 }]}>Bills · Sabres · Regional NCAA</Text>
+        {/* Team hero */}
+        <View style={styles.heroRow}>
+          <Image source={{ uri: SABRES_LOGO }} style={styles.teamLogo} resizeMode="contain" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.teamName}>Buffalo Sabres</Text>
+            {data?.record ? (
+              <Text style={[styles.record, { color: theme.acc55 }]}>
+                {data.record}{data.standing ? `  ·  ${data.standing}` : ''}
+              </Text>
+            ) : null}
+          </View>
+          <TouchableOpacity onPress={() => Linking.openURL(SABRES_ESPN)} activeOpacity={0.7}>
+            <Ionicons name="open-outline" size={18} color={`rgba(${theme.accRGB},0.45)`} />
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
 
-      {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
-
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {loading ? (
-          [1, 2, 3].map(i => (
-            <View key={i} style={{ marginBottom: 20, gap: 8 }}>
-              <SkeletonPulse width={120} height={14} borderRadius={4} accRGB={theme.accRGB} />
-              <SkeletonPulse width="100%" height={70} borderRadius={14} accRGB={theme.accRGB} />
-            </View>
-          ))
-        ) : (
-          teams.map(team => (
-            <View key={team.name} style={styles.teamSection}>
-              <TouchableOpacity
-                style={styles.teamHeader}
-                onPress={() => Linking.openURL(team.espnUrl)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.teamName, { color: theme.acc }]}>{team.name}</Text>
-                {team.record ? (
-                  <Text style={[styles.teamRecord, { color: `rgba(${theme.accRGB},0.5)` }]}>{team.record}</Text>
-                ) : null}
-                <Ionicons name="open-outline" size={13} color={`rgba(${theme.accRGB},0.35)`} />
-              </TouchableOpacity>
 
-              {team.recentGame && (
-                <GameCard game={team.recentGame} teamAbbr={team.abbr} accRGB={theme.accRGB} acc={theme.acc} glassStyle={panel} />
-              )}
-              {team.nextGame && (
-                <GameCard game={team.nextGame} teamAbbr={team.abbr} accRGB={theme.accRGB} acc={theme.acc} glassStyle={{ ...panel, borderColor: `rgba(${theme.accRGB},0.28)` }} />
-              )}
-              {!team.recentGame && !team.nextGame && (
-                // @ts-ignore
-                <View style={[panel, { padding: 14 }]}>
-                  <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: `rgba(${theme.accRGB},0.4)` }}>No recent or upcoming games found.</Text>
-                </View>
-              )}
-            </View>
-          ))
+        {loading ? (
+          <>
+            <SkeletonPulse width="100%" height={110} borderRadius={18} accRGB={theme.accRGB} style={{ marginBottom: 12 }} />
+            <SkeletonPulse width="100%" height={110} borderRadius={18} accRGB={theme.accRGB} style={{ marginBottom: 24 }} />
+            {[1,2,3].map(i => (
+              <View key={i} style={{ gap: 6, marginBottom: 14 }}>
+                <SkeletonPulse width="80%" height={13} borderRadius={4} accRGB={theme.accRGB} />
+                <SkeletonPulse width="60%" height={11} borderRadius={4} accRGB={theme.accRGB} />
+              </View>
+            ))}
+          </>
+        ) : error ? (
+          // @ts-ignore
+          <View style={[card, { padding: 18 }]}>
+            <Text style={{ fontFamily: 'Outfit', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+              Could not load Sabres data. Check your connection.
+            </Text>
+          </View>
+        ) : (
+          <>
+            {data?.recentGame && (
+              <GameCard game={data.recentGame} label="Last Game" acc={theme.acc} accRGB={theme.accRGB} glassStyle={card} />
+            )}
+            {data?.nextGame && (
+              <GameCard game={data.nextGame} label="Next Game" acc={theme.acc} accRGB={theme.accRGB} glassStyle={{ ...card, borderColor: `rgba(${theme.accRGB},0.4)` }} />
+            )}
+
+            {/* News */}
+            {data?.news && data.news.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)` }]}>SABRES NEWS</Text>
+                {data.news.map((item, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    activeOpacity={0.7}
+                    onPress={() => item.link && Linking.openURL(item.link)}
+                    // @ts-ignore
+                    style={[styles.newsItem, card, i < data.news.length - 1 && { marginBottom: 8 }]}
+                  >
+                    <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
+                    {item.summary ? (
+                      <Text style={styles.newsSummary} numberOfLines={2}>{item.summary}</Text>
+                    ) : null}
+                    {item.date ? (
+                      <Text style={[styles.newsDate, { color: `rgba(${theme.accRGB},0.4)` }]}>
+                        {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+
+            <Text style={[styles.source, { color: `rgba(${theme.accRGB},0.25)` }]}>Data via ESPN</Text>
+          </>
         )}
-        <Text style={[styles.source, { color: `rgba(${theme.accRGB},0.25)` }]}>Data via ESPN</Text>
       </ScrollView>
     </ThemedBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
-  title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
-  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
-  content: { padding: 16, paddingTop: 8, paddingBottom: 40 },
-  teamSection: { marginBottom: 24 },
-  teamHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  teamName: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', flex: 1 },
-  teamRecord: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
-  gameCard: { padding: 14, marginBottom: 6 },
-  gameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
-  gameTeams: { flex: 1 },
-  gameTeam: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.7)' },
-  gameTeamBold: { fontWeight: '700', color: '#fff' },
-  gameVenue: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 },
-  gameScore: { alignItems: 'flex-end', gap: 2 },
-  scoreText: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700' },
-  gameStatus: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600' },
-  gameDate: { fontFamily: 'Outfit', fontSize: 10, letterSpacing: 0.5 },
-  source: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 8 },
+  header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 40, zIndex: 10 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  teamLogo: { width: 52, height: 52 },
+  teamName: { fontFamily: 'Syne', fontSize: 20, fontWeight: '700', color: '#fff' },
+  record: { fontFamily: 'Outfit', fontSize: 12, marginTop: 3 },
+  content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 12 },
+  sectionLabel: {
+    fontFamily: 'Outfit', fontSize: 9, fontWeight: '700',
+    letterSpacing: 1.8, textTransform: 'uppercase', paddingLeft: 2, marginTop: 8,
+  },
+  gameCard: { padding: 18 },
+  gameLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 12 },
+  gameRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  oppLogo: { width: 44, height: 44 },
+  gameCenter: { flex: 1, gap: 3 },
+  matchup: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff' },
+  opponentName: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  venue: { fontFamily: 'Outfit', fontSize: 11 },
+  broadcast: { fontFamily: 'Outfit', fontSize: 11 },
+  gameRight: { alignItems: 'flex-end', gap: 3 },
+  score: { fontFamily: 'Syne', fontSize: 20, fontWeight: '800' },
+  gameTime: { fontFamily: 'Outfit', fontSize: 12 },
+  gameDate: { fontFamily: 'Outfit', fontSize: 10 },
+  newsItem: { padding: 16, gap: 5 },
+  newsTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff', lineHeight: 18 },
+  newsSummary: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 17 },
+  newsDate: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '600' },
+  source: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center' },
 });
