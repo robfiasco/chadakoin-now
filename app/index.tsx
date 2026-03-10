@@ -469,7 +469,7 @@ export default function HomeScreen() {
                         <Text style={{ fontSize: 18 }}>{place.emoji}</Text>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.placeListName}>{place.name}</Text>
-                          <Text style={styles.placeListDesc} numberOfLines={1}>{place.description}</Text>
+                          <Text style={styles.placeListDesc}>{place.description}</Text>
                         </View>
                         {place.website && <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />}
                       </TouchableOpacity>
