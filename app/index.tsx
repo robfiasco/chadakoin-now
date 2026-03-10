@@ -14,6 +14,7 @@ import { fetchWeather, WeatherData } from '../services/weather';
 import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
+import { Audio } from 'expo-av';
 
 interface NowPlaying {
   title: string;
@@ -202,7 +203,46 @@ export default function HomeScreen() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [visitorMode, setVisitorMode] = useState(false);
+  const [radioPlaying, setRadioPlaying] = useState(false);
+  const [radioLoading, setRadioLoading] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
   const civic = useCivicData();
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      soundRef.current?.unloadAsync().catch(() => {});
+    };
+  }, []);
+
+  async function toggleRadio() {
+    if (radioLoading) return;
+
+    if (radioPlaying) {
+      // Stop
+      setRadioPlaying(false);
+      await soundRef.current?.stopAsync().catch(() => {});
+      await soundRef.current?.unloadAsync().catch(() => {});
+      soundRef.current = null;
+    } else {
+      // Play
+      setRadioLoading(true);
+      try {
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: 'https://radio.chadakoindigital.com/radio.mp3' },
+          { shouldPlay: true, isLooping: false }
+        );
+        soundRef.current = sound;
+        setRadioPlaying(true);
+      } catch {
+        // fallback: open in browser
+        WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com');
+      } finally {
+        setRadioLoading(false);
+      }
+    }
+  }
 
   const dateBadge = getDateBadge();
 
@@ -515,25 +555,25 @@ export default function HomeScreen() {
         )}
 
         {/* ─── CDIR card ────────────────────────────── */}
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com')}
-          // @ts-ignore
-          style={[styles.cdirCard, {
-            borderRadius: 20, borderWidth: 1,
-            backgroundColor: `rgba(${theme.accRGB},0.06)`,
-            borderColor: `rgba(${theme.accRGB},0.18)`,
-            ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
-          }]}
-        >
-          {/* Artwork thumbnail */}
-          {nowPlaying?.artwork ? (
-            <Image source={{ uri: nowPlaying.artwork }} style={styles.cdirArt} resizeMode="cover" />
-          ) : (
-            <View style={[styles.cdirDotWrap]}>
-              <View style={[styles.cdirDot, { backgroundColor: theme.acc, shadowColor: theme.acc }]} />
-            </View>
-          )}
+        {/* @ts-ignore */}
+        <View style={[styles.cdirCard, {
+          borderRadius: 20, borderWidth: 1,
+          backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.1)` : `rgba(${theme.accRGB},0.06)`,
+          borderColor: radioPlaying ? `rgba(${theme.accRGB},0.35)` : `rgba(${theme.accRGB},0.18)`,
+          ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
+        }]}>
+          {/* Artwork — taps to open full site */}
+          <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com')} activeOpacity={0.8}>
+            {nowPlaying?.artwork ? (
+              <Image source={{ uri: nowPlaying.artwork }} style={styles.cdirArt} resizeMode="cover" />
+            ) : (
+              <View style={styles.cdirDotWrap}>
+                <View style={[styles.cdirDot, { backgroundColor: theme.acc, shadowColor: theme.acc }]} />
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Track info */}
           <View style={{ flex: 1 }}>
             <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR Radio</Text>
             {nowPlaying?.title ? (
@@ -546,8 +586,17 @@ export default function HomeScreen() {
               <Text style={styles.cdirSub}>Jamestown local music archive · 24/7</Text>
             )}
           </View>
-          <Ionicons name="radio-outline" size={20} color={`rgba(${theme.accRGB},0.5)`} />
-        </TouchableOpacity>
+
+          {/* Play / pause / loading */}
+          <TouchableOpacity onPress={toggleRadio} activeOpacity={0.7} style={[styles.playBtn, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.15)` : 'transparent' }]}>
+            {radioLoading
+              ? <Ionicons name="hourglass-outline" size={18} color={theme.acc} />
+              : radioPlaying
+              ? <Ionicons name="pause" size={18} color={theme.acc} />
+              : <Ionicons name="play" size={18} color={`rgba(${theme.accRGB},0.7)`} />
+            }
+          </TouchableOpacity>
+        </View>
 
 
         <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.3)` }]}>
@@ -678,6 +727,7 @@ const styles = StyleSheet.create({
     width: 10, height: 10, borderRadius: 5,
     shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 6, elevation: 4,
   },
+  playBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   cdirTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700' },
   cdirSub: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
   cdirNowLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginTop: 3 },
