@@ -39,21 +39,38 @@ export default async function handler(req, res) {
   try {
     console.log('Fetching Sabres data from ESPN...');
 
-    const [schedRes, newsRes] = await Promise.all([
-      fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule'),
-      fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news'),
-    ]);
+    // 8-second timeout — Vercel hobby functions allow 10s max
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    let schedRes, newsRes;
+    try {
+      [schedRes, newsRes] = await Promise.all([
+        fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule', { signal: controller.signal }),
+        fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news',     { signal: controller.signal }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
 
     console.log('Schedule status:', schedRes.status, '| News status:', newsRes.status);
 
+    const schedText = await schedRes.text();
+    console.log('Schedule response (first 200):', schedText.slice(0, 200));
+
     if (!schedRes.ok) {
-      const body = await schedRes.text();
-      console.error('Schedule fetch failed:', body.slice(0, 200));
-      return res.status(502).json({ error: 'ESPN schedule fetch failed', status: schedRes.status });
+      return res.status(502).json({ error: 'ESPN schedule fetch failed', status: schedRes.status, body: schedText.slice(0, 300) });
     }
 
-    const schedJson = await schedRes.json();
-    const newsJson  = newsRes.ok ? await newsRes.json() : { articles: [] };
+    let schedJson;
+    try {
+      schedJson = JSON.parse(schedText);
+    } catch (e) {
+      console.error('JSON parse failed:', e.message);
+      return res.status(502).json({ error: 'ESPN returned non-JSON', body: schedText.slice(0, 300) });
+    }
+
+    const newsJson = newsRes.ok ? await newsRes.json().catch(() => ({ articles: [] })) : { articles: [] };
 
     const record   = schedJson.team?.record?.items?.[0]?.summary ?? '';
     const standing = schedJson.team?.standingSummary ?? '';
