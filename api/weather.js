@@ -55,6 +55,22 @@ export default async function handler(req, res) {
       ? Math.round(Math.max(...periods.map(f => (f.pop ?? 0) * 100)))
       : 0;
 
+    // Find when significant precip arrives (first period with pop >= 0.4)
+    let precipAt = null;
+    const currentWeatherId = current.weather[0].id;
+    const isRainingNow = currentWeatherId >= 200 && currentWeatherId < 700;
+
+    if (!isRainingNow && periods.length) {
+      const firstWetPeriod = periods.find(f => (f.pop ?? 0) >= 0.4);
+      if (firstWetPeriod) {
+        const dt = new Date(firstWetPeriod.dt * 1000);
+        const hour = dt.getHours();
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h = hour % 12 || 12;
+        precipAt = `${h} ${ampm}`;
+      }
+    }
+
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60'); // 5 min edge cache
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({
@@ -64,6 +80,7 @@ export default async function handler(req, res) {
       high: `${high}°`,
       low: `${low}°`,
       precip: `${precip}%`,
+      precipAt,           // e.g. "3 PM" or null if raining now / no rain expected
       wind: `${windMph} mph`,
       humidity: `${humidity}%`,
       icon,

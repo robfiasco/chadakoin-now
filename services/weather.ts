@@ -11,6 +11,7 @@ export interface WeatherData {
   high: string;
   low: string;
   precip: string;
+  precipAt?: string | null;  // e.g. "3 PM" — when rain is expected to arrive
   wind: string;
   humidity?: string;
   icon: string;

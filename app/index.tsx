@@ -260,7 +260,11 @@ export default function HomeScreen() {
                 </View>
               </View>
               <View style={styles.statRow}>
-                <StatChip label="PRECIP" value={weather.precip} accRGB={theme.acc2RGB} />
+                <StatChip
+                  label={weather.precipAt ? `RAIN ~ ${weather.precipAt}` : 'PRECIP'}
+                  value={weather.precip}
+                  accRGB={theme.acc2RGB}
+                />
                 <StatChip label="WIND" value={weather.wind} accRGB={theme.acc2RGB} />
                 <StatChip label="H / L" value={`${weather.high} / ${weather.low}`} accRGB={theme.acc2RGB} />
                 {weather.humidity && <StatChip label="HUMIDITY" value={weather.humidity} accRGB={theme.acc2RGB} />}
