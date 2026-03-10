@@ -71,7 +71,7 @@ export const PLACES: Place[] = [
     name: 'Lifted Dispensary',
     category: 'cannabis',
     emoji: '🌿',
-    description: 'Cannabis dispensary serving Jamestown.',
+    description: 'New York State legalized recreational cannabis for adults 21+ in 2021. You can purchase and consume legally here. Consumption in public or in a vehicle is not permitted. Note: laws vary by state — check your home state\'s rules before traveling with any product.',
     address: 'Jamestown',
     website: 'https://www.liftedispensary.com/',
     featured: false,
