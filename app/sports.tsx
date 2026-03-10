@@ -27,11 +27,21 @@ interface GameResult {
   broadcast: string;
 }
 
+interface Scorer {
+  name: string;
+  position: string;
+  goals: number;
+  assists: number;
+  points: number;
+  headshot: string;
+}
+
 interface SabresData {
   record: string;
   standing: string;
   recentGame?: GameResult;
   nextGame?: GameResult;
+  topScorers?: Scorer[];
   news: { title: string; link: string; date: string; summary: string }[];
 }
 
@@ -79,6 +89,7 @@ async function fetchSabres(): Promise<SabresData> {
       standing:    json.standing ?? '',
       recentGame:  json.recentGame ?? undefined,
       nextGame:    json.nextGame ?? undefined,
+      topScorers:  json.topScorers ?? [],
       news:        json.news ?? [],
     };
   }
@@ -247,6 +258,39 @@ export default function SportsScreen() {
               <GameCard game={data.nextGame} label="Next Game" acc={theme.acc} accRGB={theme.accRGB} glassStyle={{ ...card, borderColor: `rgba(${theme.accRGB},0.4)` }} />
             )}
 
+            {/* Top scorers */}
+            {data?.topScorers && data.topScorers.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)` }]}>TOP SCORERS</Text>
+                {/* @ts-ignore */}
+                <View style={[card, { padding: 0, overflow: 'hidden' }]}>
+                  {/* Header */}
+                  <View style={[styles.scorerRow, { borderBottomColor: `rgba(${theme.accRGB},0.15)`, borderBottomWidth: 1, paddingTop: 10 }]}>
+                    <Text style={[styles.scorerName, { color: `rgba(${theme.accRGB},0.45)`, fontSize: 9, letterSpacing: 1 }]}>PLAYER</Text>
+                    <Text style={[styles.scorerStat, { color: `rgba(${theme.accRGB},0.45)`, fontSize: 9, letterSpacing: 1 }]}>G</Text>
+                    <Text style={[styles.scorerStat, { color: `rgba(${theme.accRGB},0.45)`, fontSize: 9, letterSpacing: 1 }]}>A</Text>
+                    <Text style={[styles.scorerStat, { color: `rgba(${theme.accRGB},0.45)`, fontSize: 9, letterSpacing: 1 }]}>PTS</Text>
+                  </View>
+                  {data.topScorers.map((p, i) => (
+                    <View key={p.name} style={[styles.scorerRow, i < data.topScorers!.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}>
+                      <View style={styles.scorerLeft}>
+                        {p.headshot ? (
+                          <Image source={{ uri: p.headshot }} style={styles.scorerHeadshot} resizeMode="cover" />
+                        ) : null}
+                        <View>
+                          <Text style={styles.scorerName}>{p.name}</Text>
+                          <Text style={[styles.scorerPos, { color: `rgba(${theme.accRGB},0.4)` }]}>{p.position}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.scorerStat}>{p.goals}</Text>
+                      <Text style={styles.scorerStat}>{p.assists}</Text>
+                      <Text style={[styles.scorerStat, { color: theme.acc, fontWeight: '700' }]}>{p.points}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
             {/* News */}
             {data?.news && data.news.length > 0 && (
               <>
@@ -305,6 +349,12 @@ const styles = StyleSheet.create({
   score: { fontFamily: 'Syne', fontSize: 20, fontWeight: '800' },
   gameTime: { fontFamily: 'Outfit', fontSize: 12 },
   gameDate: { fontFamily: 'Outfit', fontSize: 10 },
+  scorerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11 },
+  scorerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scorerHeadshot: { width: 32, height: 32, borderRadius: 16 },
+  scorerName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff', flex: 1 },
+  scorerPos: { fontFamily: 'Outfit', fontSize: 10 },
+  scorerStat: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.7)', width: 36, textAlign: 'center' },
   newsItem: { padding: 16, gap: 5 },
   newsTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff', lineHeight: 18 },
   newsSummary: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 17 },

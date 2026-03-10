@@ -8,17 +8,18 @@ export default async function handler(req, res) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    let schedRes, standRes;
+    let schedRes, standRes, statsRes;
     try {
-      [schedRes, standRes] = await Promise.all([
+      [schedRes, standRes, statsRes] = await Promise.all([
         fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now', { signal: controller.signal }),
         fetch('https://api-web.nhle.com/v1/standings/now', { signal: controller.signal }),
+        fetch('https://api-web.nhle.com/v1/club-stats/BUF/now', { signal: controller.signal }),
       ]);
     } finally {
       clearTimeout(timeout);
     }
 
-    console.log('Schedule:', schedRes.status, '| Standings:', standRes.status);
+    console.log('Schedule:', schedRes.status, '| Standings:', standRes.status, '| Stats:', statsRes.status);
 
     if (!schedRes.ok) {
       return res.status(502).json({ error: 'NHL API failed', status: schedRes.status });
@@ -26,6 +27,20 @@ export default async function handler(req, res) {
 
     const schedJson = await schedRes.json();
     const standJson = standRes.ok ? await standRes.json() : null;
+    const statsJson = statsRes.ok ? await statsRes.json() : null;
+
+    // Top 5 skaters by points
+    const topScorers = (statsJson?.skaters ?? [])
+      .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
+      .slice(0, 5)
+      .map(p => ({
+        name:     `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(),
+        position: p.positionCode ?? '',
+        goals:    p.goals ?? 0,
+        assists:  p.assists ?? 0,
+        points:   p.points ?? 0,
+        headshot: p.headshot ?? '',
+      }));
 
     const games = schedJson.games ?? [];
     console.log('Total games:', games.length);
@@ -96,7 +111,8 @@ export default async function handler(req, res) {
       standing,
       recentGame: parseGame(displayRecent),
       nextGame:   parseGame(displayNext),
-      news: [], // NHL API doesn't provide news — use Sabres-specific RSS in future
+      topScorers,
+      news: [],
     };
 
     console.log(`record: "${record}", recent: ${result.recentGame?.opponentName}, next: ${result.nextGame?.opponentName}`);
