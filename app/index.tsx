@@ -488,9 +488,12 @@ export default function HomeScreen() {
             {(() => {
               const now = new Date();
               const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+              const VISITOR_SKIP_TAGS = ['JPS', 'Athletics', 'Sports', 'Baseball', 'Tarp Skunks'];
               const weekend = civic.events.filter(e => {
                 const d = new Date(e.startDate);
-                return d >= now && d <= soon;
+                if (d < now || d > soon) return false;
+                // Skip school sports and athletics — not relevant to visitors
+                return !e.tags.some(t => VISITOR_SKIP_TAGS.includes(t));
               }).slice(0, 4);
               if (weekend.length === 0) return null;
               return (
