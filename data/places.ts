@@ -24,7 +24,7 @@ export const PLACES: Place[] = [
     name: 'Labyrinth Press Co.',
     category: 'coffee',
     emoji: '☕',
-    description: 'Downtown coffee shop with a full espresso bar, vegetarian & vegan menu, and the upstairs Brazil Lounge for craft beer and wine.',
+    description: 'Downtown coffee shop with full espresso bar and a fresh vegetarian & vegan restaurant. 🌱 Vegan-friendly.',
     address: '10-12 E. 4th St, Jamestown',
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 8am–9pm',
@@ -42,6 +42,17 @@ export const PLACES: Place[] = [
 
   // ─── Drinks ───────────────────────────────────────────────────
   {
+    id: 'brazil-lounge',
+    name: 'Brazil Lounge',
+    category: 'drinks',
+    emoji: '🍷',
+    description: 'Upstairs craft beer and wine bar above Labyrinth Press. Vegan-friendly menu. 🌱',
+    address: '10-12 E. 4th St, Jamestown',
+    website: 'https://www.labpressco.com/',
+    hours: 'Tue–Sat 11am–10pm',
+    featured: false,
+  },
+  {
     id: 'wicked-warrens',
     name: "Wicked Warren's",
     category: 'drinks',
@@ -50,16 +61,6 @@ export const PLACES: Place[] = [
     address: '119 W 3rd St, Jamestown',
     website: 'https://wickedwarrens.com/jamestown',
     hours: 'Daily 11:30am–10pm',
-    featured: false,
-  },
-  {
-    id: 'pearl-city-hops',
-    name: 'Pearl City Hops',
-    category: 'drinks',
-    emoji: '🍺',
-    description: 'Craft brewery named for Jamestown\'s historic nickname.',
-    address: 'Jamestown',
-    website: 'https://pearlcityhops.com',
     featured: false,
   },
 
