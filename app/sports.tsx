@@ -150,11 +150,13 @@ function GameCard({ game, label, acc, accRGB, glassStyle }: {
       <Text style={[styles.gameLabel, { color: `rgba(${accRGB},0.5)` }]}>{label.toUpperCase()}</Text>
       <View style={styles.gameRow}>
         {/* Opponent logo */}
-        <Image
-          source={{ uri: game.opponentLogo }}
-          style={styles.oppLogo}
-          resizeMode="contain"
-        />
+        <View style={styles.oppLogoWrap}>
+          <Image
+            source={{ uri: game.opponentLogo }}
+            style={styles.oppLogo}
+            resizeMode="contain"
+          />
+        </View>
         {/* Matchup */}
         <View style={styles.gameCenter}>
           <Text style={styles.matchup}>
@@ -339,7 +341,12 @@ const styles = StyleSheet.create({
   gameCard: { padding: 18 },
   gameLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 12 },
   gameRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  oppLogo: { width: 44, height: 44 },
+  oppLogoWrap: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  oppLogo: { width: 52, height: 52 },
   gameCenter: { flex: 1, gap: 3 },
   matchup: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff' },
   opponentName: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
