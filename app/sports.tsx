@@ -68,17 +68,25 @@ function parseGame(event: any): GameResult | null {
   }
 }
 
-function espnProxy(url: string): string {
-  if (Platform.OS === 'web') {
-    return `/api/proxy?url=${encodeURIComponent(url)}`;
-  }
-  return url;
-}
-
 async function fetchSabres(): Promise<SabresData> {
+  if (Platform.OS === 'web') {
+    // On web: use our Vercel API endpoint (server-side, no CORS)
+    const res = await fetch('/api/sabres');
+    if (!res.ok) throw new Error('Sabres API failed');
+    const json = await res.json();
+    return {
+      record:      json.record ?? '',
+      standing:    json.standing ?? '',
+      recentGame:  json.recentGame ?? undefined,
+      nextGame:    json.nextGame ?? undefined,
+      news:        json.news ?? [],
+    };
+  }
+
+  // On native: call ESPN directly (no CORS restriction)
   const [schedRes, newsRes] = await Promise.all([
-    fetch(espnProxy('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule')),
-    fetch(espnProxy('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news')),
+    fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/schedule'),
+    fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/buf/news'),
   ]);
 
   const schedJson = await schedRes.json();
@@ -99,15 +107,15 @@ async function fetchSabres(): Promise<SabresData> {
 
   const news = (newsJson.articles ?? []).slice(0, 5).map((a: any) => ({
     title: a.headline ?? '',
-    link: a.links?.web?.href ?? '',
-    date: a.published ?? '',
+    link:  a.links?.web?.href ?? '',
+    date:  a.published ?? '',
     summary: a.description ?? '',
   }));
 
   return {
     record,
     standing,
-    recentGame: past[0] ? (parseGame(past[0]) ?? undefined) : undefined,
+    recentGame: past[0]     ? (parseGame(past[0])     ?? undefined) : undefined,
     nextGame:   upcoming[0] ? (parseGame(upcoming[0]) ?? undefined) : undefined,
     news,
   };
