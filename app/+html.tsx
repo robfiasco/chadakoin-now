@@ -45,6 +45,21 @@ export default function Root({ children }: { children: React.ReactNode }) {
             position: relative;
           }
 
+          /* Crescent Tool theme — liquid glass panels */
+          .crescent-glass {
+            background: rgba(255,255,255,0.06) !important;
+            border-color: rgba(255,255,255,0.14) !important;
+            backdrop-filter: blur(40px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+          }
+          .crescent-glass-glow {
+            background: rgba(255,255,255,0.09) !important;
+            border-color: rgba(255,255,255,0.22) !important;
+            backdrop-filter: blur(40px) saturate(200%) brightness(1.05) !important;
+            -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.05) !important;
+            box-shadow: 0 0 0 0.5px rgba(255,255,255,0.1) inset !important;
+          }
+
           /* On real mobile — fill edge to edge, no chrome */
           @media (max-width: 480px) {
             body {

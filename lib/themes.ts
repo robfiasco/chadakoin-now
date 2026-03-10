@@ -1,4 +1,4 @@
-export type ThemeId = 'green' | 'solar' | 'blood' | 'violet';
+export type ThemeId = 'green' | 'solar' | 'blood' | 'violet' | 'crescent';
 
 export interface Theme {
   id: ThemeId;
@@ -106,6 +106,30 @@ export const THEMES: Theme[] = [
     orb1: 'rgba(150,50,255,0.15)',
     orb2: 'rgba(0,229,255,0.1)',
     warmWarn: { bg: 'rgba(255,180,40,0.09)', text: '#ffd060', borderColor: 'rgba(255,180,40,0.2)' },
+  },
+];
+
+  {
+    id: 'crescent',
+    label: 'Crescent Tool',
+    sub: 'Made in Jamestown',
+    swatchColor: '#e8e8e8',
+    bg: '#080808',
+    // Primary: bright white — crisp, chrome-like
+    acc: '#f0f0f0',
+    acc55: 'rgba(240,240,240,0.55)',
+    acc45: 'rgba(240,240,240,0.45)',
+    accRGB: '240,240,240',
+    // Secondary: warm silver
+    acc2: '#b8b8b8',
+    acc2RGB: '184,184,184',
+    // Tertiary: deep steel grey
+    acc3: '#606060',
+    acc3RGB: '96,96,96',
+    // Orbs: very subtle — liquid glass doesn't scream
+    orb1: 'rgba(255,255,255,0.06)',
+    orb2: 'rgba(180,180,200,0.04)',
+    warmWarn: { bg: 'rgba(255,200,50,0.08)', text: '#d4a820', borderColor: 'rgba(255,200,50,0.18)' },
   },
 ];
 
