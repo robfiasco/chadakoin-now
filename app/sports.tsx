@@ -199,6 +199,23 @@ function GameCard({ game, label, acc, accRGB, glassStyle }: {
   );
 }
 
+function sportEmoji(sport: string): string {
+  const s = sport.toLowerCase();
+  if (s.includes('basketball')) return '🏀';
+  if (s.includes('baseball'))   return '⚾';
+  if (s.includes('hockey'))     return '🏒';
+  if (s.includes('soccer'))     return '⚽';
+  if (s.includes('golf'))       return '⛳';
+  if (s.includes('softball'))   return '🥎';
+  if (s.includes('volleyball')) return '🏐';
+  if (s.includes('lacrosse'))   return '🥍';
+  if (s.includes('swim'))       return '🏊';
+  if (s.includes('track') || s.includes('cross')) return '🏃';
+  if (s.includes('tennis'))     return '🎾';
+  if (s.includes('wrestling'))  return '🤼';
+  return '🏅';
+}
+
 // ─── Sports Screen ────────────────────────────────────────────────
 
 export default function SportsScreen() {
@@ -227,8 +244,14 @@ export default function SportsScreen() {
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
-        {/* Team hero */}
-        <View style={styles.heroRow}>
+        <Text style={styles.title}>Sports</Text>
+        <Text style={[styles.subhead, { color: theme.acc55 }]}>Local teams · Jamestown</Text>
+      </SafeAreaView>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* Sabres section header — scrolls with content */}
+        <View style={styles.teamHero}>
           <Image source={{ uri: SABRES_LOGO }} style={styles.teamLogo} resizeMode="contain" />
           <View style={{ flex: 1 }}>
             <Text style={styles.teamName}>Buffalo Sabres</Text>
@@ -239,12 +262,9 @@ export default function SportsScreen() {
             ) : null}
           </View>
           <TouchableOpacity onPress={() => Linking.openURL(SABRES_ESPN)} activeOpacity={0.7}>
-            <Ionicons name="open-outline" size={18} color={`rgba(${theme.accRGB},0.45)`} />
+            <Ionicons name="open-outline" size={16} color={`rgba(${theme.accRGB},0.4)`} />
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {loading ? (
           <>
@@ -324,6 +344,7 @@ export default function SportsScreen() {
                         style={[styles.jccRow, i < data.jcc!.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
                       >
                         <Text style={[styles.jccResult, { color: resultColor }]}>{g.result}</Text>
+                        <Text style={styles.jccSportIcon}>{sportEmoji(g.sport)}</Text>
                         <View style={styles.jccCenter}>
                           <Text style={styles.jccGame}>
                             {g.isHome ? 'vs' : '@'} {g.opponent}
@@ -376,11 +397,13 @@ export default function SportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 40, zIndex: 10 },
-  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  teamLogo: { width: 52, height: 52 },
-  teamName: { fontFamily: 'Syne', fontSize: 20, fontWeight: '700', color: '#fff' },
-  record: { fontFamily: 'Outfit', fontSize: 12, marginTop: 3 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
+  title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
+  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
+  teamHero: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 4 },
+  teamLogo: { width: 44, height: 44 },
+  teamName: { fontFamily: 'Syne', fontSize: 17, fontWeight: '700', color: '#fff' },
+  record: { fontFamily: 'Outfit', fontSize: 11, marginTop: 2 },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 12 },
   sectionLabel: {
     fontFamily: 'Outfit', fontSize: 9, fontWeight: '700',
@@ -410,7 +433,8 @@ const styles = StyleSheet.create({
   scorerName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff', flex: 1 },
   scorerPos: { fontFamily: 'Outfit', fontSize: 10 },
   scorerStat: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.7)', width: 36, textAlign: 'center' },
-  jccRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
+  jccRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 10 },
+  jccSportIcon: { fontSize: 18, width: 26, textAlign: 'center' },
   jccResult: { fontFamily: 'Syne', fontSize: 14, fontWeight: '800', width: 24, textAlign: 'center' },
   jccCenter: { flex: 1, gap: 2 },
   jccGame: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },

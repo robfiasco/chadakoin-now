@@ -53,7 +53,7 @@ export const THEMES: Theme[] = [
     id: 'solar',
     label: 'Pearl City',
     sub: 'Jamestown\'s old nickname',
-    description: 'Jamestown\'s historic nickname, earned during its 19th century reign as a furniture manufacturing powerhouse. At its peak the city ranked second in the nation for wood furniture production, and its craftsmen shipped pieces across the country. The warm amber and gold tones reflect the polished hardwoods that made Jamestown famous.',
+    description: 'Jamestown\'s historic nickname, most likely derived from pearl ash — potassium carbonate produced by burning hardwood and refining the ash. It was one of early America\'s most valuable exports, used in soap, glass, and as a leavening agent, and Jamestown\'s vast hardwood forests made it a natural center for production. The warm amber and gold tones reflect those early fires and the industry they built.',
     swatchColor: '#ffaa00',
     bg: '#0d0900',
     // Primary: amber
