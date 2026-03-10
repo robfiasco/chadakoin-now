@@ -41,6 +41,8 @@ const CATEGORY_ACCENT: Record<string, AccentSlot> = {
   // News/WRFA — primary
   'WRFA':                'acc',
   'Local':               'acc',
+  'RTPI':                'acc3',
+  'Fenton':              'acc2',
 };
 
 function getEventColor(event: EventItem, theme: { acc: string; acc2: string; acc3: string }): string {
