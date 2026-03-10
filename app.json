@@ -16,6 +16,10 @@
       "package": "com.chadakoinnow"
     },
     "scheme": "chadakoin-now",
+    "web": {
+      "bundler": "metro",
+      "output": "server"
+    },
     "plugins": ["expo-router"]
   }
 }

@@ -1,77 +1,124 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../lib/colors';
-import { Card } from '../components/Card';
-import { SectionHeader } from '../components/SectionHeader';
-import { UpdatedLine } from '../components/UpdatedLine';
-import { recyclingData } from '../services/mockData';
+import { ThemedBackground } from '../components/ThemedBackground';
+import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { useTheme } from '../lib/ThemeContext';
+import { useCivicData } from '../hooks/useCivicData';
 
 export default function RecyclingScreen() {
+  const { theme } = useTheme();
+  const { recycling, loading, error } = useCivicData();
+
+  const glassWeb = Platform.OS === 'web'
+    ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
+    : {};
+  const panel     = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
+  const panelGlow = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.22)`, ...glassWeb };
+
   return (
-    <View style={styles.container}>
+    <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
         <Text style={styles.title}>Recycling</Text>
-        <Text style={styles.subhead}>Jamestown pickup schedule</Text>
+        <Text style={[styles.subhead, { color: theme.acc55 }]}>Jamestown pickup schedule</Text>
       </SafeAreaView>
-      <ScrollView contentContainerStyle={styles.content}>
-        <SectionHeader title="This Week" />
-        <Card variant="primary" style={styles.heroCard}>
-          <Text style={styles.weekLabel}>{recyclingData.thisWeek.dateRange}</Text>
-          {recyclingData.thisWeek.items.map((item) => (
-            <View key={item} style={styles.itemRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Colors.green} />
-              <Text style={styles.itemText}>{item}</Text>
+
+      {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>THIS WEEK</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.card, panelGlow]}>
+          {loading ? (
+            <View style={{ gap: 10 }}>
+              <SkeletonPulse width={80} height={11} borderRadius={4} accRGB={theme.accRGB} />
+              <SkeletonPulse width={160} height={28} borderRadius={6} accRGB={theme.accRGB} />
+              <SkeletonPulse width={120} height={28} borderRadius={6} accRGB={theme.accRGB} />
             </View>
-          ))}
-        </Card>
+          ) : (
+            <>
+              {recycling.thisWeek.dateRange ? (
+                <Text style={[styles.weekRange, { color: theme.acc }]}>{recycling.thisWeek.dateRange}</Text>
+              ) : null}
+              <View style={styles.itemRow}>
+                <Ionicons name="checkmark-circle" size={18} color={theme.acc} />
+                <Text style={styles.itemText}>{recycling.thisWeek.material}</Text>
+              </View>
+            </>
+          )}
+        </View>
 
-        <SectionHeader title="Next Week" />
-        <Card style={styles.nextCard}>
-          <Text style={styles.nextWeekLabel}>{recyclingData.nextWeek.dateRange}</Text>
-          {recyclingData.nextWeek.items.map((item) => (
-            <View key={item} style={styles.itemRowLight}>
-              <Ionicons name="ellipse-outline" size={14} color={Colors.gray400} />
-              <Text style={styles.itemTextLight}>{item}</Text>
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>NEXT WEEK</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.card, panel]}>
+          {loading ? (
+            <View style={{ gap: 8 }}>
+              <SkeletonPulse width={80} height={11} borderRadius={4} accRGB={theme.accRGB} />
+              <SkeletonPulse width="100%" height={20} borderRadius={4} accRGB={theme.accRGB} />
             </View>
-          ))}
-        </Card>
+          ) : (
+            <>
+              {recycling.nextWeek.dateRange ? (
+                <Text style={[styles.weekRange, { color: `rgba(${theme.accRGB},0.45)` }]}>{recycling.nextWeek.dateRange}</Text>
+              ) : null}
+              <View style={styles.itemRowLight}>
+                <Ionicons name="ellipse-outline" size={13} color="rgba(255,255,255,0.3)" />
+                <Text style={styles.itemTextLight}>{recycling.nextWeek.material}</Text>
+              </View>
+            </>
+          )}
+        </View>
 
-        <SectionHeader title="Holiday Rule" />
-        <Card style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={18} color={Colors.blueTeal} />
-          <Text style={styles.infoText}>{recyclingData.holidayRule}</Text>
-        </Card>
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>HOLIDAY RULE</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.card, panel, { flexDirection: 'row', alignItems: 'flex-start', gap: 10 }]}>
+          <Ionicons name="information-circle-outline" size={18} color={theme.acc} />
+          <Text style={styles.infoText}>If your pickup falls on a holiday, recycling moves to Saturday.</Text>
+        </View>
 
-        <SectionHeader title="Rotation" />
-        {recyclingData.rotation.map((r, i) => (
-          <Card key={i}>
+        {recycling.holidayDelay && (
+          // @ts-ignore
+          <View style={[styles.delayBanner, { backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.25)' }]}>
+            <Ionicons name="warning-outline" size={14} color="#f59e0b" />
+            <Text style={styles.delayText}>
+              Holiday this week — pickup may shift by one day.
+            </Text>
+          </View>
+        )}
+
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>ROTATION</Text>
+        {['Week A: Cardboard & Paper', 'Week B: Plastic, Cans & Glass'].map((r, i) => (
+          // @ts-ignore
+          <View key={i} style={[styles.card, panel, { marginBottom: i === 0 ? 8 : 0 }]}>
             <Text style={styles.rotationText}>{r}</Text>
-          </Card>
+          </View>
         ))}
 
-        <UpdatedLine text="Updated today · 6:00 AM" />
+        <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
+          Updated today · 6:00 AM
+        </Text>
       </ScrollView>
-    </View>
+    </ThemedBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.cream },
-  header: { backgroundColor: Colors.deepBlue, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.white },
-  subhead: { fontSize: 13, color: Colors.gray400, marginTop: 2 },
-  content: { padding: 16, paddingTop: 20 },
-  heroCard: {},
-  weekLabel: { fontSize: 12, color: Colors.green, fontWeight: '700', letterSpacing: 0.8, marginBottom: 10 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
+  title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
+  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
+  content: { padding: 16, paddingTop: 4, paddingBottom: 32 },
+  sectionLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 16, paddingLeft: 2 },
+  card: { padding: 20, marginBottom: 0 },
+  weekRange: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 12 },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  itemText: { fontSize: 18, fontWeight: '700', color: Colors.cream },
-  nextCard: {},
-  nextWeekLabel: { fontSize: 12, color: Colors.gray400, fontWeight: '700', letterSpacing: 0.8, marginBottom: 10 },
-  itemRowLight: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
-  itemTextLight: { fontSize: 15, color: Colors.charcoal },
-  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  infoText: { flex: 1, fontSize: 14, color: Colors.gray600, lineHeight: 20 },
-  rotationText: { fontSize: 14, color: Colors.charcoal },
+  itemText: { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#fff' },
+  itemRowLight: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
+  itemTextLight: { fontFamily: 'Outfit', fontSize: 15, color: 'rgba(255,255,255,0.65)' },
+  infoText: { fontFamily: 'Outfit', flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 },
+  rotationText: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  delayBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 8 },
+  delayText: { fontFamily: 'Outfit', fontSize: 12, color: '#f59e0b', flex: 1, lineHeight: 17 },
+  updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28 },
 });

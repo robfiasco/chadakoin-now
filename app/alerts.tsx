@@ -1,79 +1,148 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, Linking, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../lib/colors';
-import { Card } from '../components/Card';
-import { SectionHeader } from '../components/SectionHeader';
-import { StatusBadge } from '../components/StatusBadge';
-import { UpdatedLine } from '../components/UpdatedLine';
-import { alertsData } from '../services/mockData';
+import { ThemedBackground } from '../components/ThemedBackground';
+import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { useTheme } from '../lib/ThemeContext';
+import { useCivicData } from '../hooks/useCivicData';
 
-const severityConfig = {
-  info: { color: Colors.blueTeal, icon: 'information-circle-outline' as const, label: 'Info' },
-  caution: { color: Colors.amber, icon: 'warning-outline' as const, label: 'Caution' },
-  emergency: { color: Colors.red, icon: 'alert-circle-outline' as const, label: 'Emergency' },
-};
+function formatDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 export default function AlertsScreen() {
-  const isClear = alertsData.status === 'clear';
+  const { theme } = useTheme();
+  const { alerts, loading, error } = useCivicData();
+  const isClear = !alerts.hasActiveAlerts;
+
+  const glassWeb = Platform.OS === 'web'
+    ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
+    : {};
+  const panel     = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
+  const panelGlow = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.22)`, ...glassWeb };
+
   return (
-    <View style={styles.container}>
+    <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
         <Text style={styles.title}>Alerts</Text>
-        <Text style={styles.subhead}>Jamestown advisories and updates</Text>
+        <Text style={[styles.subhead, { color: theme.acc55 }]}>Jamestown advisories</Text>
       </SafeAreaView>
-      <ScrollView contentContainerStyle={styles.content}>
+
+      {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
         {/* Status card */}
-        <Card variant={isClear ? 'default' : 'dark'} style={[styles.statusCard, isClear && styles.statusClear]}>
-          <Ionicons
-            name={isClear ? 'checkmark-circle' : 'alert-circle'}
-            size={32}
-            color={isClear ? Colors.green : Colors.red}
-          />
-          <Text style={[styles.statusText, { color: isClear ? Colors.green : Colors.red }]}>
-            {isClear ? 'All Clear' : 'Active Alert'}
-          </Text>
-          <Text style={styles.statusMessage}>{alertsData.message}</Text>
-          <StatusBadge label={isClear ? 'No active alerts' : 'Alert active'} severity={isClear ? 'green' : 'red'} />
-        </Card>
+        {loading ? (
+          // @ts-ignore
+          <View style={[styles.statusCard, panelGlow, { gap: 12 }]}>
+            <SkeletonPulse width={40} height={40} borderRadius={20} accRGB={theme.accRGB} />
+            <SkeletonPulse width={100} height={22} borderRadius={6} accRGB={theme.accRGB} />
+            <SkeletonPulse width={180} height={14} borderRadius={4} accRGB={theme.accRGB} />
+          </View>
+        ) : (
+          // @ts-ignore
+          <View style={[styles.statusCard, isClear ? panelGlow : {
+            borderRadius: 20, borderWidth: 1,
+            backgroundColor: 'rgba(220,0,50,0.08)',
+            borderColor: 'rgba(220,0,50,0.25)',
+            ...glassWeb,
+          }]}>
+            <Ionicons
+              name={isClear ? 'checkmark-circle' : 'alert-circle'}
+              size={32}
+              color={isClear ? theme.acc : '#ff4466'}
+            />
+            <Text style={[styles.statusText, { color: isClear ? theme.acc : '#ff4466' }]}>
+              {isClear ? 'All Clear' : 'Active Alert'}
+            </Text>
+            <Text style={styles.statusMessage}>
+              {isClear ? 'No active alerts for Jamestown.' : `${alerts.activeAlerts.length} active alert${alerts.activeAlerts.length > 1 ? 's' : ''}`}
+            </Text>
+            <View style={[styles.chip, { backgroundColor: `rgba(${theme.accRGB},0.15)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+              <Text style={[styles.chipText, { color: theme.acc }]}>
+                {isClear ? 'No active alerts' : 'Check updates below'}
+              </Text>
+            </View>
+          </View>
+        )}
 
-        {/* Recent updates */}
-        <SectionHeader title="Recent Updates" />
-        {alertsData.updates.map((update) => {
-          const config = severityConfig[update.severity as keyof typeof severityConfig] || severityConfig.info;
-          return (
-            <Card key={update.id} style={styles.updateCard}>
-              <View style={styles.updateHeader}>
-                <Ionicons name={config.icon} size={18} color={config.color} />
-                <Text style={[styles.updateDate, { color: config.color }]}>{update.date}</Text>
-                <StatusBadge label={config.label} severity={update.severity === 'caution' ? 'amber' : 'blue'} />
+        {/* Active alerts list */}
+        {!loading && alerts.activeAlerts.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>ACTIVE ALERTS</Text>
+            {alerts.activeAlerts.map((alert, i) => (
+              // @ts-ignore
+              <View key={i} style={[styles.alertCard, {
+                borderRadius: 20, borderWidth: 1,
+                backgroundColor: 'rgba(220,0,50,0.07)',
+                borderColor: 'rgba(220,0,50,0.2)',
+                ...glassWeb,
+              }]}>
+                <View style={styles.alertHeader}>
+                  <Ionicons name="alert-circle" size={16} color="#ff4466" />
+                  <Text style={styles.alertDate}>{formatDate(alert.pubDate)}</Text>
+                </View>
+                <Text style={styles.alertTitle}>{alert.title}</Text>
+                {alert.description ? (
+                  <Text style={styles.alertBody}>{alert.description}</Text>
+                ) : null}
+                {alert.link ? (
+                  <TouchableOpacity onPress={() => Linking.openURL(alert.link)}>
+                    <Text style={[styles.alertLink, { color: theme.acc }]}>Read more →</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
-              <Text style={styles.updateTitle}>{update.title}</Text>
-              <Text style={styles.updateBody}>{update.body}</Text>
-            </Card>
-          );
-        })}
+            ))}
+          </>
+        )}
 
-        <UpdatedLine text="Updated today · 6:00 AM" />
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>RECENT UPDATES</Text>
+        {loading ? (
+          [1, 2].map(i => (
+            // @ts-ignore
+            <View key={i} style={[styles.updateCard, panel, { gap: 8 }]}>
+              <SkeletonPulse width={80} height={12} borderRadius={4} accRGB={theme.accRGB} />
+              <SkeletonPulse width="100%" height={16} borderRadius={4} accRGB={theme.accRGB} />
+              <SkeletonPulse width="80%" height={13} borderRadius={4} accRGB={theme.accRGB} />
+            </View>
+          ))
+        ) : alerts.activeAlerts.length === 0 ? (
+          // @ts-ignore
+          <View style={[styles.updateCard, panel]}>
+            <Text style={styles.emptyText}>No alerts in the last 7 days.</Text>
+          </View>
+        ) : null}
+
+        <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
+          Refreshes every 5 minutes
+        </Text>
       </ScrollView>
-    </View>
+    </ThemedBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.cream },
-  header: { backgroundColor: Colors.deepBlue, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.white },
-  subhead: { fontSize: 13, color: Colors.gray400, marginTop: 2 },
-  content: { padding: 16, paddingTop: 20 },
-  statusCard: { alignItems: 'center', paddingVertical: 32, gap: 10, marginBottom: 16 },
-  statusClear: { borderWidth: 1, borderColor: Colors.green + '30' },
-  statusText: { fontSize: 22, fontWeight: '800' },
-  statusMessage: { fontSize: 14, color: Colors.gray600, textAlign: 'center' },
-  updateCard: { marginBottom: 10 },
-  updateHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  updateDate: { flex: 1, fontSize: 12, fontWeight: '600' },
-  updateTitle: { fontSize: 15, fontWeight: '700', color: Colors.charcoal, marginBottom: 4 },
-  updateBody: { fontSize: 13, color: Colors.gray600, lineHeight: 19 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
+  title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
+  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
+  content: { padding: 16, paddingTop: 4, paddingBottom: 32 },
+  sectionLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 16, paddingLeft: 2 },
+  statusCard: { padding: 28, alignItems: 'center', gap: 10 },
+  statusText: { fontFamily: 'Syne', fontSize: 22, fontWeight: '700' },
+  statusMessage: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
+  chip: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+  chipText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
+  alertCard: { padding: 18, marginBottom: 8 },
+  alertHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  alertDate: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,80,80,0.7)', flex: 1 },
+  alertTitle: { fontFamily: 'Outfit', fontSize: 14, fontWeight: '700', color: '#fff', marginBottom: 6 },
+  alertBody: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 18, marginBottom: 8 },
+  alertLink: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
+  updateCard: { padding: 18, marginBottom: 8 },
+  emptyText: { fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', fontSize: 13 },
+  updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28 },
 });

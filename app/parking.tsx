@@ -1,115 +1,135 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../lib/colors';
-import { Card } from '../components/Card';
-import { SectionHeader } from '../components/SectionHeader';
-import { StatusBadge } from '../components/StatusBadge';
-import { UpdatedLine } from '../components/UpdatedLine';
-import { parkingData } from '../services/mockData';
+import { ThemedBackground } from '../components/ThemedBackground';
+import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { useTheme } from '../lib/ThemeContext';
+import { useCivicData, computeParkingSchedule } from '../hooks/useCivicData';
 
 export default function ParkingScreen() {
-  const isEven = parkingData.today.side === 'EVEN';
+  const { theme } = useTheme();
+  const { parking, loading, error } = useCivicData();
+
+  const schedule = computeParkingSchedule();
+
+  const glassWeb = Platform.OS === 'web'
+    ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
+    : {};
+  const panel     = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
+  const panelGlow = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.22)`, ...glassWeb };
+
   return (
-    <View style={styles.container}>
+    <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
         <Text style={styles.title}>Parking</Text>
-        <Text style={styles.subhead}>Alternate-side rules for Jamestown</Text>
+        <Text style={[styles.subhead, { color: theme.acc55 }]}>Alternate-side rules · Jamestown</Text>
       </SafeAreaView>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Today status */}
-        <Card variant="primary" style={styles.todayCard}>
-          <Text style={styles.todayDate}>{parkingData.today.date} · {parkingData.today.day}</Text>
-          <Text style={styles.todaySide}>{parkingData.today.side} SIDE</Text>
-          <Text style={styles.todayRule}>{parkingData.today.rule}</Text>
-          <StatusBadge label={isEven ? 'Even Side' : 'Odd Side'} severity={isEven ? 'blue' : 'green'} />
-        </Card>
 
-        {/* Season + Switch time */}
-        <View style={styles.row}>
-          <Card style={[styles.halfCard, styles.mr8]}>
-            <Ionicons name="snow-outline" size={20} color={Colors.blueTeal} />
-            <Text style={styles.halfLabel}>Season</Text>
-            <Text style={styles.halfValue}>{parkingData.season}</Text>
-          </Card>
-          <Card style={styles.halfCard}>
-            <Ionicons name="time-outline" size={20} color={Colors.blueTeal} />
-            <Text style={styles.halfLabel}>Switch Time</Text>
-            <Text style={styles.halfValue}>{parkingData.switchTime}</Text>
-          </Card>
+      {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* Today hero */}
+        {/* @ts-ignore */}
+        <View style={[styles.card, panelGlow]}>
+          {loading ? (
+            <View style={{ gap: 10 }}>
+              <SkeletonPulse width={160} height={32} borderRadius={6} accRGB={theme.accRGB} />
+              <SkeletonPulse width="90%" height={14} borderRadius={4} accRGB={theme.accRGB} />
+            </View>
+          ) : parking.active ? (
+            <>
+              <Text style={[styles.todaySide, { color: theme.acc, textShadowColor: `rgba(${theme.accRGB},0.4)`, textShadowRadius: 28 }]}>
+                {parking.side === 'EVEN' ? 'Even side' : 'Odd side'}
+              </Text>
+              <Text style={styles.todayRule}>{parking.rule}</Text>
+              <View style={[styles.chip, { backgroundColor: `rgba(${theme.accRGB},0.15)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+                <Text style={[styles.chipText, { color: theme.acc }]}>Winter rules active</Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.offSeasonText}>Alternate-side parking is not active right now. Winter rules apply Nov 15 – Apr 1.</Text>
+          )}
         </View>
 
-        {/* Weekly schedule */}
-        <SectionHeader title="This Week" />
-        {parkingData.schedule.map((day) => {
-          const isToday = day.date === parkingData.today.date;
-          return (
-            <View
-              key={day.date}
-              style={[styles.scheduleRow, isToday && styles.scheduleRowToday]}
-            >
-              <Text style={[styles.scheduleDay, isToday && styles.scheduleTodayText]}>
-                {day.date}
+        {/* Season + Switch time */}
+        <View style={styles.halfRow}>
+          {/* @ts-ignore */}
+          <View style={[styles.halfCard, panel]}>
+            <Ionicons name="snow-outline" size={18} color={theme.acc} />
+            <Text style={[styles.halfLabel, { color: theme.acc45 }]}>SEASON</Text>
+            <Text style={styles.halfValue}>{parking.isWinter ? 'Winter rules active' : 'Off season'}</Text>
+          </View>
+          {/* @ts-ignore */}
+          <View style={[styles.halfCard, panel]}>
+            <Ionicons name="time-outline" size={18} color={theme.acc} />
+            <Text style={[styles.halfLabel, { color: theme.acc45 }]}>SWITCH</Text>
+            <Text style={styles.halfValue}>Midnight each day</Text>
+          </View>
+        </View>
+
+        {/* Live weekly schedule — computed from current date */}
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>THIS WEEK</Text>
+        {schedule.map(day => (
+          <View key={day.date} style={[
+            styles.scheduleRow,
+            day.isToday
+              ? { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.25)`, borderWidth: 1 }
+              : { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+          ]}>
+            <Text style={[styles.scheduleDate, day.isToday && { color: theme.acc }]}>{day.date}</Text>
+            <Text style={styles.scheduleDay}>{day.day}</Text>
+            <View style={[styles.sideChip, {
+              backgroundColor: day.side === 'EVEN' ? `rgba(${theme.accRGB},0.15)` : 'rgba(255,255,255,0.08)',
+              borderColor: day.side === 'EVEN' ? `rgba(${theme.accRGB},0.3)` : 'rgba(255,255,255,0.12)',
+            }]}>
+              <Text style={[styles.sideChipText, { color: day.side === 'EVEN' ? theme.acc : 'rgba(255,255,255,0.45)' }]}>
+                {day.side}
               </Text>
-              <Text style={[styles.scheduleWeekday, isToday && styles.scheduleTodayText]}>
-                {day.day}
-              </Text>
-              <View style={[
-                styles.sideChip,
-                day.side === 'EVEN' ? styles.evenChip : styles.oddChip
-              ]}>
-                <Text style={styles.sideChipText}>{day.side}</Text>
-              </View>
             </View>
-          );
-        })}
+          </View>
+        ))}
 
-        {/* Exceptions */}
-        <SectionHeader title="Exceptions" />
-        <Card style={styles.exceptionCard}>
-          <Ionicons name="alert-circle-outline" size={18} color={Colors.amber} />
-          <Text style={styles.exceptionText}>{parkingData.exceptions}</Text>
-        </Card>
+        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>EXCEPTIONS</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.card, panel, styles.exceptionRow]}>
+          <Ionicons name="alert-circle-outline" size={18} color={theme.warmWarn.text} />
+          <Text style={[styles.exceptionText, { color: theme.warmWarn.text }]}>
+            Snow emergency routes override alternate-side rules. Check alerts.
+          </Text>
+        </View>
 
-        <UpdatedLine text="Updated today · 6:00 AM" />
+        <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
+          Updated today · 6:00 AM
+        </Text>
       </ScrollView>
-    </View>
+    </ThemedBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.cream },
-  header: { backgroundColor: Colors.deepBlue, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.white },
-  subhead: { fontSize: 13, color: Colors.gray400, marginTop: 2 },
-  content: { padding: 16, paddingTop: 20 },
-  todayCard: { alignItems: 'flex-start', marginBottom: 12 },
-  todayDate: { fontSize: 12, color: Colors.green, fontWeight: '700', letterSpacing: 0.8 },
-  todaySide: { fontSize: 40, fontWeight: '900', color: Colors.white, marginVertical: 8, letterSpacing: -1 },
-  todayRule: { fontSize: 14, color: 'rgba(255,255,255,0.65)', marginBottom: 12 },
-  row: { flexDirection: 'row', marginBottom: 4 },
-  mr8: { marginRight: 8 },
-  halfCard: { flex: 1, gap: 4 },
-  halfLabel: { fontSize: 11, color: Colors.gray400, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-  halfValue: { fontSize: 13, color: Colors.charcoal, fontWeight: '600' },
-  scheduleRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, paddingHorizontal: 14,
-    backgroundColor: Colors.warmWhite,
-    borderRadius: 10, marginBottom: 6,
-  },
-  scheduleRowToday: { backgroundColor: Colors.deepBlue },
-  scheduleDay: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.charcoal },
-  scheduleWeekday: { flex: 1, fontSize: 13, color: Colors.gray600 },
-  scheduleTodayText: { color: Colors.white },
-  sideChip: {
-    paddingHorizontal: 12, paddingVertical: 4,
-    borderRadius: 20,
-  },
-  evenChip: { backgroundColor: Colors.blueTeal },
-  oddChip: { backgroundColor: Colors.green },
-  sideChipText: { fontSize: 12, fontWeight: '700', color: Colors.white },
-  exceptionCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  exceptionText: { flex: 1, fontSize: 14, color: Colors.gray600, lineHeight: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
+  title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
+  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
+  content: { padding: 16, paddingTop: 4, paddingBottom: 32 },
+  sectionLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 16, paddingLeft: 2 },
+  card: { padding: 20 },
+  todaySide: { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', lineHeight: 34, marginBottom: 8, textShadowOffset: { width: 0, height: 0 } },
+  todayRule: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 14, lineHeight: 18 },
+  offSeasonText: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 20 },
+  chip: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
+  chipText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
+  halfRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  halfCard: { flex: 1, padding: 16, gap: 6 },
+  halfLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  halfValue: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
+  scheduleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, marginBottom: 6 },
+  scheduleDate: { flex: 1, fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' },
+  scheduleDay: { flex: 1, fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  sideChip: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+  sideChipText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  exceptionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  exceptionText: { fontFamily: 'Outfit', flex: 1, fontSize: 13, lineHeight: 20 },
+  updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28 },
 });

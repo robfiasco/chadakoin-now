@@ -1,75 +1,69 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Colors } from '../lib/colors';
+import { ThemeProvider, useTheme } from '../lib/ThemeContext';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+function tabIcon(active: IoniconName, inactive: IoniconName) {
+  return ({ color, focused }: { color: string; focused: boolean }) => (
+    <Ionicons name={focused ? active : inactive} size={22} color={color} />
+  );
+}
+
+// Separate component so useTheme() can access the ThemeProvider above it
+function ThemedTabs() {
+  const { theme } = useTheme();
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'rgba(0,5,15,0.92)',
+          borderTopWidth: 1,
+          borderTopColor: `rgba(${theme.accRGB},0.14)`,
+          elevation: 0,
+          height: 68,
+          paddingBottom: 12,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: theme.acc,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.28)',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 1,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: tabIcon('home', 'home-outline'),
+        }}
+      />
+      <Tabs.Screen name="recycling" options={{ href: null }} />
+      <Tabs.Screen name="parking" options={{ href: null }} />
+      <Tabs.Screen name="alerts" options={{ href: null }} />
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: 'Events',
+          tabBarIcon: tabIcon('calendar', 'calendar-outline'),
+        }}
+      />
+    </Tabs>
+  );
+}
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: Colors.deepBlue,
-            borderTopWidth: 0,
-            elevation: 0,
-            height: 64,
-            paddingBottom: 10,
-          },
-          tabBarActiveTintColor: Colors.green,
-          tabBarInactiveTintColor: Colors.gray400,
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '600',
-          },
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="recycling"
-          options={{
-            title: 'Recycling',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="refresh-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="parking"
-          options={{
-            title: 'Parking',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="car-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="alerts"
-          options={{
-            title: 'Alerts',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="warning-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="events"
-          options={{
-            title: 'Events',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="calendar-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      </Tabs>
+      <ThemeProvider>
+        <ThemedTabs />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
