@@ -77,8 +77,14 @@ function Orb({ color, width, height, top, bottom, left, right, duration, delay =
 export function ThemedBackground({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
 
+  // On web, use CSS gradient if theme provides one
+  const webBg = Platform.OS === 'web' && theme.bgGradient
+    ? { background: theme.bgGradient }
+    : {};
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+    // @ts-ignore
+    <View style={[styles.container, { backgroundColor: theme.bg }, webBg]}>
       <Orb
         color={theme.orb1}
         width={400} height={250}

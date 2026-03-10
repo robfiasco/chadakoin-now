@@ -20,6 +20,9 @@ export interface Theme {
   orb1: string;
   orb2: string;
   warmWarn: { bg: string; text: string; borderColor: string };
+  // Optional overrides
+  tabBarBg?: string;    // tab bar background — defaults to rgba(0,5,15,0.92)
+  bgGradient?: string;  // web-only CSS background gradient override
 }
 
 export const THEMES: Theme[] = [
@@ -124,6 +127,8 @@ export const THEMES: Theme[] = [
     orb1: 'rgba(255,255,255,0.06)',
     orb2: 'rgba(180,180,200,0.04)',
     warmWarn: { bg: 'rgba(255,200,50,0.08)', text: '#d4a820', borderColor: 'rgba(255,200,50,0.18)' },
+    tabBarBg: 'rgba(6,6,6,0.97)',
+    bgGradient: 'linear-gradient(180deg, #050505 0%, #101010 50%, #1c1c1c 100%)',
   },
 ];
 

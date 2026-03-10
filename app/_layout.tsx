@@ -20,7 +20,7 @@ function ThemedTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(0,5,15,0.92)',
+          backgroundColor: theme.tabBarBg ?? 'rgba(0,5,15,0.92)',
           borderTopWidth: 1,
           borderTopColor: `rgba(${theme.accRGB},0.14)`,
           elevation: 0,
