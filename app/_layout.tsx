@@ -61,13 +61,7 @@ function ThemedTabs() {
           tabBarIcon: tabIcon('newspaper', 'newspaper-outline'),
         }}
       />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: tabIcon('settings', 'settings-outline'),
-        }}
-      />
+      <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen
         name="events"
         options={{

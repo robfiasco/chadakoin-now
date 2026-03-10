@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../lib/ThemeContext';
 import { THEMES, ThemeId } from '../lib/themes';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -13,6 +14,34 @@ import { fetchWeather, WeatherData } from '../services/weather';
 import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
+
+interface NowPlaying {
+  title: string;
+  artist: string;
+  album?: string;
+  artwork?: string;
+}
+
+async function fetchNowPlaying(): Promise<NowPlaying | null> {
+  try {
+    const url = Platform.OS === 'web'
+      ? '/api/cdir'
+      : 'https://radio.chadakoindigital.com/now.json';
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      title:   data.title   ?? '',
+      artist:  data.artist  ?? '',
+      album:   data.album   ?? '',
+      artwork: data.artwork?.startsWith('http')
+        ? data.artwork
+        : data.artwork
+          ? `https://radio.chadakoindigital.com${data.artwork}`
+          : undefined,
+    };
+  } catch { return null; }
+}
 
 function getDateBadge() {
   const d = new Date();
@@ -169,13 +198,25 @@ function StatChip({ label, value, accRGB, loading }: { label: string; value: str
 // ─── Home Screen ─────────────────────────────────────────────────
 export default function HomeScreen() {
   const { theme, themeId, setThemeId } = useTheme();
+  const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
+  const [visitorMode, setVisitorMode] = useState(false);
   const civic = useCivicData();
 
   const dateBadge = getDateBadge();
 
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
+  }, []);
+
+  // Poll CDIR every 30 seconds
+  useEffect(() => {
+    fetchNowPlaying().then(setNowPlaying).catch(() => {});
+    const id = setInterval(() => {
+      fetchNowPlaying().then(setNowPlaying).catch(() => {});
+    }, 30000);
+    return () => clearInterval(id);
   }, []);
 
   const glassWeb = Platform.OS === 'web'
@@ -200,13 +241,22 @@ export default function HomeScreen() {
       {/* ─── Header ─────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.appName}>Chadakoin Now</Text>
-            <Text style={[styles.appCity, { color: theme.acc55 }]}>Jamestown, NY</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.appName}>
+              {visitorMode ? 'Welcome to Jamestown' : 'Chadakoin Now'}
+            </Text>
+            <Text style={[styles.appCity, { color: theme.acc55 }]}>
+              {visitorMode ? 'Your weekend guide' : 'Jamestown, NY'}
+            </Text>
           </View>
-          <View style={[styles.dateBadge, { backgroundColor: `rgba(${theme.accRGB},0.1)`, borderColor: `rgba(${theme.accRGB},0.22)` }]}>
-            <LiveDot color={theme.acc} />
-            <Text style={[styles.dateBadgeText, { color: theme.acc }]}>{dateBadge}</Text>
+          <View style={styles.headerRight}>
+            <View style={[styles.dateBadge, { backgroundColor: `rgba(${theme.accRGB},0.1)`, borderColor: `rgba(${theme.accRGB},0.22)` }]}>
+              <LiveDot color={theme.acc} />
+              <Text style={[styles.dateBadgeText, { color: theme.acc }]}>{dateBadge}</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/settings')} activeOpacity={0.7} style={{ padding: 4 }}>
+              <Ionicons name="settings-outline" size={18} color={`rgba(${theme.accRGB},0.45)`} />
+            </TouchableOpacity>
           </View>
         </View>
         {/* Theme dots — tap to cycle, full details in Settings */}
@@ -235,6 +285,33 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       {civic.error && <ErrorBanner message={civic.error} accRGB={theme.accRGB} />}
+
+      {/* ─── Visitor mode toggle ──────────────────── */}
+      <TouchableOpacity
+        activeOpacity={0.75}
+        onPress={() => setVisitorMode(v => !v)}
+        // @ts-ignore
+        style={[styles.visitorToggle, {
+          backgroundColor: visitorMode ? `rgba(${theme.acc2RGB},0.15)` : `rgba(${theme.accRGB},0.06)`,
+          borderColor: visitorMode ? `rgba(${theme.acc2RGB},0.4)` : `rgba(${theme.accRGB},0.12)`,
+          ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
+        }]}
+      >
+        <Text style={{ fontSize: 16 }}>{visitorMode ? '🏠' : '🧳'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.visitorLabel, { color: visitorMode ? theme.acc2 : 'rgba(255,255,255,0.6)' }]}>
+            {visitorMode ? 'Visitor mode · Tap to switch to resident view' : 'Visiting Jamestown this weekend?'}
+          </Text>
+        </View>
+        <View style={[styles.visitorPill, {
+          backgroundColor: visitorMode ? `rgba(${theme.acc2RGB},0.2)` : 'rgba(255,255,255,0.06)',
+          borderColor: visitorMode ? `rgba(${theme.acc2RGB},0.4)` : 'rgba(255,255,255,0.12)',
+        }]}>
+          <Text style={[styles.visitorPillText, { color: visitorMode ? theme.acc2 : 'rgba(255,255,255,0.35)' }]}>
+            {visitorMode ? 'ON' : 'TAP'}
+          </Text>
+        </View>
+      </TouchableOpacity>
 
       {/* ─── Snow emergency banner ─────────────────── */}
       {snowEmergency && (
@@ -449,12 +526,25 @@ export default function HomeScreen() {
             ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
           }]}
         >
-          <View style={styles.cdirLeft}>
-            <View style={[styles.cdirDot, { backgroundColor: theme.acc, shadowColor: theme.acc }]} />
-            <View>
-              <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR Radio</Text>
-              <Text style={styles.cdirSub}>Jamestown local music archive · 24/7</Text>
+          {/* Artwork thumbnail */}
+          {nowPlaying?.artwork ? (
+            <Image source={{ uri: nowPlaying.artwork }} style={styles.cdirArt} resizeMode="cover" />
+          ) : (
+            <View style={[styles.cdirDotWrap]}>
+              <View style={[styles.cdirDot, { backgroundColor: theme.acc, shadowColor: theme.acc }]} />
             </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR Radio</Text>
+            {nowPlaying?.title ? (
+              <>
+                <Text style={styles.cdirNowLabel}>NOW PLAYING</Text>
+                <Text style={styles.cdirTrack} numberOfLines={1}>{nowPlaying.title}</Text>
+                <Text style={styles.cdirArtist} numberOfLines={1}>{nowPlaying.artist}</Text>
+              </>
+            ) : (
+              <Text style={styles.cdirSub}>Jamestown local music archive · 24/7</Text>
+            )}
           </View>
           <Ionicons name="radio-outline" size={20} color={`rgba(${theme.accRGB},0.5)`} />
         </TouchableOpacity>
@@ -495,6 +585,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   appName: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
   appCity: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1.2 },
   dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
@@ -586,18 +677,34 @@ const styles = StyleSheet.create({
   lotdTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
   lotdDuration: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3 },
 
+  // Visitor toggle
+  visitorToggle: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderWidth: 1, borderRadius: 14,
+    paddingHorizontal: 16, paddingVertical: 12,
+    marginHorizontal: 16, marginBottom: 4,
+  },
+  visitorLabel: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '500' },
+  visitorPill: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  visitorPillText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+
   // CDIR
   cdirCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 18, marginTop: 18,
   },
   cdirLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cdirArt: { width: 44, height: 44, borderRadius: 8 },
+  cdirDotWrap: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   cdirDot: {
     width: 10, height: 10, borderRadius: 5,
     shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 6, elevation: 4,
   },
   cdirTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700' },
   cdirSub: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  cdirNowLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginTop: 3 },
+  cdirTrack: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginTop: 1 },
+  cdirArtist: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)' },
 
   updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28 },
 });
