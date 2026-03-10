@@ -2,7 +2,7 @@
 // featured: true = highlighted card (paid placement or owner's pick)
 // Add your personal favorites here, mark featured: true when a business pays for placement
 
-export type PlaceCategory = 'coffee' | 'food' | 'drinks' | 'activity' | 'arts' | 'stay';
+export type PlaceCategory = 'coffee' | 'food' | 'drinks' | 'cannabis' | 'activity' | 'arts' | 'stay';
 
 export interface Place {
   id: string;
@@ -20,16 +20,38 @@ export interface Place {
 export const PLACES: Place[] = [
   // ─── Coffee ───────────────────────────────────────────────────
   {
+    id: 'labyrinth-press',
+    name: 'Labyrinth Press Co.',
+    category: 'coffee',
+    emoji: '☕',
+    description: 'Downtown coffee shop with a full espresso bar, vegetarian & vegan menu, and the upstairs Brazil Lounge for craft beer and wine.',
+    address: '10-12 E. 4th St, Jamestown',
+    website: 'https://www.labpressco.com/',
+    hours: 'Tue–Sat 8am–9pm',
+    featured: false,
+  },
+  {
     id: 'shawbucks',
     name: 'Shawbucks',
     category: 'coffee',
     emoji: '☕',
-    description: 'Local coffee shop and bar, home of Trivia Nights.',
+    description: 'Local coffee shop and bar, home of weekly Trivia Nights.',
     address: 'Downtown Jamestown',
     featured: false,
   },
 
-  // ─── Food ─────────────────────────────────────────────────────
+  // ─── Drinks ───────────────────────────────────────────────────
+  {
+    id: 'wicked-warrens',
+    name: "Wicked Warren's",
+    category: 'drinks',
+    emoji: '🍺',
+    description: 'Brewery and restaurant with outstanding craft beer and wood-fired pizza.',
+    address: '119 W 3rd St, Jamestown',
+    website: 'https://wickedwarrens.com/jamestown',
+    hours: 'Daily 11:30am–10pm',
+    featured: false,
+  },
   {
     id: 'pearl-city-hops',
     name: 'Pearl City Hops',
@@ -38,6 +60,51 @@ export const PLACES: Place[] = [
     description: 'Craft brewery named for Jamestown\'s historic nickname.',
     address: 'Jamestown',
     website: 'https://pearlcityhops.com',
+    featured: false,
+  },
+
+  // ─── Cannabis ─────────────────────────────────────────────────
+  {
+    id: 'lifted',
+    name: 'Lifted Dispensary',
+    category: 'cannabis',
+    emoji: '🌿',
+    description: 'Cannabis dispensary serving Jamestown.',
+    address: 'Jamestown',
+    website: 'https://www.liftedispensary.com/',
+    featured: false,
+  },
+
+  // ─── Pizza ────────────────────────────────────────────────────
+  {
+    id: 'honest-johns',
+    name: "Honest John's Pizzeria",
+    category: 'food',
+    emoji: '🍕',
+    description: 'Pizza, wings, and subs with delivery throughout Jamestown, Celeron, West Ellicott, and Falconer.',
+    address: '1245 E. 2nd St, Jamestown',
+    website: 'https://honestjohns.pizza/',
+    featured: false,
+  },
+  {
+    id: 'paces',
+    name: "Pace's Pizzeria",
+    category: 'food',
+    emoji: '🍕',
+    description: 'The world\'s greatest pizza since 1953. Simple. Fresh. Delicious. Wine and beer selection.',
+    address: '549 W 3rd St, Jamestown',
+    website: 'https://paces.pizza/',
+    hours: 'Wed–Sat 4pm–9pm · Sun 4pm–8pm',
+    featured: false,
+  },
+  {
+    id: 'slice-of-home',
+    name: 'A Slice of Home Pizzeria',
+    category: 'food',
+    emoji: '🍕',
+    description: 'Local Jamestown pizzeria.',
+    address: 'Jamestown',
+    website: 'https://asliceofhomepizzeriallc.toast.site/',
     featured: false,
   },
 
@@ -109,8 +176,9 @@ export const PLACES: Place[] = [
 
 export const PLACE_CATEGORIES: { key: PlaceCategory; label: string; emoji: string }[] = [
   { key: 'coffee',   label: 'Coffee',       emoji: '☕' },
-  { key: 'food',     label: 'Food',         emoji: '🍽️' },
+  { key: 'food',     label: 'Pizza & Food',  emoji: '🍕' },
   { key: 'drinks',   label: 'Drinks',       emoji: '🍺' },
+  { key: 'cannabis', label: 'Cannabis',     emoji: '🌿' },
   { key: 'activity', label: 'Things to Do', emoji: '🎯' },
   { key: 'arts',     label: 'Arts',         emoji: '🎭' },
   { key: 'stay',     label: 'Stay',         emoji: '🏨' },
