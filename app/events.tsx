@@ -7,40 +7,49 @@ import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivicData, EventItem } from '../hooks/useCivicData';
 
-// Color accent per category/tag — gives each event visual identity
-const CATEGORY_COLORS: Record<string, string> = {
-  'Theater':        '#c490ff',  // violet
-  'Arts':           '#c490ff',
-  'Arts & Entertainment': '#c490ff',
-  'Music':          '#2dffb4',  // mint
-  'Community':      '#2FBF71',  // green
-  "St. Patrick's Day": '#2FBF71',
-  'Annual':         '#2FBF71',
-  'Family':         '#2FBF71',
-  'Sports':         '#ff6b35',  // orange
-  'Athletics':      '#ff6b35',
-  'JPS':            '#ff6b35',
-  'Civic':          '#5ba8d4',  // steel blue
-  'BPU':            '#5ba8d4',
-  'Government':     '#5ba8d4',
-  'Jackson Center': '#f59e0b',  // amber
-  'Education':      '#f59e0b',
-  'Lecture':        '#f59e0b',
-  'Library':        '#00d4ff',  // cyan
-  'WRFA':           '#ff9f43',  // tangerine
-  'Local':          '#ff9f43',
-  'Reg Lenna':      '#bf7fff',  // purple
-  'Festival':       '#ff4466',  // red
-  'Tarp Skunks':    '#2FBF71',
-  'Baseball':       '#2FBF71',
+// Map categories to theme accent slots (acc, acc2, acc3)
+// so colors always match the active theme
+type AccentSlot = 'acc' | 'acc2' | 'acc3';
+
+const CATEGORY_ACCENT: Record<string, AccentSlot> = {
+  // Primary accent — civic, structural, informational
+  'Civic':               'acc',
+  'BPU':                 'acc',
+  'Government':          'acc',
+  'Jackson Center':      'acc',
+  'Education':           'acc',
+  'Lecture':             'acc',
+  'Library':             'acc',
+  // Secondary accent — community, nature, celebration
+  'Community':           'acc2',
+  "St. Patrick's Day":   'acc2',
+  'Annual':              'acc2',
+  'Family':              'acc2',
+  'Tarp Skunks':         'acc2',
+  'Baseball':            'acc2',
+  'Music':               'acc2',
+  'Festival':            'acc2',
+  // Tertiary accent — arts, culture, performance
+  'Theater':             'acc3',
+  'Arts':                'acc3',
+  'Arts & Entertainment':'acc3',
+  'Reg Lenna':           'acc3',
+  // Sports — secondary (energetic)
+  'Sports':              'acc2',
+  'Athletics':           'acc2',
+  'JPS':                 'acc2',
+  // News/WRFA — primary
+  'WRFA':                'acc',
+  'Local':               'acc',
 };
 
-function getEventColor(event: EventItem): string {
+function getEventColor(event: EventItem, theme: { acc: string; acc2: string; acc3: string }): string {
   for (const tag of event.tags) {
-    if (CATEGORY_COLORS[tag]) return CATEGORY_COLORS[tag];
+    const slot = CATEGORY_ACCENT[tag];
+    if (slot) return theme[slot];
   }
-  if (CATEGORY_COLORS[event.category]) return CATEGORY_COLORS[event.category];
-  return '#9CA3AF'; // neutral grey fallback
+  const slot = CATEGORY_ACCENT[event.category];
+  return slot ? theme[slot] : theme.acc3;
 }
 
 function formatEventDate(iso: string): { date: string; time: string } {
@@ -128,7 +137,7 @@ export default function EventsScreen() {
         ) : (
           filtered.map((event, i) => {
             const { date, time } = formatEventDate(event.startDate);
-            const accentColor = getEventColor(event);
+            const accentColor = getEventColor(event, theme);
             return (
               // @ts-ignore
               <TouchableOpacity key={i} style={[styles.eventCard, panel, { borderLeftColor: accentColor, borderLeftWidth: 3 }]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)}>
