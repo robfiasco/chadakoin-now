@@ -36,12 +36,24 @@ interface Scorer {
   headshot: string;
 }
 
+interface JCCResult {
+  date: string;
+  sport: string;
+  opponent: string;
+  isHome: boolean;
+  result: string;
+  score: string;
+  won: boolean;
+  link: string;
+}
+
 interface SabresData {
   record: string;
   standing: string;
   recentGame?: GameResult;
   nextGame?: GameResult;
   topScorers?: Scorer[];
+  jcc?: JCCResult[];
   news: { title: string; link: string; date: string; summary: string }[];
 }
 
@@ -90,6 +102,7 @@ async function fetchSabres(): Promise<SabresData> {
       recentGame:  json.recentGame ?? undefined,
       nextGame:    json.nextGame ?? undefined,
       topScorers:  json.topScorers ?? [],
+      jcc:         json.jcc ?? [],
       news:        json.news ?? [],
     };
   }
@@ -293,6 +306,41 @@ export default function SportsScreen() {
               </>
             )}
 
+            {/* JCC Jayhawks recent results */}
+            {data?.jcc && data.jcc.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)` }]}>JCC JAYHAWKS</Text>
+                {/* @ts-ignore */}
+                <View style={[card, { padding: 0, overflow: 'hidden' }]}>
+                  {data.jcc.map((g, i) => {
+                    const d = new Date(g.date);
+                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const resultColor = g.won ? '#2FBF71' : '#ef4444';
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => g.link && Linking.openURL(g.link)}
+                        activeOpacity={0.7}
+                        style={[styles.jccRow, i < data.jcc!.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
+                      >
+                        <Text style={[styles.jccResult, { color: resultColor }]}>{g.result}</Text>
+                        <View style={styles.jccCenter}>
+                          <Text style={styles.jccGame}>
+                            {g.isHome ? 'vs' : '@'} {g.opponent}
+                          </Text>
+                          <Text style={[styles.jccSport, { color: `rgba(${theme.accRGB},0.4)` }]}>{g.sport}</Text>
+                        </View>
+                        <View style={styles.jccRight}>
+                          <Text style={[styles.jccScore, { color: resultColor }]}>{g.score}</Text>
+                          <Text style={[styles.jccDate, { color: `rgba(${theme.accRGB},0.35)` }]}>{dateStr}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
             {/* News */}
             {data?.news && data.news.length > 0 && (
               <>
@@ -362,6 +410,14 @@ const styles = StyleSheet.create({
   scorerName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff', flex: 1 },
   scorerPos: { fontFamily: 'Outfit', fontSize: 10 },
   scorerStat: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.7)', width: 36, textAlign: 'center' },
+  jccRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
+  jccResult: { fontFamily: 'Syne', fontSize: 14, fontWeight: '800', width: 24, textAlign: 'center' },
+  jccCenter: { flex: 1, gap: 2 },
+  jccGame: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
+  jccSport: { fontFamily: 'Outfit', fontSize: 10 },
+  jccRight: { alignItems: 'flex-end', gap: 2 },
+  jccScore: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700' },
+  jccDate: { fontFamily: 'Outfit', fontSize: 10 },
   newsItem: { padding: 16, gap: 5 },
   newsTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff', lineHeight: 18 },
   newsSummary: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 17 },

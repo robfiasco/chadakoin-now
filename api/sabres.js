@@ -1,6 +1,66 @@
 // Vercel serverless function — Buffalo Sabres data via NHL official API
 // api-web.nhle.com is publicly accessible from server environments.
 
+// ─── JCC helper (called from the same endpoint) ──────────────────
+
+async function fetchJCC(signal) {
+  try {
+    const res = await fetch('https://jccjayhawks.com/composite?print=rss', { signal });
+    if (!res.ok) return [];
+    const text = await res.text();
+
+    const items = [];
+    const itemRx = /<item>([\s\S]*?)<\/item>/g;
+    let m;
+    while ((m = itemRx.exec(text)) !== null) {
+      const block = m[1];
+      const get = (tag) => {
+        const r = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`);
+        const match = r.exec(block);
+        return match ? (match[1] ?? match[2] ?? '').trim() : '';
+      };
+
+      const score     = get('ps:score');
+      const pubDate   = get('pubDate');
+      const opponent  = get('ps:opponent');
+      const category  = get('category');
+      const link      = get('link');
+      const desc      = get('description');
+
+      if (!pubDate) continue;
+      const date = new Date(pubDate);
+      const now  = new Date();
+
+      // Parse score: "W, 89-85" or "L, 80-69"
+      const hasResult = score && score.trim() !== '';
+      const isPast    = date < now;
+
+      if (hasResult && isPast) {
+        const parts = score.split(',').map(s => s.trim());
+        const wl    = parts[0]; // "W" or "L"
+        const final = parts[1] ?? '';
+        items.push({
+          date:     date.toISOString(),
+          sport:    category,
+          opponent: opponent.replace(/^(at|vs\.?)\s*/i, ''),
+          isHome:   !opponent.toLowerCase().startsWith('at '),
+          result:   wl,   // "W" or "L"
+          score:    final,
+          won:      wl === 'W',
+          link,
+        });
+      }
+    }
+
+    // Most recent 5 completed games across all sports, newest first
+    return items
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
 export default async function handler(req, res) {
   try {
     console.log('Fetching Sabres from NHL API...');
@@ -8,12 +68,13 @@ export default async function handler(req, res) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    let schedRes, standRes, statsRes;
+    let schedRes, standRes, statsRes, jccResults;
     try {
-      [schedRes, standRes, statsRes] = await Promise.all([
+      [schedRes, standRes, statsRes, jccResults] = await Promise.all([
         fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now', { signal: controller.signal }),
         fetch('https://api-web.nhle.com/v1/standings/now', { signal: controller.signal }),
         fetch('https://api-web.nhle.com/v1/club-stats/BUF/now', { signal: controller.signal }),
+        fetchJCC(controller.signal),
       ]);
     } finally {
       clearTimeout(timeout);
@@ -115,7 +176,8 @@ export default async function handler(req, res) {
       news: [],
     };
 
-    console.log(`record: "${record}", recent: ${result.recentGame?.opponentName}, next: ${result.nextGame?.opponentName}`);
+    result.jcc = jccResults;
+    console.log(`record: "${record}", recent: ${result.recentGame?.opponentName}, next: ${result.nextGame?.opponentName}, jcc: ${jccResults.length} results`);
 
     res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60');
     res.setHeader('Access-Control-Allow-Origin', '*');
