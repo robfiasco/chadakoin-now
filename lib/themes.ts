@@ -143,7 +143,7 @@ export const THEMES: Theme[] = [
     id: 'aldos',
     label: "Aldo's",
     sub: 'Late night diner',
-    description: "Aldo's was the kind of place that didn't need to advertise. After the bars closed and the bands played their last set, everyone just knew — you ended up at Aldo's. Teens, musicians, bartenders, and anyone who needed eggs and coffee at 2am. Warm, loud, greasy, and exactly what you needed. This theme is for them.",
+    description: "Aldo's was a Jamestown institution — the kind of diner where you'd slide into a booth with friends just to drink coffee for three hours and not be bothered about it. Teens hung out there during the day, bands stopped in after gigs, and when the bars closed, everyone made their way over for eggs. It didn't need to be anything special. It just was.",
     swatchColor: '#ffd060',
     bg: '#1a1008',
     // Primary: diner fluorescent yellow
