@@ -6,20 +6,22 @@ export default async function handler(req, res) {
   const token = process.env.EXPO_PUBLIC_EVENTBRITE_TOKEN || process.env.EVENTBRITE_TOKEN;
   if (!token) return res.status(401).json({ error: 'Eventbrite token not configured' });
 
-  const today = new Date().toISOString(); // full ISO with Z — more reliable
+  const today = new Date().toISOString().split('T')[0];
+  // No trailing slash, token in query param (most reliable for Eventbrite v3)
   const url =
-    'https://www.eventbriteapi.com/v3/events/search/' +
-    '?location.latitude=42.097' +      // coordinates more reliable than address
+    'https://www.eventbriteapi.com/v3/events/search' +
+    `?token=${token}` +
+    '&location.latitude=42.097' +
     '&location.longitude=-79.2353' +
-    '&location.within=25mi' +           // widened — Jamestown is small
+    '&location.within=25mi' +
     '&expand=venue,category' +
     '&sort_by=date' +
-    `&start_date.range_start=${encodeURIComponent(today)}`;
+    `&start_date.range_start=${today}T00%3A00%3A00`;
+
+  console.log('Fetching Eventbrite:', url.replace(token, 'REDACTED'));
 
   try {
-    const upstream = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const upstream = await fetch(url);
 
     if (!upstream.ok) {
       const body = await upstream.text();
