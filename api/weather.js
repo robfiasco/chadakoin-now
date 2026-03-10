@@ -68,16 +68,18 @@ export default async function handler(req, res) {
       dailyMap[date].icons.push(p.weather[0].icon);
     }
 
-    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const forecast = Object.entries(dailyMap)
       .filter(([date]) => date >= today)
       .slice(0, 5)
       .map(([date, d]) => {
         // Pick daytime icon if available (ends in 'd'), else first
         const dayIcon = d.icons.find(i => i.endsWith('d')) ?? d.icons[0];
-        const dominantCode = d.codes.reduce((a, b) =>
-          d.codes.filter(c => c === a).length >= d.codes.filter(c => c === b).length ? a : b
-        );
+        const dominantCode = d.codes.length
+          ? d.codes.reduce((a, b) =>
+              d.codes.filter(c => c === a).length >= d.codes.filter(c => c === b).length ? a : b
+            )
+          : 800;
         return {
           date,
           high: Math.round(Math.max(...d.temps)),
