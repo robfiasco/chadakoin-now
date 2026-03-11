@@ -43,11 +43,30 @@ export const PLACES: Place[] = [
 
   // ─── Food ─────────────────────────────────────────────────────
   {
+    id: 'the-eatery',
+    name: 'The Eatery',
+    category: 'food',
+    emoji: '🍳',
+    description: 'Breakfast and brunch in Jamestown. A local favorite for starting your morning right.',
+    address: 'Jamestown, NY',
+    hours: 'Morning–early afternoon',
+    featured: false,
+  },
+  {
+    id: 'davidsons',
+    name: "Davidson's",
+    category: 'food',
+    emoji: '🍽️',
+    description: 'Local Jamestown restaurant.',
+    address: 'Jamestown, NY',
+    featured: false,
+  },
+  {
     id: 'taco-company',
     name: 'The Taco Company',
     category: 'food',
     emoji: '🌮',
-    description: 'Local Jamestown taqueria serving fresh tacos, burritos, and more. A go-to for a quick and delicious meal.',
+    description: 'Local Jamestown taqueria serving fresh tacos, burritos, and more.',
     address: 'Jamestown, NY',
     featured: false,
   },
