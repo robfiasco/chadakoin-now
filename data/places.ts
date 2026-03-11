@@ -43,14 +43,12 @@ export const PLACES: Place[] = [
 
   // ─── Food ─────────────────────────────────────────────────────
   {
-    id: 'shawbucks',
-    name: "Shawbuck's Restaurant & Bar",
+    id: 'taco-company',
+    name: 'The Taco Company',
     category: 'food',
-    emoji: '🍔',
-    description: 'Casual American bar and grill in downtown Jamestown. Burgers, sandwiches, wings, and a full bar. A local go-to for lunch or dinner.',
-    address: '319 Pine St, Jamestown',
-    website: 'https://www.shawbucks.com/',
-    hours: 'Mon–Sat 11am–10pm · Sun 11am–9pm',
+    emoji: '🌮',
+    description: 'Local Jamestown taqueria serving fresh tacos, burritos, and more. A go-to for a quick and delicious meal.',
+    address: 'Jamestown, NY',
     featured: false,
   },
   {
@@ -98,6 +96,15 @@ export const PLACES: Place[] = [
   },
 
   // ─── Drinks ───────────────────────────────────────────────────
+  {
+    id: 'cherry-lounge',
+    name: 'The Cherry Lounge',
+    category: 'drinks',
+    emoji: '🍒',
+    description: 'Downtown Jamestown cocktail lounge with a relaxed vibe. Good drinks, good crowd.',
+    address: 'Jamestown, NY',
+    featured: false,
+  },
   {
     id: 'brazil-lounge',
     name: 'Brazil Lounge',
