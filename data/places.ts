@@ -122,8 +122,9 @@ export const PLACES: Place[] = [
     name: 'The Cherry Lounge',
     category: 'drinks',
     emoji: '🍒',
-    description: 'Downtown Jamestown cocktail lounge with a relaxed vibe. Good drinks, good crowd.',
+    description: 'Full service bar and restaurant in the heart of downtown Jamestown.',
     address: 'Jamestown, NY',
+    website: 'https://www.facebook.com/CherryLoungeJTNY/',
     featured: false,
   },
   {
