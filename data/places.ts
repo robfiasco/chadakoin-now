@@ -117,7 +117,40 @@ export const PLACES: Place[] = [
     featured: false,
   },
 
+  {
+    id: 'art-of-flavors',
+    name: 'The Art of Flavors',
+    category: 'food',
+    emoji: '🌶️',
+    description: 'Authentic family-owned Mexican restaurant. 98% recommended on Facebook. Dine-in and in-store pickup.',
+    address: '679 Fairmount Ave, Jamestown',
+    website: 'https://www.facebook.com/artofflavorsJamestownNY',
+    hours: 'Mon–Sat 11am–8pm · Closed Sunday',
+    featured: false,
+  },
+
   // ─── Drinks ───────────────────────────────────────────────────
+  {
+    id: 'busti-tap-house',
+    name: 'Busti Tap House',
+    category: 'drinks',
+    emoji: '🍻',
+    description: 'Newly renovated restaurant and taphouse in the rolling hills of Busti — just outside Jamestown. Beautiful patio, full menu, catering available.',
+    address: '792 Busti Sugar Grove Rd, Jamestown',
+    website: 'https://www.bustitaphouse.com/',
+    hours: 'Wed–Thu 4:30–9pm · Fri 4:30–10pm · Sat 4–10pm · Sun 1–8pm',
+    featured: false,
+  },
+  {
+    id: 'the-swamp',
+    name: 'The Swamp',
+    category: 'drinks',
+    emoji: '🐊',
+    description: 'Casual, down-to-earth bar and grill with craft beer, wings, cocktails, pool, darts, and a jukebox. A Jamestown classic.',
+    address: '250 Jones and Gifford Ave, Jamestown',
+    hours: 'Closes 10pm',
+    featured: false,
+  },
   {
     id: 'cherry-lounge',
     name: 'The Cherry Lounge',
