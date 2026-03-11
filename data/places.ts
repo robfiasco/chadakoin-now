@@ -54,11 +54,13 @@ export const PLACES: Place[] = [
   },
   {
     id: 'davidsons',
-    name: "Davidson's",
+    name: "Davidson's Restaurant",
     category: 'food',
-    emoji: '🍽️',
-    description: 'Local Jamestown restaurant.',
-    address: 'Jamestown, NY',
+    emoji: '🐟',
+    description: "Family-owned since 1950 and celebrating 74 years. Famous for their fish fry — they sell over 3 tons of fish a month. Burgers, fried chicken, and steaks too. A true Chautauqua County institution.",
+    address: '398 E Fairmount Ave, Lakewood, NY',
+    website: 'https://www.davidsonsfishfry.com/',
+    hours: 'Check website for current hours',
     featured: false,
   },
   {
