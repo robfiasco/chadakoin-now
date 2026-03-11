@@ -55,12 +55,13 @@ function getEventColor(event: EventItem, theme: { acc: string; acc2: string; acc
   return slot ? theme[slot] : theme.acc3;
 }
 
-function formatEventDate(iso: string): { date: string; time: string } {
-  if (!iso) return { date: '—', time: '' };
+function formatEventDate(iso: string): { weekday: string; date: string; time: string } {
+  if (!iso) return { weekday: '', date: '—', time: '' };
   const d = new Date(iso);
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
   const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return { date, time };
+  return { weekday, date, time };
 }
 
 function getEventMonth(iso: string): string {
@@ -158,12 +159,13 @@ export default function EventsScreen() {
           </View>
         ) : (
           filtered.map((event, i) => {
-            const { date, time } = formatEventDate(event.startDate);
+            const { weekday, date, time } = formatEventDate(event.startDate);
             const accentColor = getEventColor(event, theme);
             return (
               // @ts-ignore
               <TouchableOpacity key={i} style={[styles.eventCard, panel, { borderLeftColor: accentColor, borderLeftWidth: 3 }]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)}>
                 <View style={styles.eventLeft}>
+                  {weekday ? <Text style={[styles.eventWeekday, { color: accentColor }]}>{weekday}</Text> : null}
                   <Text style={[styles.eventDate, { color: accentColor }]}>{date}</Text>
                   <Text style={styles.eventTime}>{time}</Text>
                 </View>
@@ -215,6 +217,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 4, paddingLeft: 2 },
   eventCard: { flexDirection: 'row', gap: 14, padding: 18, marginBottom: 8, alignItems: 'flex-start' },
   eventLeft: { alignItems: 'center', minWidth: 44 },
+  eventWeekday: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.5, opacity: 0.7, marginBottom: 1 },
   eventDate: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
   eventTime: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 3 },
   dividerV: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.07)' },
