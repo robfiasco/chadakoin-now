@@ -174,7 +174,7 @@ function stripHtml(html: string): string {
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
 // v2 prefix busts any stale v1 cache entries
-const CACHE_PREFIX = 'civic_v10_';
+const CACHE_PREFIX = 'civic_v11_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -789,6 +789,65 @@ async function fetchLOTD(): Promise<PodcastEpisode | null> {
   return episode;
 }
 
+// ─── Date extraction from article titles ─────────────────────────
+// WRFA articles embed event dates in natural language titles.
+// e.g. "Lecture Set For March 18", "Exhibition Opens Saturday"
+// We try to extract the real event date before falling back to pubDate.
+
+function extractEventDate(title: string, pubDateStr: string): string {
+  const pub = new Date(pubDateStr);
+  const t = title.toLowerCase();
+  const year = pub.getFullYear();
+
+  // Pattern: "March 18", "April 5th", "Feb. 14", etc.
+  const MONTHS: Record<string, number> = {
+    january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+    july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+    jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7,
+    aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  };
+  const monthPattern = new RegExp(
+    `\\b(${Object.keys(MONTHS).join('|')})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`, 'i'
+  );
+  const monthMatch = t.match(monthPattern);
+  if (monthMatch) {
+    const month = MONTHS[monthMatch[1].toLowerCase().replace('.', '')];
+    const day   = parseInt(monthMatch[2], 10);
+    if (month && day) {
+      const d = new Date(year, month - 1, day, 12, 0, 0);
+      // If the date is more than 2 months in the past, try next year
+      if (d < new Date(pub.getTime() - 60 * 24 * 60 * 60 * 1000)) {
+        d.setFullYear(year + 1);
+      }
+      return d.toISOString();
+    }
+  }
+
+  // Pattern: "opens saturday", "this friday", "next thursday", etc.
+  const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  for (let wi = 0; wi < WEEKDAYS.length; wi++) {
+    if (t.includes(WEEKDAYS[wi])) {
+      const pubDay = pub.getDay();
+      let diff = wi - pubDay;
+      if (diff <= 0) diff += 7; // always look forward
+      const d = new Date(pub);
+      d.setDate(pub.getDate() + diff);
+      d.setHours(12, 0, 0, 0);
+      return d.toISOString();
+    }
+  }
+
+  // Pattern: "tonight", "tomorrow"
+  if (t.includes('tonight')) {
+    const d = new Date(pub); d.setHours(19, 0, 0, 0); return d.toISOString();
+  }
+  if (t.includes('tomorrow')) {
+    const d = new Date(pub); d.setDate(pub.getDate() + 1); d.setHours(12, 0, 0, 0); return d.toISOString();
+  }
+
+  return pubDateStr; // fallback to publication date
+}
+
 // ─── WRFA events supplement ───────────────────────────────────────
 
 // Keyword list for event-like headlines
@@ -843,10 +902,12 @@ async function fetchWrfaEvents(): Promise<EventItem[]> {
           category = 'Community'; tags = ['Community'];
         }
 
+        const pubDate = getItemText(item.pubDate);
+        const startDate = extractEventDate(title, pubDate);
         return {
           title,
-          startDate: getItemText(item.pubDate),
-          endDate: getItemText(item.pubDate),
+          startDate,
+          endDate: startDate,
           location: 'Jamestown, NY',
           category,
           tags,
