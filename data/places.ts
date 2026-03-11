@@ -47,9 +47,10 @@ export const PLACES: Place[] = [
     name: 'The Eatery',
     category: 'food',
     emoji: '🍳',
-    description: 'Breakfast and brunch in Jamestown. A local favorite for starting your morning right.',
-    address: 'Jamestown, NY',
-    hours: 'Morning–early afternoon',
+    description: 'Breakfast and lunch in Jamestown. A local favorite for starting your morning right.',
+    address: '180 Fluvanna Ave, Jamestown',
+    website: 'https://www.yelp.com/biz/the-eatery-restaurant-jamestown',
+    hours: 'Daily 7am–2pm',
     featured: false,
   },
   {
