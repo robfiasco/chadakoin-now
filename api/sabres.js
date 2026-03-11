@@ -38,10 +38,23 @@ async function fetchJCC(signal) {
         const parts = score.split(',').map(s => s.trim());
         const wl    = parts[0]; // "W" or "L"
         const final = parts[1] ?? '';
+
+        // Skip entries with no real score (0-0 = postponed/cancelled/bad data)
+        if (final === '0-0') continue;
+
+        // Decode common HTML entities in opponent names
+        const opponentClean = opponent
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/^(at|vs\.?)\s*/i, '');
+
         items.push({
           date:     date.toISOString(),
           sport:    category,
-          opponent: opponent.replace(/^(at|vs\.?)\s*/i, ''),
+          opponent: opponentClean,
           isHome:   !opponent.toLowerCase().startsWith('at '),
           result:   wl,
           score:    final,
