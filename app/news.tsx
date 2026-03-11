@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity, Linking, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
@@ -13,7 +13,15 @@ function formatDate(str: string) {
 
 export default function NewsScreen() {
   const { theme } = useTheme();
-  const { news, loading, error } = useCivicData();
+  const civic = useCivicData();
+  const { news, loading, error } = civic;
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await civic.refresh();
+    setRefreshing(false);
+  }
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -36,7 +44,18 @@ export default function NewsScreen() {
 
       {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
         {loading ? (
           [1,2,3,4,5].map(i => (
             // @ts-ignore

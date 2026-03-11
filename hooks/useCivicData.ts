@@ -76,6 +76,7 @@ export interface CivicData {
   news: NewsItem[];
   latestEpisode: PodcastEpisode | null;
   lastUpdated: string | null;
+  refresh: () => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -107,7 +108,7 @@ const FEDERAL_HOLIDAYS_2026 = [
   '2026-11-11', '2026-11-26', '2026-12-25',
 ];
 
-const DEFAULTS: CivicData = {
+const DEFAULTS: Omit<CivicData, 'refresh'> = {
   loading: true,
   error: null,
   recycling: {
@@ -173,7 +174,7 @@ function stripHtml(html: string): string {
 }
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
-// v2 prefix busts any stale v1 cache entries
+// Bump the version suffix here to bust all stale cached data in the wild
 const CACHE_PREFIX = 'civic_v11_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
@@ -214,8 +215,9 @@ function computeParking(): ParkingData {
     active: true,
     side,
     isWinter: true,
+    // Date flips at midnight but drivers have until 10 AM to move their car
     switchTime: '10:00 AM',
-    rule: 'Even date → even side. Odd date → odd side. Flip at 10:00 AM.',
+    rule: 'Even date → even side. Odd date → odd side. Move by 10:00 AM.',
   };
 }
 
@@ -327,8 +329,8 @@ async function fetchRecycling(): Promise<Pick<RecyclingData, 'thisWeek' | 'nextW
   const nextItem = thisIdx >= 0 && thisIdx + 1 < sorted.length ? sorted[thisIdx + 1] : null;
 
   const result = {
-    thisWeek: thisItem ? parseRecyclingTitle(getItemText(thisItem.title)) : { material: '—', dateRange: '—' },
-    nextWeek: nextItem ? parseRecyclingTitle(getItemText(nextItem.title)) : { material: '—', dateRange: '—' },
+    thisWeek: thisItem ? parseRecyclingTitle(getItemText(thisItem.title)) : { material: '—', dateRange: '—', exclusions: '' },
+    nextWeek: nextItem ? parseRecyclingTitle(getItemText(nextItem.title)) : { material: '—', dateRange: '—', exclusions: '' },
   };
 
   await setCache('recycling', result);
@@ -372,15 +374,7 @@ async function fetchAlerts(): Promise<AlertsData> {
 // Known Jamestown events that may not appear in any feed.
 // Add new entries here as they're confirmed. Keep sorted by startDate.
 const CURATED_EVENTS: EventItem[] = [
-  {
-    title: 'Board of Education Meeting',
-    startDate: '2026-03-09T18:00:00',
-    endDate: '2026-03-09T19:00:00',
-    location: '197 Martin Rd, Jamestown',
-    category: 'Civic',
-    tags: ['JPS', 'Civic'],
-    link: 'https://www.jpsny.org/calendar',
-  },
+
   {
     title: 'V Boys Basketball — Far West Regionals vs. Fairport',
     startDate: '2026-03-13T17:00:00',
@@ -509,15 +503,7 @@ const CURATED_EVENTS: EventItem[] = [
   },
 
   // ─── Fenton History Center ────────────────────────────────────
-  {
-    title: 'Trivia Night at Shawbucks',
-    startDate: '2026-03-11T19:00:00',
-    endDate:   '2026-03-11T21:00:00',
-    location: 'Shawbucks, Jamestown',
-    category: 'Community',
-    tags: ['Fenton', 'Community'],
-    link: 'https://fentonhistorycenter.org/events2/',
-  },
+
   {
     title: 'Trivia Night at Shawbucks',
     startDate: '2026-03-18T19:00:00',
@@ -1021,7 +1007,7 @@ async function fetchNews(): Promise<NewsItem[]> {
 
 // ─── Main hook ────────────────────────────────────────────────────
 export function useCivicData(): CivicData {
-  const [state, setState] = useState<CivicData>(DEFAULTS);
+  const [state, setState] = useState<Omit<CivicData, 'refresh'>>(DEFAULTS);
 
   const load = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -1075,7 +1061,7 @@ export function useCivicData(): CivicData {
       ? lotdResult.value
       : null;
 
-    // Library failure is non-critical — don't surface an error banner for it
+    // Library and county-alerts failures are non-critical — intentionally excluded from error banner
     const anyFailed = [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult]
       .some(r => r.status === 'rejected');
 
@@ -1094,5 +1080,5 @@ export function useCivicData(): CivicData {
 
   useEffect(() => { load(); }, [load]);
 
-  return state;
+  return { ...state, refresh: load };
 }

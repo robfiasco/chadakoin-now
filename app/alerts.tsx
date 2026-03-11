@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Linking, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, Linking, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -15,8 +15,16 @@ function formatDate(dateStr: string): string {
 
 export default function AlertsScreen() {
   const { theme } = useTheme();
-  const { alerts, loading, error } = useCivicData();
+  const civic = useCivicData();
+  const { alerts, loading, error } = civic;
   const isClear = !alerts.hasActiveAlerts;
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await civic.refresh();
+    setRefreshing(false);
+  }
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -33,7 +41,18 @@ export default function AlertsScreen() {
 
       {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
 
         {/* Status card */}
         {loading ? (

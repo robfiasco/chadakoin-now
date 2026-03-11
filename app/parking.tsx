@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -9,9 +9,17 @@ import { useCivicData, computeParkingSchedule } from '../hooks/useCivicData';
 
 export default function ParkingScreen() {
   const { theme } = useTheme();
-  const { parking, loading, error } = useCivicData();
+  const civic = useCivicData();
+  const { parking, loading, error } = civic;
+  const [refreshing, setRefreshing] = useState(false);
 
   const schedule = computeParkingSchedule();
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await civic.refresh();
+    setRefreshing(false);
+  }
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -28,7 +36,18 @@ export default function ParkingScreen() {
 
       {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
 
         {/* Today hero */}
         {/* @ts-ignore */}
@@ -65,7 +84,7 @@ export default function ParkingScreen() {
           <View style={[styles.halfCard, panel]}>
             <Ionicons name="time-outline" size={18} color={theme.acc} />
             <Text style={[styles.halfLabel, { color: theme.acc45 }]}>SWITCH</Text>
-            <Text style={styles.halfValue}>Midnight each day</Text>
+            <Text style={styles.halfValue}>Switches at {parking.switchTime}</Text>
           </View>
         </View>
 
@@ -101,7 +120,9 @@ export default function ParkingScreen() {
         </View>
 
         <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
-          Updated today · 6:00 AM
+          {civic.lastUpdated
+            ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : 'Loading…'}
         </Text>
       </ScrollView>
     </ThemedBackground>

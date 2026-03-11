@@ -4,6 +4,38 @@ All notable changes to Chadakoin Now are documented here.
 
 ---
 
+## [1.0.1] — 2026-03-11
+
+### Visitor Guide — Content Expansion
+- Added **Where to Stay** category: Hotel Jamestown (featured), Hampton Inn, Airbnb/VRBO guidance
+- Added **Shawbucks Restaurant & Bar** to food listings
+- Filled in hours across all places (Comedy Center, RTPI, Fenton, Reg Lenna, Lifted, Honest John's)
+- Chautauqua Lake now has a website link and mentions Celoron beach access
+- Chautauqua Institution description updated to note June–August season
+- Category label: "Pizza & Food" → "Food", "Stay" → "Where to Stay"
+
+### Pull-to-Refresh
+- Added pull-to-refresh (`RefreshControl`) to all 7 screens: Home, News, Events, Parking, Recycling, Alerts, Sports
+
+### Dynamic Timestamps
+- Parking, Recycling, and Events screens now show live "Updated HH:MM" instead of hardcoded "Updated today · 6:00 AM"
+
+### Parking Rule Accuracy
+- Switch time corrected to **10:00 AM** (enforcement deadline for moving your car)
+- Rule text updated: "Flips at midnight" → "Move by 10:00 AM"
+
+### Visitor Preference Persistence
+- `visitorMode` (🧳/🏠 toggle) now saved to AsyncStorage and restored on next app launch
+
+### Bug Fixes & Cleanup
+- Removed 7 dead `StyleSheet` entries from `index.tsx`
+- Fixed stale and inaccurate comments in `index.tsx`, `useCivicData.ts`, `sports.tsx`
+- Fixed TypeScript error: recycling fallback objects were missing `exclusions` field
+- Pruned 2 past curated events (Board of Education Meeting Mar 9, Trivia Night Mar 11)
+- Added `JCC native limitation` and `parseGame` usage comments in `sports.tsx`
+
+---
+
 ## [1.0.0] — 2026-03-10
 
 ### First public-ready release

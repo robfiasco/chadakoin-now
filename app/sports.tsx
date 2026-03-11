@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
-  TouchableOpacity, Linking, Image, Animated, Easing,
+  TouchableOpacity, Linking, Image, Animated, Easing, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,6 +48,8 @@ function sportEmoji(sport: string): string {
 
 // ─── Fetch ────────────────────────────────────────────────────────
 
+// Transforms an ESPN-format game event into our GameResult shape.
+// Used by the web API route (/api/sabres); the native path uses the NHL API directly.
 function parseGame(event: any): GameResult | null {
   try {
     const comp = event.competitions?.[0]; if (!comp) return null;
@@ -90,7 +92,18 @@ async function fetchSabres(): Promise<SabresData> {
   const now = new Date();
   const past = events.filter(e => e.gameState === 'FINAL' || e.gameState === 'OFF').sort((a, b) => new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime());
   const upcoming = events.filter(e => (e.gameState === 'FUT' || e.gameState === 'PRE') && new Date(e.startTimeUTC) >= now).sort((a, b) => new Date(a.gameDate).getTime() - new Date(b.gameDate).getTime());
-  const topScorers = (statsJson?.skaters ?? []).sort((a: any, b: any) => (b.points ?? 0) - (a.points ?? 0)).slice(0, 5).map((p: any) => ({ name: `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(), position: p.positionCode ?? '', goals: p.goals ?? 0, assists: p.assists ?? 0, points: p.points ?? 0, headshot: p.headshot ?? '' }));
+  const topScorers: Scorer[] = (statsJson?.skaters ?? [])
+    .sort((a: any, b: any) => (b.points ?? 0) - (a.points ?? 0))
+    .slice(0, 5)
+    .map((p: any) => ({
+      name: `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(),
+      position: p.positionCode ?? '',
+      goals: p.goals ?? 0,
+      assists: p.assists ?? 0,
+      points: p.points ?? 0,
+      headshot: p.headshot ?? '',
+    }));
+  // JCC results are only available via the web API route — native returns []
   return { record, standing, recentGame: past[0] ? parseGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc: [], news: [] };
 }
 
@@ -171,6 +184,7 @@ export default function SportsScreen() {
   const { theme } = useTheme();
   const [data, setData]       = useState<SabresData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const glassWeb = Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {};
   const innerCard = { borderRadius: 14, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.18)`, ...glassWeb };
@@ -179,6 +193,12 @@ export default function SportsScreen() {
     fetchSabres().then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  async function onRefresh() {
+    setRefreshing(true);
+    try { const d = await fetchSabres(); setData(d); } catch {}
+    setRefreshing(false);
+  }
+
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
@@ -186,7 +206,18 @@ export default function SportsScreen() {
         <Text style={[styles.subhead, { color: theme.acc55 }]}>Local teams · Jamestown</Text>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
 
         {/* ── Tarp Skunks banner ────────────────────── */}
         <TouchableOpacity

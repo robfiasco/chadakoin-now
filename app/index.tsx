@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image,
-  TouchableOpacity, Animated, Easing, Platform, Linking,
+  TouchableOpacity, Animated, Easing, Platform, Linking, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { PLACES, PLACE_CATEGORIES, PlaceCategory } from '../data/places';
 import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NowPlaying {
   title: string;
@@ -54,7 +55,7 @@ function getDateBadge() {
 function getDaysUntilWinterEnds(): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // Winter ends Apr 1 — if we're past Apr 1 this year we'd be in summer, so always use next Apr 1
+  // If we're already into April or later, target next year's Apr 1
   const year = today.getMonth() >= 3 ? today.getFullYear() + 1 : today.getFullYear();
   const end = new Date(year, 3, 1); // April 1
   return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -179,9 +180,7 @@ const tsStyles = StyleSheet.create({
     zIndex: 300,
   },
   option: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  optionText: { flex: 1 },
   optionLabel: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
-  optionSub: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 },
 });
 
 // ─── Stat chip ────────────────────────────────────────────────────
@@ -206,8 +205,24 @@ export default function HomeScreen() {
   const [visitorMode, setVisitorMode] = useState(false);
   const [radioPlaying, setRadioPlaying] = useState(false);
   const [radioLoading, setRadioLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const soundRef = useRef<Audio.Sound | null>(null);
   const civic = useCivicData();
+
+  // Load persisted visitor preference on first mount
+  useEffect(() => {
+    AsyncStorage.getItem('visitorMode').then(val => {
+      if (val === 'true') setVisitorMode(true);
+    }).catch(() => {});
+  }, []);
+
+  function toggleVisitorMode() {
+    setVisitorMode(v => {
+      const next = !v;
+      AsyncStorage.setItem('visitorMode', String(next)).catch(() => {});
+      return next;
+    });
+  }
 
   // Clean up audio on unmount
   useEffect(() => {
@@ -250,6 +265,16 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await Promise.all([
+      fetchWeather().then(setWeather).catch(() => {}),
+      fetchNowPlaying().then(setNowPlaying).catch(() => {}),
+      civic.refresh(),
+    ]);
+    setRefreshing(false);
+  }
 
   // Poll CDIR every 30 seconds
   useEffect(() => {
@@ -332,7 +357,7 @@ export default function HomeScreen() {
       {/* ─── Visitor mode toggle ──────────────────── */}
       <TouchableOpacity
         activeOpacity={0.75}
-        onPress={() => setVisitorMode(v => !v)}
+        onPress={toggleVisitorMode}
         // @ts-ignore
         style={[styles.visitorToggle, {
           backgroundColor: visitorMode ? `rgba(${theme.acc2RGB},0.15)` : `rgba(${theme.accRGB},0.06)`,
@@ -374,7 +399,19 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
 
         {/* ─── Weather ──────────────────────────────── */}
         {/* @ts-ignore */}
@@ -735,7 +772,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-
           <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.3)` }]}>
             {civic.lastUpdated
               ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -847,12 +883,7 @@ const styles = StyleSheet.create({
   factCard: { borderLeftWidth: 3 },
   factText: { fontFamily: 'Outfit', fontSize: 14, lineHeight: 22 },
 
-  // City news
-  newsCard: { overflow: 'hidden' },
-  newsItem: { paddingVertical: 14, paddingHorizontal: 20, gap: 4 },
-  newsTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
-  newsExcerpt: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 16, marginTop: 2 },
-  newsDate: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.6 },
+
 
   // LOTD
   lotdCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
@@ -879,7 +910,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 14,
     padding: 16, marginTop: 10,
   },
-  cdirLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   cdirArt: { width: 52, height: 52, borderRadius: 10 },
   cdirDotWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   cdirDot: {

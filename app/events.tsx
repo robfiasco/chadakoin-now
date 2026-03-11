@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Linking, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -71,8 +71,16 @@ function getEventMonth(iso: string): string {
 
 export default function EventsScreen() {
   const { theme } = useTheme();
-  const { events, loading, error } = useCivicData();
+  const civic = useCivicData();
+  const { events, loading, error } = civic;
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await civic.refresh();
+    setRefreshing(false);
+  }
 
   // Derive available months from live events
   const months = Array.from(new Set(events.map(e => getEventMonth(e.startDate)))).slice(0, 4);
@@ -118,7 +126,18 @@ export default function EventsScreen() {
 
       {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
         <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>{currentMonth.toUpperCase()} EVENTS</Text>
 
         {loading ? (
@@ -176,7 +195,9 @@ export default function EventsScreen() {
         )}
 
         <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
-          Refreshes every hour
+          {civic.lastUpdated
+            ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : 'Loading…'}
         </Text>
       </ScrollView>
     </ThemedBackground>

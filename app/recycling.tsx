@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -9,7 +9,15 @@ import { useCivicData } from '../hooks/useCivicData';
 
 export default function RecyclingScreen() {
   const { theme } = useTheme();
-  const { recycling, loading, error } = useCivicData();
+  const civic = useCivicData();
+  const { recycling, loading, error } = civic;
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await civic.refresh();
+    setRefreshing(false);
+  }
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -26,7 +34,18 @@ export default function RecyclingScreen() {
 
       {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
+          />
+        }
+      >
 
         <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>THIS WEEK</Text>
         {/* @ts-ignore */}
@@ -97,7 +116,9 @@ export default function RecyclingScreen() {
         ))}
 
         <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
-          Updated today · 6:00 AM
+          {civic.lastUpdated
+            ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : 'Loading…'}
         </Text>
       </ScrollView>
     </ThemedBackground>
