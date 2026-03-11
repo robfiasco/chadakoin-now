@@ -28,7 +28,7 @@ interface SabresData {
 const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
-const JCC_LOGO    = 'https://jccjayhawks.com/images/logos/site/site.png';
+const JCC_LOGO    = 'https://jccjayhawks.com/images/setup/logo-jayhawk.png';
 
 function sportEmoji(sport: string): string {
   const s = sport.toLowerCase();
