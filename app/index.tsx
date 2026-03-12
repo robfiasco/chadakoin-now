@@ -642,6 +642,8 @@ export default function HomeScreen() {
                   color: theme.acc2,
                   textShadowColor: `rgba(${theme.acc2RGB},0.4)`,
                   textShadowRadius: 30,
+                  fontSize: materialName.length > 20 ? 22 : 28,
+                  lineHeight: materialName.length > 20 ? 26 : 34,
                 }]}>
                   {materialName}
                 </Text>

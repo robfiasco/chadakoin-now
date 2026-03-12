@@ -183,7 +183,7 @@ function stripHtml(html: string): string {
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
 // Bump the version suffix here to bust all stale cached data in the wild
-const CACHE_PREFIX = 'civic_v14_';
+const CACHE_PREFIX = 'civic_v15_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -310,6 +310,8 @@ function parseRecyclingTitle(summary: string, description: string, start: Date |
   const exclusionMatch = searchStr.match(/(:|-|\.)?\s*[Nn]o\s+(.+?)(?:,?\s*$|\.\s*$)/);
   if (exclusionMatch) {
     exclusions = exclusionMatch[2].replace(/[.,]\s*$/, '').trim();
+    // Strip trailing URLs if they got caught in the text
+    exclusions = exclusions.replace(/\s*https?:\/\/[^\s]+$/, '').trim();
   }
 
   // Map to friendly material names based on SUMMARY
