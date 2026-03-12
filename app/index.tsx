@@ -650,6 +650,11 @@ export default function HomeScreen() {
                 {materialDetail ? (
                   <Text style={styles.recyclingDetail}>{materialDetail}</Text>
                 ) : null}
+                {recycling.thisWeek.note ? (
+                  <Text style={[styles.recyclingDetail, { color: `rgba(${theme.acc2RGB},0.6)`, marginTop: -8 }]}>
+                    {recycling.thisWeek.note}
+                  </Text>
+                ) : null}
                 {recycling.thisWeek.exclusions ? (
                   <View style={[styles.recyclingNote, { borderTopColor: `rgba(${theme.acc2RGB},0.1)` }]}>
                     <Text style={[styles.recyclingNoteText, { color: `rgba(${theme.acc2RGB},0.5)` }]}>

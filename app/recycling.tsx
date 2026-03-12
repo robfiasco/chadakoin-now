@@ -114,6 +114,11 @@ export default function RecyclingScreen() {
                           {detail && week.isThis ? (
                             <Text style={styles.materialDetail}>{detail}</Text>
                           ) : null}
+                          {week.note && week.isThis ? (
+                            <Text style={[styles.materialDetail, { color: `rgba(255,255,255,0.7)` }]}>
+                              • {week.note}
+                            </Text>
+                          ) : null}
                           {week.exclusions && week.isThis ? (
                             <Text style={[styles.exclusions, { color: `rgba(${theme.accRGB},0.5)` }]}>
                               ✕ {week.exclusions}

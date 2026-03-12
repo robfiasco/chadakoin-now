@@ -9,6 +9,7 @@ export interface RecyclingWeek {
   material: string;
   dateRange: string;
   exclusions: string;
+  note?: string;
   startDate: string;   // ISO date string for sorting (YYYY-MM-DD)
   emoji: string;       // material emoji for display
 }
@@ -183,7 +184,7 @@ function stripHtml(html: string): string {
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
 // Bump the version suffix here to bust all stale cached data in the wild
-const CACHE_PREFIX = 'civic_v15_';
+const CACHE_PREFIX = 'civic_v16_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -314,6 +315,13 @@ function parseRecyclingTitle(summary: string, description: string, start: Date |
     exclusions = exclusions.replace(/\s*https?:\/\/[^\s]+$/, '').trim();
   }
 
+  // Extract special instructions (like 'Flatten all boxes...')
+  let note = '';
+  const noteMatch = description.match(/\*\s*([Ff]latten[^\*]+)/);
+  if (noteMatch) {
+    note = noteMatch[1].trim();
+  }
+
   // Map to friendly material names based on SUMMARY
   let material: string;
   if (lowerSummary.includes('cardboard') || lowerSummary.includes('corrugated') || lowerSummary.includes('box board') || lowerSummary.includes('boxboard')) {
@@ -342,7 +350,7 @@ function parseRecyclingTitle(summary: string, description: string, start: Date |
   const startDate = start ? start.toISOString().split('T')[0] : '';
   const emoji = recyclingEmoji(lowerSummary);
 
-  return { material, dateRange, exclusions, startDate, emoji };
+  return { material, dateRange, exclusions, note, startDate, emoji };
 }
 
 async function fetchRecyclingICS(): Promise<RecyclingData> {
