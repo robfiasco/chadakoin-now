@@ -183,7 +183,7 @@ function stripHtml(html: string): string {
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
 // Bump the version suffix here to bust all stale cached data in the wild
-const CACHE_PREFIX = 'civic_v12_';
+const CACHE_PREFIX = 'civic_v13_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -300,30 +300,33 @@ function recyclingEmoji(lower: string): string {
   return '♻️';
 }
 
-function parseRecyclingTitle(title: string, start: Date | null = null, end: Date | null = null): RecyclingWeek {
-  const lower = title.toLowerCase();
+function parseRecyclingTitle(summary: string, description: string, start: Date | null = null, end: Date | null = null): RecyclingWeek {
+  const lowerSummary = summary.toLowerCase();
+  const lowerDesc = description.toLowerCase();
+  
+  // Extract exclusions from either summary or description (look for "no " or "No ")
+  let exclusions = '';
+  const searchStr = summary + ' ' + description;
+  const exclusionMatch = searchStr.match(/(:|-|\.)?\s*[Nn]o\s+(.+?)(?:,?\s*$|\.\s*$)/);
+  if (exclusionMatch) {
+    exclusions = exclusionMatch[2].replace(/[.,]\s*$/, '').trim();
+  }
 
-  // Extract exclusions — everything after "no " following a dash/colon separator
-  const exclusionMatch = title.match(/[-:]\s*[Nn]o\s+(.+?)(?:,?\s*)$/);
-  const exclusions = exclusionMatch
-    ? exclusionMatch[1].replace(/,\s*$/, '').trim()
-    : '';
-
-  // Map to friendly material names
+  // Map to friendly material names based on SUMMARY
   let material: string;
-  if (lower.includes('cardboard') || lower.includes('corrugated') || lower.includes('box board')) {
+  if (lowerSummary.includes('cardboard') || lowerSummary.includes('corrugated') || lowerSummary.includes('box board') || lowerSummary.includes('boxboard')) {
     material = 'Corrugated Cardboard & Boxboard';
-  } else if (lower.includes('plastic')) {
+  } else if (lowerSummary.includes('plastic')) {
     material = 'Plastics (bottles, jugs, containers)';
-  } else if (lower.includes('paper')) {
+  } else if (lowerSummary.includes('paper')) {
     material = 'Paper (newspaper, mail, magazines, office paper)';
-  } else if (lower.includes('metal') || lower.includes('tin') || lower.includes('alumin')) {
+  } else if (lowerSummary.includes('metal') || lowerSummary.includes('tin') || lowerSummary.includes('alumin')) {
     material = 'Metals & Cans (aluminum, tin)';
-  } else if (lower.includes('glass')) {
+  } else if (lowerSummary.includes('glass')) {
     material = 'Glass';
   } else {
-    const cut = title.match(/^(.+?)(?:\s+(?:week|only|recycling)\b|\s*[-:—–])/i);
-    material = cut ? cut[1].trim() : title.replace(/,\s*$/, '').trim();
+    const cut = summary.match(/^(.+?)(?:\s+(?:week|only|recycling)\b|\s*[-:—–])/i);
+    material = cut ? cut[1].trim() : summary.replace(/,\s*$/, '').trim();
   }
 
   // Build human-friendly date range e.g. "Mar 9 – Mar 13"
@@ -335,7 +338,7 @@ function parseRecyclingTitle(title: string, start: Date | null = null, end: Date
   }
 
   const startDate = start ? start.toISOString().split('T')[0] : '';
-  const emoji = recyclingEmoji(lower);
+  const emoji = recyclingEmoji(lowerSummary);
 
   return { material, dateRange, exclusions, startDate, emoji };
 }
@@ -393,9 +396,8 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
     ].some(kw => lower.includes(kw));
     if (!isRecycling) continue;
 
-    // Use description for exclusions if summary doesn't have them
-    const titleForParsing = summary.includes('No ') || summary.includes('no ') ? summary : description || summary;
-    recyclingWeeks.push(parseRecyclingTitle(titleForParsing, start, end));
+    // Pass both summary and description
+    recyclingWeeks.push(parseRecyclingTitle(summary, description, start, end));
   }
 
   // Sort chronologically (ICS is in reverse order)
