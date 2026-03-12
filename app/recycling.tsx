@@ -108,9 +108,13 @@ export default function RecyclingScreen() {
         )}
 
         <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>ROTATION</Text>
-        {['Week A: Cardboard & Paper', 'Week B: Plastic, Cans & Glass'].map((r, i) => (
+        {[
+          'Week A: Corrugated Cardboard & Boxboard',
+          'Week B: Plastic Recycling',
+          'Week C: Paper Recycling',
+        ].map((r, i, arr) => (
           // @ts-ignore
-          <View key={i} style={[styles.card, panel, { marginBottom: i === 0 ? 8 : 0 }]}>
+          <View key={i} style={[styles.card, panel, { marginBottom: i < arr.length - 1 ? 8 : 0 }]}>
             <Text style={styles.rotationText}>{r}</Text>
           </View>
         ))}
