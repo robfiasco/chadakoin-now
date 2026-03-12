@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const upstream = await fetch(decodeURIComponent(url), {
       headers: {
         'User-Agent': 'ChadakoinNow/1.0',
-        'Accept': 'application/rss+xml, application/xml, application/json, text/xml, */*',
+        'Accept': 'text/calendar, application/rss+xml, application/xml, application/json, text/xml, */*',
       },
     });
 

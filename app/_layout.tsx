@@ -44,7 +44,13 @@ function ThemedTabs() {
           tabBarIcon: tabIcon('home', 'home-outline'),
         }}
       />
-      <Tabs.Screen name="recycling" options={{ href: null }} />
+      <Tabs.Screen
+        name="recycling"
+        options={{
+          title: 'Recycling',
+          tabBarIcon: tabIcon('leaf', 'leaf-outline'),
+        }}
+      />
       <Tabs.Screen name="parking" options={{ href: null }} />
       <Tabs.Screen name="alerts" options={{ href: null }} />
       <Tabs.Screen
