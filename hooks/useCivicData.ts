@@ -183,7 +183,7 @@ function stripHtml(html: string): string {
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
 // Bump the version suffix here to bust all stale cached data in the wild
-const CACHE_PREFIX = 'civic_v13_';
+const CACHE_PREFIX = 'civic_v14_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -419,11 +419,17 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   const nextWeek     = recyclingWeeks[thisIdx + 1] ?? EMPTY_WEEK;
   const upcomingWeeks = recyclingWeeks.slice(thisIdx + 2, thisIdx + 6);
 
-  // Holiday delay: is there a holiday date within this pickup week?
+  // Holiday delay: is there a holiday date within this pickup's 7-day week?
   const thisStart = thisWeek.startDate;
-  const thisEnd   = thisWeek.dateRange.split('–')[1]?.trim() ?? '';
-  const holidayDelay = holidayDates.some(d => d >= thisStart);
-  const affectedDays = holidayDates.filter(d => d >= thisStart);
+  let thisEnd = '';
+  if (thisStart) {
+    const endD = new Date(thisStart + 'T12:00:00Z');
+    endD.setDate(endD.getDate() + 6);
+    thisEnd = endD.toISOString().split('T')[0];
+  }
+  
+  const holidayDelay = thisStart ? holidayDates.some(d => d >= thisStart && d <= thisEnd) : false;
+  const affectedDays = thisStart ? holidayDates.filter(d => d >= thisStart && d <= thisEnd) : [];
 
   const result: RecyclingData = {
     thisWeek,
