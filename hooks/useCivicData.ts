@@ -9,11 +9,14 @@ export interface RecyclingWeek {
   material: string;
   dateRange: string;
   exclusions: string;
+  startDate: string;   // ISO date string for sorting (YYYY-MM-DD)
+  emoji: string;       // material emoji for display
 }
 
 export interface RecyclingData {
   thisWeek: RecyclingWeek;
   nextWeek: RecyclingWeek;
+  upcomingWeeks: RecyclingWeek[];  // next 4 weeks beyond nextWeek
   holidayDelay: boolean;
   affectedDays: string[];
 }
@@ -82,7 +85,9 @@ export interface CivicData {
 // ─── Constants ────────────────────────────────────────────────────
 
 const FEEDS = {
-  recycling: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Recycling-Calendar-24',
+  // BPU iCalendar feed — full year recycling schedule including Metal weeks & holiday events
+  recyclingICS: 'https://www.jamestownnybpu.gov/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24',
+  // recyclingRSS (legacy, only shows ~6 weeks): 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Recycling-Calendar-24',
   alerts: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=63&CID=Alerts-11',
   eventsFallback: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Jamestown-Board-Meeting-Calendar-23',
   news: 'https://www.wrfalp.com/feed/',
@@ -108,12 +113,15 @@ const FEDERAL_HOLIDAYS_2026 = [
   '2026-11-11', '2026-11-26', '2026-12-25',
 ];
 
+const EMPTY_WEEK: RecyclingWeek = { material: '—', dateRange: '—', exclusions: '', startDate: '', emoji: '♻️' };
+
 const DEFAULTS: Omit<CivicData, 'refresh'> = {
   loading: true,
   error: null,
   recycling: {
-    thisWeek: { material: '—', dateRange: '—', exclusions: '' },
-    nextWeek: { material: '—', dateRange: '—', exclusions: '' },
+    thisWeek: EMPTY_WEEK,
+    nextWeek: EMPTY_WEEK,
+    upcomingWeeks: [],
     holidayDelay: false,
     affectedDays: [],
   },
@@ -264,21 +272,44 @@ function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
   return { hasDelay: affected.length > 0, affectedDays: affected };
 }
 
-// ─── Recycling fetcher ────────────────────────────────────────────
-// BPU title formats:
+// ─── Recycling ICS fetcher ────────────────────────────────────────
+// BPU iCalendar feed: full year schedule, 4 material types + holiday delay events.
+// Material SUMMARY formats:
 //   "Corrugated Cardboard & Box Board Only"
 //   "Plastic Recycling- no plastic bags, no cat litter buckets,"
 //   "Paper Recycling Week: No gift wrap, tissues/napkins, boxes or shredded paper,"
-function parseRecyclingTitle(title: string): RecyclingWeek {
+//   "Metal Recycling: Aluminum & Tin - Food and Beverage Containers ONLY."
+// Holiday SUMMARY formats: "LABOR DAY - NO GARBAGE...", "CHRISTMAS DAY = NO...", etc.
+
+function parseIcsDate(raw: string): Date | null {
+  // Handles "20260309T120000" and "20260309" (date-only) forms from DTSTART/DTEND
+  const clean = raw.replace(/.*:/,'').trim();    // strip "TZID=...:"
+  if (clean.length >= 8) {
+    const y = clean.slice(0,4), mo = clean.slice(4,6), d = clean.slice(6,8);
+    const h = clean.slice(9,11)||'00', mi = clean.slice(11,13)||'00';
+    return new Date(`${y}-${mo}-${d}T${h}:${mi}:00`);
+  }
+  return null;
+}
+
+function recyclingEmoji(lower: string): string {
+  if (lower.includes('cardboard') || lower.includes('corrugated') || lower.includes('box board')) return '📦';
+  if (lower.includes('plastic')) return '🧴';
+  if (lower.includes('paper')) return '📰';
+  if (lower.includes('metal') || lower.includes('tin') || lower.includes('alumin')) return '🥫';
+  return '♻️';
+}
+
+function parseRecyclingTitle(title: string, start: Date | null = null, end: Date | null = null): RecyclingWeek {
   const lower = title.toLowerCase();
 
-  // Extract exclusions — everything after "no " following a separator
+  // Extract exclusions — everything after "no " following a dash/colon separator
   const exclusionMatch = title.match(/[-:]\s*[Nn]o\s+(.+?)(?:,?\s*)$/);
   const exclusions = exclusionMatch
     ? exclusionMatch[1].replace(/,\s*$/, '').trim()
     : '';
 
-  // Map to friendly material names with specifics
+  // Map to friendly material names
   let material: string;
   if (lower.includes('cardboard') || lower.includes('corrugated') || lower.includes('box board')) {
     material = 'Corrugated Cardboard & Boxboard';
@@ -286,51 +317,118 @@ function parseRecyclingTitle(title: string): RecyclingWeek {
     material = 'Plastics (bottles, jugs, containers)';
   } else if (lower.includes('paper')) {
     material = 'Paper (newspaper, mail, magazines, office paper)';
+  } else if (lower.includes('metal') || lower.includes('tin') || lower.includes('alumin')) {
+    material = 'Metals & Cans (aluminum, tin)';
   } else if (lower.includes('glass')) {
     material = 'Glass';
-  } else if (lower.includes('metal') || lower.includes('can') || lower.includes('tin')) {
-    material = 'Metals & Cans';
   } else {
     const cut = title.match(/^(.+?)(?:\s+(?:week|only|recycling)\b|\s*[-:—–])/i);
     material = cut ? cut[1].trim() : title.replace(/,\s*$/, '').trim();
   }
 
-  return { material, dateRange: '', exclusions };
+  // Build human-friendly date range e.g. "Mar 9 – Mar 13"
+  let dateRange = '';
+  if (start && end) {
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // DTEND in ICS is exclusive (23:59:00 of end day), so same day = last day of pickup window
+    dateRange = `${fmt(start)} – ${fmt(end)}`;
+  }
+
+  const startDate = start ? start.toISOString().split('T')[0] : '';
+  const emoji = recyclingEmoji(lower);
+
+  return { material, dateRange, exclusions, startDate, emoji };
 }
 
-async function fetchRecycling(): Promise<Pick<RecyclingData, 'thisWeek' | 'nextWeek'>> {
-  const cached = await getCached<Pick<RecyclingData, 'thisWeek' | 'nextWeek'>>('recycling', TTL.recycling);
+async function fetchRecyclingICS(): Promise<RecyclingData> {
+  const cached = await getCached<RecyclingData>('recycling', TTL.recycling);
   if (cached) return cached;
 
-  const res = await fetch(proxyUrl(FEEDS.recycling));
-  if (!res.ok) throw new Error('Recycling fetch failed');
+  const res = await fetch(proxyUrl(FEEDS.recyclingICS));
+  if (!res.ok) throw new Error(`Recycling ICS fetch failed: ${res.status}`);
   const text = await res.text();
-  const items = getRssItems(text);
 
-  const now = new Date();
+  // Parse VEVENT blocks from ICS
+  const eventRx = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
+  const fieldRx = /^([A-Z\-]+(?:;[^:]+)?):(.*)/;
 
-  // Sort by pubDate: oldest first, then find straddling entry
-  const sorted = [...items].sort((a, b) => {
-    const da = new Date(getItemText(a.pubDate)).getTime();
-    const db = new Date(getItemText(b.pubDate)).getTime();
-    return da - db;
-  });
+  const recyclingWeeks: RecyclingWeek[] = [];
+  const holidayDates: string[] = [];
+  let m;
 
-  // "This week" = most recent item whose pubDate is <= now
+  while ((m = eventRx.exec(text)) !== null) {
+    const block = m[1];
+
+    // Unfold ICS line continuations (lines starting with space/tab continue previous line)
+    const unfolded = block.replace(/\r?\n[ \t]/g, '');
+    const lines = unfolded.split(/\r?\n/);
+
+    let summary = '', dtstart = '', dtend = '', description = '';
+    for (const line of lines) {
+      const fm = fieldRx.exec(line);
+      if (!fm) continue;
+      const [, key, val] = fm;
+      const k = key.split(';')[0].toUpperCase();
+      if (k === 'SUMMARY')     summary     = val.replace(/\\,/g, ',').replace(/\\n/g, ' ').trim();
+      if (k === 'DTSTART')     dtstart     = val.trim();
+      if (k === 'DTEND')       dtend       = val.trim();
+      if (k === 'DESCRIPTION') description = val.replace(/\\,/g, ',').replace(/\\n/g, ' ').trim();
+    }
+
+    if (!summary || !dtstart) continue;
+
+    const lower = summary.toLowerCase();
+    const start = parseIcsDate(dtstart);
+    const end   = parseIcsDate(dtend);
+
+    // Holiday delay events ("NO GARBAGE OR RECYCLING")
+    if (lower.includes('no garbage') || lower.includes('no recycling')) {
+      if (start) holidayDates.push(start.toISOString().split('T')[0]);
+      continue;
+    }
+
+    // Skip non-recycling BPU events (yard waste site open/close, etc.)
+    const isRecycling = [
+      'cardboard', 'plastic', 'paper', 'metal', 'glass', 'recycling'
+    ].some(kw => lower.includes(kw));
+    if (!isRecycling) continue;
+
+    // Use description for exclusions if summary doesn't have them
+    const titleForParsing = summary.includes('No ') || summary.includes('no ') ? summary : description || summary;
+    recyclingWeeks.push(parseRecyclingTitle(titleForParsing, start, end));
+  }
+
+  // Sort chronologically (ICS is in reverse order)
+  recyclingWeeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  // Find this week's entry: most recent startDate <= today
+  const today = new Date().toISOString().split('T')[0];
   let thisIdx = -1;
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    if (new Date(getItemText(sorted[i].pubDate)) <= now) {
+  for (let i = recyclingWeeks.length - 1; i >= 0; i--) {
+    if (recyclingWeeks[i].startDate <= today) {
       thisIdx = i;
       break;
     }
   }
+  // If today is past the last week's start but within the window, use that
+  if (thisIdx === -1 && recyclingWeeks.length > 0) thisIdx = 0;
 
-  const thisItem = thisIdx >= 0 ? sorted[thisIdx] : null;
-  const nextItem = thisIdx >= 0 && thisIdx + 1 < sorted.length ? sorted[thisIdx + 1] : null;
+  const thisWeek     = recyclingWeeks[thisIdx]     ?? EMPTY_WEEK;
+  const nextWeek     = recyclingWeeks[thisIdx + 1] ?? EMPTY_WEEK;
+  const upcomingWeeks = recyclingWeeks.slice(thisIdx + 2, thisIdx + 6);
 
-  const result = {
-    thisWeek: thisItem ? parseRecyclingTitle(getItemText(thisItem.title)) : { material: '—', dateRange: '—', exclusions: '' },
-    nextWeek: nextItem ? parseRecyclingTitle(getItemText(nextItem.title)) : { material: '—', dateRange: '—', exclusions: '' },
+  // Holiday delay: is there a holiday date within this pickup week?
+  const thisStart = thisWeek.startDate;
+  const thisEnd   = thisWeek.dateRange.split('–')[1]?.trim() ?? '';
+  const holidayDelay = holidayDates.some(d => d >= thisStart);
+  const affectedDays = holidayDates.filter(d => d >= thisStart);
+
+  const result: RecyclingData = {
+    thisWeek,
+    nextWeek,
+    upcomingWeeks,
+    holidayDelay,
+    affectedDays,
   };
 
   await setCache('recycling', result);
@@ -1018,7 +1116,7 @@ export function useCivicData(): CivicData {
 
     // Fetch all in parallel, individual failures don't block the rest
     const [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult] = await Promise.allSettled([
-      fetchRecycling(),
+      fetchRecyclingICS(),
       fetchAlerts(),
       fetchEvents(),
       fetchNews(),
@@ -1028,7 +1126,7 @@ export function useCivicData(): CivicData {
     ]);
 
     const recycling = recyclingResult.status === 'fulfilled'
-      ? { ...recyclingResult.value, holidayDelay: hasDelay, affectedDays }
+      ? recyclingResult.value
       : { ...DEFAULTS.recycling, holidayDelay: hasDelay, affectedDays };
 
     // Merge BPU alerts + Chautauqua County alerts, dedupe by title
