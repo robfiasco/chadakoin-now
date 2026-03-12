@@ -183,7 +183,7 @@ function stripHtml(html: string): string {
 
 // ─── AsyncStorage cache helpers ───────────────────────────────────
 // Bump the version suffix here to bust all stale cached data in the wild
-const CACHE_PREFIX = 'civic_v11_';
+const CACHE_PREFIX = 'civic_v12_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
