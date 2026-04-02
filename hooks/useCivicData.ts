@@ -25,7 +25,8 @@ export interface RecyclingData {
 export interface ParkingData {
   active: boolean;
   side: 'EVEN' | 'ODD' | null;
-  isWinter: boolean;
+  isWinter: boolean; // true = Nov–Mar daily mode, false = Apr–Oct monthly mode
+  mode: 'daily' | 'monthly';
   switchTime: string;
   rule: string;
 }
@@ -108,11 +109,20 @@ const TTL = {
   lotd:      12 * 60 * 60 * 1000,   // 12h — weekly show
 };
 
+// Update annually — used to detect holiday recycling delays
 const FEDERAL_HOLIDAYS_2026 = [
   '2026-01-01', '2026-01-19', '2026-02-16', '2026-05-25',
   '2026-06-19', '2026-07-04', '2026-09-07', '2026-10-12',
   '2026-11-11', '2026-11-26', '2026-12-25',
 ];
+
+const FEDERAL_HOLIDAYS_2027 = [
+  '2027-01-01', '2027-01-18', '2027-02-15', '2027-05-31',
+  '2027-06-19', '2027-07-05', '2027-09-06', '2027-10-11',
+  '2027-11-11', '2027-11-25', '2027-12-24',
+];
+
+const FEDERAL_HOLIDAYS = [...FEDERAL_HOLIDAYS_2026, ...FEDERAL_HOLIDAYS_2027];
 
 const EMPTY_WEEK: RecyclingWeek = { material: '—', dateRange: '—', exclusions: '', startDate: '', emoji: '♻️' };
 
@@ -126,7 +136,7 @@ const DEFAULTS: Omit<CivicData, 'refresh'> = {
     holidayDelay: false,
     affectedDays: [],
   },
-  parking: { active: false, side: null, isWinter: false, switchTime: '10:00 AM', rule: '' },
+  parking: { active: true, side: null, isWinter: false, mode: 'monthly' as const, switchTime: '1st of month', rule: '' },
   alerts: { hasActiveAlerts: false, activeAlerts: [] },
   events: [],
   news: [],
@@ -205,32 +215,43 @@ async function setCache(key: string, data: unknown): Promise<void> {
 }
 
 // ─── Parking (computed) ───────────────────────────────────────────
+// Jamestown alternate-side rules:
+//   Nov 1 – Mar 31 (daily):   even date → even side, odd date → odd side, move by 10:00 AM
+//   Apr 1 – Oct 31 (monthly): even month → even side, odd month → odd side, same all month
 function computeParking(): ParkingData {
   const today = new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1; // 1-indexed
 
-  const isWinter =
-    month >= 11 ||
-    month < 4 ||
-    (month === 4 && day === 1);
+  // Daily mode: November through March
+  const isWinter = month >= 11 || month <= 3;
 
-  if (!isWinter) {
-    return { active: false, side: null, isWinter: false, switchTime: '10:00 AM', rule: '' };
+  if (isWinter) {
+    const side: 'EVEN' | 'ODD' = day % 2 === 0 ? 'EVEN' : 'ODD';
+    return {
+      active: true,
+      side,
+      isWinter: true,
+      mode: 'daily',
+      switchTime: '10:00 AM',
+      rule: 'Even date → even side. Odd date → odd side. Move by 10:00 AM.',
+    };
   }
 
-  const side: 'EVEN' | 'ODD' = day % 2 === 0 ? 'EVEN' : 'ODD';
+  // Monthly mode: April through October
+  const side: 'EVEN' | 'ODD' = month % 2 === 0 ? 'EVEN' : 'ODD';
   return {
     active: true,
     side,
-    isWinter: true,
-    // Date flips at midnight but drivers have until 10 AM to move their car
-    switchTime: '10:00 AM',
-    rule: 'Even date → even side. Odd date → odd side. Move by 10:00 AM.',
+    isWinter: false,
+    mode: 'monthly',
+    switchTime: '1st of month',
+    rule: 'Even month → even side. Odd month → odd side. Side stays the same all month.',
   };
 }
 
-// Compute 7-day schedule from today's week
+// Compute 7-day schedule from today's week.
+// Daily mode (Nov–Mar): side flips by date. Monthly mode (Apr–Oct): same side all month.
 export function computeParkingSchedule() {
   const today = new Date();
   const dow = today.getDay(); // 0=Sun
@@ -241,13 +262,23 @@ export function computeParkingSchedule() {
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
+  function sideForDate(d: Date): 'EVEN' | 'ODD' {
+    const m = d.getMonth() + 1; // 1-indexed
+    if (m >= 11 || m <= 3) {
+      // Daily mode: even date = even side
+      return d.getDate() % 2 === 0 ? 'EVEN' : 'ODD';
+    }
+    // Monthly mode: even month = even side
+    return m % 2 === 0 ? 'EVEN' : 'ODD';
+  }
+
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     return {
       date: `${MONTHS[d.getMonth()]} ${d.getDate()}`,
       day: DAYS[d.getDay()],
-      side: (d.getDate() % 2 === 0 ? 'EVEN' : 'ODD') as 'EVEN' | 'ODD',
+      side: sideForDate(d),
       isToday: d.toDateString() === today.toDateString(),
     };
   });
@@ -269,7 +300,7 @@ function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
     return d.toISOString().split('T')[0];
   });
 
-  const affected = weekDays.filter(d => FEDERAL_HOLIDAYS_2026.includes(d));
+  const affected = weekDays.filter(d => FEDERAL_HOLIDAYS.includes(d));
   return { hasDelay: affected.length > 0, affectedDays: affected };
 }
 

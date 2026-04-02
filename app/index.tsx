@@ -52,13 +52,24 @@ function getDateBadge() {
   return `${days[d.getDay()]} ${d.getDate()}`;
 }
 
-function getDaysUntilWinterEnds(): number {
+// Returns a note about when the parking mode next changes
+function getParkingModeNote(): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // If we're already into April or later, target next year's Apr 1
-  const year = today.getMonth() >= 3 ? today.getFullYear() + 1 : today.getFullYear();
-  const end = new Date(year, 3, 1); // April 1
-  return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const month = today.getMonth() + 1; // 1-indexed
+  const isDaily = month >= 11 || month <= 3;
+  if (isDaily) {
+    // Daily mode: next switch to monthly is Apr 1
+    const year = month >= 4 ? today.getFullYear() + 1 : today.getFullYear();
+    const end = new Date(year, 3, 1); // Apr 1
+    const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return `${days} day${days !== 1 ? 's' : ''} until monthly switching (Apr 1)`;
+  }
+  // Monthly mode: next switch to daily is Nov 1
+  const year = month >= 11 ? today.getFullYear() + 1 : today.getFullYear();
+  const end = new Date(year, 10, 1); // Nov 1
+  const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return `${days} day${days !== 1 ? 's' : ''} until daily switching (Nov 1)`;
 }
 
 // ─── Live pulse dot ───────────────────────────────────────────────
@@ -252,8 +263,9 @@ export default function HomeScreen() {
         soundRef.current = sound;
         setRadioPlaying(true);
       } catch {
-        // fallback: open in browser
-        WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com');
+        // fallback: open in browser if native audio fails
+        setRadioPlaying(false);
+        WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {});
       } finally {
         setRadioLoading(false);
       }
@@ -585,7 +597,7 @@ export default function HomeScreen() {
           ═══════════════════════════════════════════ */
           <>
         {/* ─── Parking Today ────────────────────────── */}
-        {parking.isWinter && (
+        {parking.active && (
           <>
             <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>PARKING TODAY</Text>
             {/* @ts-ignore */}
@@ -607,10 +619,10 @@ export default function HomeScreen() {
                   </Text>
                   <View style={[styles.parkingNote, { borderTopColor: `rgba(${theme.accRGB},0.1)` }]}>
                     <Text style={[styles.parkingNoteText, { color: `rgba(${theme.accRGB},0.5)` }]}>
-                      Switches at {parking.switchTime}
+                      {parking.mode === 'daily' ? `Switches daily at ${parking.switchTime}` : 'Side stays same all month'}
                     </Text>
                     <Text style={[styles.parkingNoteText, { color: `rgba(${theme.accRGB},0.35)` }]}>
-                      {getDaysUntilWinterEnds()} days until daily switching ends (Apr 1)
+                      {getParkingModeNote()}
                     </Text>
                   </View>
                 </>
@@ -709,13 +721,17 @@ export default function HomeScreen() {
             ) : civic.latestEpisode ? (
               <TouchableOpacity
                 activeOpacity={0.75}
-                onPress={() => WebBrowser.openBrowserAsync(civic.latestEpisode!.pageUrl)}
+                onPress={() => WebBrowser.openBrowserAsync(civic.latestEpisode!.pageUrl).catch(() => {})}
+                accessibilityLabel={`Play episode: ${civic.latestEpisode.title}`}
+                accessibilityRole="button"
                 // @ts-ignore
                 style={[styles.lotdCard, panel2]}
               >
                 <Image
                   source={{ uri: civic.latestEpisode.artworkUrl }}
                   style={[styles.lotdArt, { borderColor: `rgba(${theme.acc2RGB},0.3)` }]}
+                  onError={() => {}}
+                  accessibilityLabel="Episode artwork"
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.lotdShow, { color: `rgba(${theme.acc2RGB},0.6)` }]}>
@@ -744,7 +760,7 @@ export default function HomeScreen() {
           ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
         }]}>
           {/* Artwork — taps to open full site */}
-          <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com')} activeOpacity={0.8}>
+          <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})} activeOpacity={0.8} accessibilityLabel="Open CDIR radio website" accessibilityRole="button">
             {nowPlaying?.artwork ? (
               <Image source={{ uri: nowPlaying.artwork }} style={styles.cdirArt} resizeMode="cover" />
             ) : (
@@ -769,7 +785,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Play / pause / loading */}
-          <TouchableOpacity onPress={toggleRadio} activeOpacity={0.7} style={[styles.playBtn, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.15)` : 'transparent' }]}>
+          <TouchableOpacity onPress={toggleRadio} activeOpacity={0.7} style={[styles.playBtn, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.15)` : 'transparent' }]} accessibilityLabel={radioPlaying ? 'Stop radio' : 'Play CDIR radio'} accessibilityRole="button">
             {radioLoading
               ? <Ionicons name="hourglass-outline" size={18} color={theme.acc} />
               : radioPlaying

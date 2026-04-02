@@ -42,6 +42,9 @@ export default function SettingsScreen() {
               key={t.id}
               onPress={() => setThemeId(t.id as ThemeId)}
               activeOpacity={0.75}
+              accessibilityLabel={`${t.label} theme${isActive ? ', currently active' : ''}`}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: isActive }}
               // @ts-ignore
               style={[styles.themeCard, cardStyle]}
             >

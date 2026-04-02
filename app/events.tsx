@@ -117,6 +117,9 @@ export default function EventsScreen() {
                 ]}
                 onPress={() => setActiveMonth(m)}
                 activeOpacity={0.7}
+                accessibilityLabel={`${m} events`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
               >
                 <Text style={[styles.tabText, { color: isActive ? theme.acc : 'rgba(255,255,255,0.35)' }]}>{m}</Text>
               </TouchableOpacity>
@@ -163,7 +166,7 @@ export default function EventsScreen() {
             const accentColor = getEventColor(event, theme);
             return (
               // @ts-ignore
-              <TouchableOpacity key={i} style={[styles.eventCard, panel, { borderLeftColor: accentColor, borderLeftWidth: 3 }]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)}>
+              <TouchableOpacity key={i} style={[styles.eventCard, panel, { borderLeftColor: accentColor, borderLeftWidth: 3 }]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)} accessibilityLabel={event.title} accessibilityRole={event.link ? 'link' : 'text'} accessibilityHint={event.link ? 'Opens event details' : undefined}>
                 <View style={styles.eventLeft}>
                   {weekday ? <Text style={[styles.eventWeekday, { color: accentColor }]}>{weekday}</Text> : null}
                   <Text style={[styles.eventDate, { color: accentColor }]}>{date}</Text>

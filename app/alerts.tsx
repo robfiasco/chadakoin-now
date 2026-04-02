@@ -89,36 +89,7 @@ export default function AlertsScreen() {
           </View>
         )}
 
-        {/* Active alerts list */}
-        {!loading && alerts.activeAlerts.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>ACTIVE ALERTS</Text>
-            {alerts.activeAlerts.map((alert, i) => (
-              // @ts-ignore
-              <View key={i} style={[styles.alertCard, {
-                borderRadius: 20, borderWidth: 1,
-                backgroundColor: 'rgba(220,0,50,0.07)',
-                borderColor: 'rgba(220,0,50,0.2)',
-                ...glassWeb,
-              }]}>
-                <View style={styles.alertHeader}>
-                  <Ionicons name="alert-circle" size={16} color="#ff4466" />
-                  <Text style={styles.alertDate}>{formatDate(alert.pubDate)}</Text>
-                </View>
-                <Text style={styles.alertTitle}>{alert.title}</Text>
-                {alert.description ? (
-                  <Text style={styles.alertBody}>{alert.description}</Text>
-                ) : null}
-                {alert.link ? (
-                  <TouchableOpacity onPress={() => Linking.openURL(alert.link)}>
-                    <Text style={[styles.alertLink, { color: theme.acc }]}>Read more →</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            ))}
-          </>
-        )}
-
+        {/* Alerts list */}
         <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>RECENT UPDATES</Text>
         {loading ? (
           [1, 2].map(i => (
@@ -132,9 +103,37 @@ export default function AlertsScreen() {
         ) : alerts.activeAlerts.length === 0 ? (
           // @ts-ignore
           <View style={[styles.updateCard, panel]}>
-            <Text style={styles.emptyText}>No alerts in the last 7 days.</Text>
+            <Text style={styles.emptyText}>No recent updates from Jamestown BPU.</Text>
           </View>
-        ) : null}
+        ) : (
+          alerts.activeAlerts.map((alert, i) => (
+            // @ts-ignore
+            <View key={i} style={[styles.alertCard, {
+              borderRadius: 20, borderWidth: 1,
+              backgroundColor: 'rgba(220,0,50,0.07)',
+              borderColor: 'rgba(220,0,50,0.2)',
+              ...glassWeb,
+            }]}>
+              <View style={styles.alertHeader}>
+                <Ionicons name="alert-circle" size={16} color="#ff4466" />
+                <Text style={styles.alertDate}>{formatDate(alert.pubDate)}</Text>
+              </View>
+              <Text style={styles.alertTitle}>{alert.title}</Text>
+              {alert.description ? (
+                <Text style={styles.alertBody}>{alert.description}</Text>
+              ) : null}
+              {alert.link ? (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(alert.link)}
+                  accessibilityLabel={`Read more about: ${alert.title}`}
+                  accessibilityRole="link"
+                >
+                  <Text style={[styles.alertLink, { color: theme.acc }]}>Read more →</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ))
+        )}
 
         <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
           Refreshes every 5 minutes

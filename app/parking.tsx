@@ -57,18 +57,18 @@ export default function ParkingScreen() {
               <SkeletonPulse width={160} height={32} borderRadius={6} accRGB={theme.accRGB} />
               <SkeletonPulse width="90%" height={14} borderRadius={4} accRGB={theme.accRGB} />
             </View>
-          ) : parking.active ? (
+          ) : (
             <>
               <Text style={[styles.todaySide, { color: theme.acc, textShadowColor: `rgba(${theme.accRGB},0.4)`, textShadowRadius: 28 }]}>
                 {parking.side === 'EVEN' ? 'Even side' : 'Odd side'}
               </Text>
               <Text style={styles.todayRule}>{parking.rule}</Text>
               <View style={[styles.chip, { backgroundColor: `rgba(${theme.accRGB},0.15)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
-                <Text style={[styles.chipText, { color: theme.acc }]}>Winter rules active</Text>
+                <Text style={[styles.chipText, { color: theme.acc }]}>
+                  {parking.mode === 'daily' ? 'Daily switching active' : 'Monthly switching active'}
+                </Text>
               </View>
             </>
-          ) : (
-            <Text style={styles.offSeasonText}>Alternate-side parking is not active right now. Winter rules apply Nov 15 – Apr 1.</Text>
           )}
         </View>
 
@@ -76,15 +76,15 @@ export default function ParkingScreen() {
         <View style={styles.halfRow}>
           {/* @ts-ignore */}
           <View style={[styles.halfCard, panel]}>
-            <Ionicons name="snow-outline" size={18} color={theme.acc} />
-            <Text style={[styles.halfLabel, { color: theme.acc45 }]}>SEASON</Text>
-            <Text style={styles.halfValue}>{parking.isWinter ? 'Winter rules active' : 'Off season'}</Text>
+            <Ionicons name={parking.mode === 'daily' ? 'snow-outline' : 'sunny-outline'} size={18} color={theme.acc} />
+            <Text style={[styles.halfLabel, { color: theme.acc45 }]}>MODE</Text>
+            <Text style={styles.halfValue}>{parking.mode === 'daily' ? 'Daily (Nov–Mar)' : 'Monthly (Apr–Oct)'}</Text>
           </View>
           {/* @ts-ignore */}
           <View style={[styles.halfCard, panel]}>
             <Ionicons name="time-outline" size={18} color={theme.acc} />
-            <Text style={[styles.halfLabel, { color: theme.acc45 }]}>SWITCH</Text>
-            <Text style={styles.halfValue}>Switches at {parking.switchTime}</Text>
+            <Text style={[styles.halfLabel, { color: theme.acc45 }]}>NEXT SWITCH</Text>
+            <Text style={styles.halfValue}>{parking.mode === 'daily' ? 'Daily at 10:00 AM' : '1st of next month'}</Text>
           </View>
         </View>
 
