@@ -1,7 +1,29 @@
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
+
+import {
+  Syne_400Regular,
+  Syne_500Medium,
+  Syne_600SemiBold,
+  Syne_700Bold,
+  Syne_800ExtraBold,
+} from '@expo-google-fonts/syne';
+
+import {
+  Outfit_300Light,
+  Outfit_400Regular,
+  Outfit_500Medium,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+} from '@expo-google-fonts/outfit';
+
+// Hold the splash screen until fonts are ready
+SplashScreen.preventAutoHideAsync();
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -31,8 +53,8 @@ function ThemedTabs() {
         tabBarActiveTintColor: theme.acc,
         tabBarInactiveTintColor: 'rgba(255,255,255,0.28)',
         tabBarLabelStyle: {
+          fontFamily: 'Outfit_600SemiBold',
           fontSize: 11,
-          fontWeight: '600',
           marginTop: 1,
         },
       })}
@@ -74,6 +96,31 @@ function ThemedTabs() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Syne_400Regular,
+    Syne_500Medium,
+    Syne_600SemiBold,
+    Syne_700Bold,
+    Syne_800ExtraBold,
+    Outfit_300Light,
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    // Alias 'Syne' and 'Outfit' so existing fontFamily references keep working
+    Syne: Syne_700Bold,
+    Outfit: Outfit_400Regular,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  // Keep showing splash until fonts are ready
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
