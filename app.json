@@ -4,14 +4,14 @@
     "slug": "chadakoin-now",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon_blue.png",
+    "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "backgroundColor": "#163A59"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon_blue.png",
+        "foregroundImage": "./assets/files/icon-chadakoin.png",
         "backgroundColor": "#163A59"
       },
       "versionCode": 2,

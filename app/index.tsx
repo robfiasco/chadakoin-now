@@ -17,6 +17,7 @@ import { getTodaysFact } from '../data/jamestown-facts';
 import { PLACES, PLACE_CATEGORIES, PlaceCategory } from '../data/places';
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AddToHomeScreen } from '../components/AddToHomeScreen';
 
 interface NowPlaying {
   title: string;
@@ -797,6 +798,7 @@ export default function HomeScreen() {
           </>
         )}
       </ScrollView>
+      <AddToHomeScreen />
     </ThemedBackground>
   );
 }
