@@ -25,7 +25,6 @@ export default function RecyclingScreen() {
   const panel     = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
   const panelGlow = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.22)`, ...glassWeb };
 
-  // Build the full schedule: this week + next week + upcoming
   const allWeeks: Array<RecyclingWeek & { label: string; isThis: boolean }> = loading ? [] : [
     recycling.thisWeek.startDate ? { ...recycling.thisWeek, label: 'THIS WEEK', isThis: true }  : null,
     recycling.nextWeek.startDate ? { ...recycling.nextWeek, label: 'NEXT WEEK', isThis: false } : null,
@@ -79,7 +78,6 @@ export default function RecyclingScreen() {
                   week.isThis && { paddingBottom: 16 },
                 ]}
               >
-                {/* Left: date range */}
                 <View style={styles.weekDate}>
                   {week.label ? (
                     <Text style={[styles.weekLabel, { color: week.isThis ? theme.acc : `rgba(${theme.accRGB},0.45)` }]}>
@@ -91,10 +89,8 @@ export default function RecyclingScreen() {
                   </Text>
                 </View>
 
-                {/* Divider */}
                 <View style={[styles.dividerV, { backgroundColor: `rgba(${theme.accRGB},0.12)` }]} />
 
-                {/* Right: emoji + material */}
                 <View style={styles.weekMaterial}>
                   <Text style={[styles.weekEmoji, { opacity: week.isThis ? 1 : 0.55 }]}>{week.emoji}</Text>
                   <View style={{ flex: 1 }}>

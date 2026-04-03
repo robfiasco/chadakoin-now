@@ -49,7 +49,6 @@ export default function SettingsScreen() {
               // @ts-ignore
               style={[styles.themeCard, cardStyle]}
             >
-              {/* Swatch + name row */}
               <View style={styles.themeHeader}>
                 <View style={styles.swatchRow}>
                   {[t.acc, t.acc2, t.acc3].map((c, i) => (
@@ -71,7 +70,6 @@ export default function SettingsScreen() {
                 )}
               </View>
 
-              {/* Description */}
               <Text style={[styles.themeDesc, { color: isActive ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)' }]}>
                 {t.description}
               </Text>
@@ -79,7 +77,6 @@ export default function SettingsScreen() {
           );
         })}
 
-        {/* Feature your business CTA */}
         <TouchableOpacity
           onPress={() => Linking.openURL('https://chadakoindigital.com')}
           activeOpacity={0.75}
@@ -98,7 +95,7 @@ export default function SettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.ctaTitle, { color: theme.acc }]}>Feature your business</Text>
               <Text style={[styles.ctaSub, { color: `rgba(${theme.accRGB},0.5)` }]}>
-                Reach Jamestown residents directly in the app
+                Reach residents and visitors right in the app
               </Text>
             </View>
             <Ionicons name="arrow-forward" size={16} color={`rgba(${theme.accRGB},0.4)`} />

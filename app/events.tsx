@@ -103,7 +103,6 @@ export default function EventsScreen() {
         <Text style={[styles.subhead, { color: theme.acc55 }]}>Upcoming in Jamestown</Text>
       </SafeAreaView>
 
-      {/* Month tabs — built from live data */}
       {months.length > 0 && (
         <View style={styles.tabs}>
           {months.map(m => {

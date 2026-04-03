@@ -1,8 +1,6 @@
 // Vercel serverless function — Buffalo Sabres data via NHL official API
 // api-web.nhle.com is publicly accessible from server environments.
 
-// ─── JCC helper (called from the same endpoint) ──────────────────
-
 async function fetchJCC(signal) {
   try {
     const res = await fetch('https://jccjayhawks.com/composite?print=rss', { signal });
@@ -14,11 +12,15 @@ async function fetchJCC(signal) {
     let m;
     while ((m = itemRx.exec(text)) !== null) {
       const block = m[1];
-      const get = (tag) => {
-        const r = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`);
-        const match = r.exec(block);
-        return match ? (match[1] ?? match[2] ?? '').trim() : '';
+      // Precompiled regexes — avoids dynamic RegExp construction (ReDoS risk)
+      const RX = {
+        'ps:score':    /<ps:score[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:score>|<ps:score[^>]*>([^<]*)<\/ps:score>/,
+        'pubDate':     /<pubDate[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/pubDate>|<pubDate[^>]*>([^<]*)<\/pubDate>/,
+        'ps:opponent': /<ps:opponent[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:opponent>|<ps:opponent[^>]*>([^<]*)<\/ps:opponent>/,
+        'category':    /<category[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category[^>]*>([^<]*)<\/category>/,
+        'link':        /<link[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/link>|<link[^>]*>([^<]*)<\/link>/,
       };
+      const get = (tag) => { const match = RX[tag]?.exec(block); return match ? (match[1] ?? match[2] ?? '').trim() : ''; };
 
       const score    = get('ps:score');
       const pubDate  = get('pubDate');

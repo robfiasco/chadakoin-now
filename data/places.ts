@@ -8,7 +8,7 @@ export interface Place {
   id: string;
   name: string;
   category: PlaceCategory;
-  emoji: string;
+  icon: string;  // Ionicons name (e.g. 'cafe-outline')
   description: string;
   address: string;
   website?: string;
@@ -18,13 +18,12 @@ export interface Place {
 }
 
 export const PLACES: Place[] = [
-  // ─── Coffee ───────────────────────────────────────────────────
   {
     id: 'labyrinth-press',
     name: 'Labyrinth Press Co.',
     category: 'coffee',
-    emoji: '☕',
-    description: 'Full espresso bar, fresh vegetarian & vegan restaurant, and a seasonal outdoor patio. One of the best spots downtown for food and coffee. 🌱 Vegan-friendly.',
+    icon: 'cafe-outline',
+    description: 'Full espresso bar, fresh vegetarian & vegan restaurant, and a seasonal outdoor patio. One of the best spots downtown for food and coffee. Vegan-friendly.',
     address: '10-12 E. 4th St, Jamestown',
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 8am–9pm',
@@ -34,19 +33,18 @@ export const PLACES: Place[] = [
     id: 'crown-street-roasting',
     name: 'Crown Street Roasting Co.',
     category: 'coffee',
-    emoji: '☕',
+    icon: 'cafe-outline',
     description: 'Specialty coffee roasted right here in Jamestown. Café, whole beans, and merchandise.',
     address: 'Jamestown, NY',
     website: 'https://www.crownstreetroasting.com/',
     featured: false,
   },
 
-  // ─── Food ─────────────────────────────────────────────────────
   {
     id: 'the-eatery',
     name: 'The Eatery',
     category: 'food',
-    emoji: '🍳',
+    icon: 'restaurant-outline',
     description: 'Breakfast and lunch in Jamestown. A local favorite for starting your morning right.',
     address: '180 Fluvanna Ave, Jamestown',
     website: 'https://www.yelp.com/biz/the-eatery-restaurant-jamestown',
@@ -57,8 +55,8 @@ export const PLACES: Place[] = [
     id: 'davidsons',
     name: "Davidson's Restaurant",
     category: 'food',
-    emoji: '🐟',
-    description: "Family-owned since 1950 and celebrating 74 years. Famous for their fish fry — they sell over 3 tons of fish a month. Burgers, fried chicken, and steaks too. A true Chautauqua County institution.",
+    icon: 'restaurant-outline',
+    description: "Family-owned since 1950. Famous for their fish fry — they sell over 3 tons of fish a month. Burgers, fried chicken, and steaks too. A true Chautauqua County institution.",
     address: '398 E Fairmount Ave, Lakewood, NY',
     website: 'https://www.davidsonsfishfry.com/',
     hours: 'Check website for current hours',
@@ -68,7 +66,7 @@ export const PLACES: Place[] = [
     id: 'taco-company',
     name: 'The Taco Company',
     category: 'food',
-    emoji: '🌮',
+    icon: 'restaurant-outline',
     description: 'Local Jamestown taqueria serving fresh tacos, burritos, and more.',
     address: 'Jamestown, NY',
     featured: false,
@@ -77,7 +75,7 @@ export const PLACES: Place[] = [
     id: 'honest-johns',
     name: "Honest John's Pizzeria",
     category: 'food',
-    emoji: '🍕',
+    icon: 'pizza-outline',
     description: 'Pizza, wings, and subs with delivery throughout Jamestown, Celeron, West Ellicott, and Falconer.',
     address: '1245 E. 2nd St, Jamestown',
     website: 'https://honestjohns.pizza/',
@@ -88,7 +86,7 @@ export const PLACES: Place[] = [
     id: 'paces',
     name: "Pace's Pizzeria",
     category: 'food',
-    emoji: '🍕',
+    icon: 'pizza-outline',
     description: "The world's greatest pizza since 1953. Simple. Fresh. Delicious. Wine and beer selection.",
     address: '549 W 3rd St, Jamestown',
     website: 'https://paces.pizza/',
@@ -99,7 +97,7 @@ export const PLACES: Place[] = [
     id: 'slice-of-home',
     name: 'A Slice of Home Pizzeria',
     category: 'food',
-    emoji: '🍕',
+    icon: 'pizza-outline',
     description: 'Local Jamestown pizzeria.',
     address: 'Jamestown',
     website: 'https://asliceofhomepizzeriallc.toast.site/',
@@ -109,32 +107,51 @@ export const PLACES: Place[] = [
     id: 'jamestown-farmers-market',
     name: 'Jamestown Farmers Market',
     category: 'food',
-    emoji: '🥬',
+    icon: 'leaf-outline',
     description: 'Fresh local produce, artisan goods, and community vendors. Look for Durow Farms — farm-fresh eggs, hand-tapped maple syrup, small-batch coffee, and more from a local family farm. Winter market runs 2nd & 4th Saturdays at 410 N Main St. Summer market moves to 17 W 3rd St.',
     address: '410 N Main St (winter) · 17 W 3rd St (summer)',
     website: 'https://jfmny.org/',
     hours: 'Saturdays 9am–1pm',
     featured: false,
   },
-
   {
     id: 'art-of-flavors',
     name: 'The Art of Flavors',
     category: 'food',
-    emoji: '🌶️',
+    icon: 'restaurant-outline',
     description: 'Authentic family-owned Mexican restaurant. 98% recommended on Facebook. Dine-in and in-store pickup.',
     address: '679 Fairmount Ave, Jamestown',
     website: 'https://www.facebook.com/artofflavorsJamestownNY',
     hours: 'Mon–Sat 11am–8pm · Closed Sunday',
     featured: false,
   },
+  {
+    id: 'archies-diner',
+    name: "Archie's Airport Diner",
+    category: 'food',
+    icon: 'restaurant-outline',
+    description: 'Breakfast diner inside the Jamestown Airport. Classic diner fare, 5-star rated.',
+    address: '3163 Airport Dr, Jamestown',
+    hours: 'Closes 2pm',
+    featured: false,
+  },
+  {
+    id: 'crooked-stick',
+    name: 'Crooked Stick Bar',
+    category: 'food',
+    icon: 'restaurant-outline',
+    description: 'Newer bar and grill just outside Jamestown with cocktails, wings, outdoor seating, and a full kitchen menu. Highly rated on Google.',
+    address: '4003 Route 380, Gerry, NY',
+    website: 'https://crookedstick.bar',
+    hours: 'Open daily · Kitchen closes 7:30pm · Bar closes 10pm',
+    featured: false,
+  },
 
-  // ─── Drinks ───────────────────────────────────────────────────
   {
     id: 'busti-tap-house',
     name: 'Busti Tap House',
     category: 'drinks',
-    emoji: '🍻',
+    icon: 'beer-outline',
     description: 'Newly renovated restaurant and taphouse in the rolling hills of Busti — just outside Jamestown. Beautiful patio, full menu, catering available.',
     address: '792 Busti Sugar Grove Rd, Jamestown',
     website: 'https://www.bustitaphouse.com/',
@@ -145,7 +162,7 @@ export const PLACES: Place[] = [
     id: 'the-swamp',
     name: 'The Swamp',
     category: 'drinks',
-    emoji: '🐊',
+    icon: 'beer-outline',
     description: 'Casual, down-to-earth bar and grill with craft beer, wings, cocktails, pool, darts, and a jukebox. A Jamestown classic.',
     address: '250 Jones and Gifford Ave, Jamestown',
     hours: 'Closes 10pm',
@@ -155,7 +172,7 @@ export const PLACES: Place[] = [
     id: 'cherry-lounge',
     name: 'The Cherry Lounge',
     category: 'drinks',
-    emoji: '🍒',
+    icon: 'wine-outline',
     description: 'Full service bar and restaurant in the heart of downtown Jamestown.',
     address: 'Jamestown, NY',
     website: 'https://www.facebook.com/CherryLoungeJTNY/',
@@ -165,8 +182,8 @@ export const PLACES: Place[] = [
     id: 'brazil-lounge',
     name: 'Brazil Lounge',
     category: 'drinks',
-    emoji: '🍷',
-    description: 'Upstairs craft beer and wine bar above Labyrinth Press. Vegan-friendly menu. 🌱',
+    icon: 'wine-outline',
+    description: 'Upstairs craft beer and wine bar above Labyrinth Press. Vegan-friendly menu.',
     address: '10-12 E. 4th St, Jamestown',
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 11am–10pm',
@@ -176,7 +193,7 @@ export const PLACES: Place[] = [
     id: 'wicked-warrens',
     name: "Wicked Warren's",
     category: 'drinks',
-    emoji: '🍺',
+    icon: 'beer-outline',
     description: 'Brewery and restaurant with outstanding craft beer and wood-fired pizza.',
     address: '119 W 3rd St, Jamestown',
     website: 'https://wickedwarrens.com/jamestown',
@@ -184,12 +201,11 @@ export const PLACES: Place[] = [
     featured: false,
   },
 
-  // ─── Cannabis ─────────────────────────────────────────────────
   {
     id: 'lifted',
     name: 'Lifted Dispensary',
     category: 'cannabis',
-    emoji: '🌿',
+    icon: 'leaf-outline',
     description: 'Licensed cannabis dispensary serving Jamestown.',
     address: 'Jamestown',
     website: 'https://www.liftedispensary.com/',
@@ -197,12 +213,11 @@ export const PLACES: Place[] = [
     featured: false,
   },
 
-  // ─── Arts & Entertainment ─────────────────────────────────────
   {
     id: 'comedy-center',
     name: 'National Comedy Center',
     category: 'activity',
-    emoji: '😂',
+    icon: 'happy-outline',
     description: "America's official museum of comedy. Interactive, immersive, and one of a kind.",
     address: '203 W 2nd St, Jamestown',
     website: 'https://comedycenter.org',
@@ -214,7 +229,7 @@ export const PLACES: Place[] = [
     id: 'reg-lenna',
     name: 'Reg Lenna Center for the Arts',
     category: 'arts',
-    emoji: '🎭',
+    icon: 'musical-notes-outline',
     description: 'Historic theater in downtown Jamestown. Shows, concerts, films, and community events.',
     address: '116 E 3rd St, Jamestown',
     website: 'https://reglenna.com',
@@ -225,7 +240,7 @@ export const PLACES: Place[] = [
     id: 'rtpi',
     name: 'Roger Tory Peterson Institute',
     category: 'activity',
-    emoji: '🐦',
+    icon: 'eye-outline',
     description: "Nature art, bird walks, and galleries honoring Jamestown's most famous naturalist.",
     address: '311 Curtis St, Jamestown',
     website: 'https://rtpi.org',
@@ -236,42 +251,41 @@ export const PLACES: Place[] = [
     id: 'fenton-history',
     name: 'Fenton History Center',
     category: 'activity',
-    emoji: '🏛️',
+    icon: 'library-outline',
     description: 'Local history, rotating exhibits, and the beautiful Victorian-era Reuben Fenton mansion.',
     address: '67 Washington St, Jamestown',
     website: 'https://fentonhistorycenter.org',
     hours: 'Tue–Sat 10am–4pm',
     featured: false,
   },
+  {
+    id: 'robert-h-jackson-center',
+    name: 'Robert H. Jackson Center',
+    category: 'activity',
+    icon: 'ribbon-outline',
+    description: "Dedicated to Jamestown native and U.S. Supreme Court Justice Robert H. Jackson, chief prosecutor at the Nuremberg Trials. Museum, library, and educational programming.",
+    address: '305 E 4th St, Jamestown',
+    website: 'https://www.roberthjackson.org/',
+    hours: 'Mon–Fri 9am–5pm',
+    featured: false,
+  },
 
-  // ─── Outdoors ─────────────────────────────────────────────────
   {
     id: 'chautauqua-institution',
     name: 'Chautauqua Institution',
     category: 'activity',
-    emoji: '⛵',
+    icon: 'boat-outline',
     description: 'World-renowned arts, education, and lecture community on the shores of Chautauqua Lake. Season runs June–August.',
     address: 'Chautauqua, NY (20 min from Jamestown)',
     website: 'https://chq.org',
     featured: false,
   },
-  {
-    id: 'chautauqua-lake',
-    name: 'Chautauqua Lake',
-    category: 'activity',
-    emoji: '🌊',
-    description: 'Glacially-formed lake and one of the highest navigable lakes in the US. Boating, fishing, lakeside dining, and beach access in nearby Celoron.',
-    address: 'Chautauqua, NY (15 min from downtown)',
-    website: 'https://www.chautauqualake.org/',
-    featured: false,
-  },
 
-  // ─── Stay ─────────────────────────────────────────────────────
   {
     id: 'chautauqua-harbor-hotel',
     name: 'The Chautauqua Harbor Hotel',
     category: 'stay',
-    emoji: '🏨',
+    icon: 'bed-outline',
     description: 'Upscale lakeside hotel on the shores of Chautauqua Lake in Celoron — just minutes from downtown Jamestown. Stunning water views, a full-service marina, and a great restaurant on site.',
     address: '10 Dunham Ave, Celoron, NY',
     website: 'https://www.thechautauquaharborhotel.com/',
@@ -283,7 +297,7 @@ export const PLACES: Place[] = [
     id: 'airbnb-jamestown',
     name: 'Airbnb & VRBO',
     category: 'stay',
-    emoji: '🏠',
+    icon: 'home-outline',
     description: 'Short-term rentals throughout Jamestown and the Chautauqua Lake area. Good option for groups or longer stays.',
     address: 'Various locations',
     website: 'https://www.airbnb.com/s/Jamestown--New-York',
@@ -291,17 +305,17 @@ export const PLACES: Place[] = [
   },
 ];
 
-export const PLACE_CATEGORIES: { key: PlaceCategory; label: string; emoji: string; note?: string }[] = [
-  { key: 'coffee',   label: 'Coffee',       emoji: '☕' },
-  { key: 'food',     label: 'Food',         emoji: '🍽️' },
-  { key: 'drinks',   label: 'Drinks',       emoji: '🍺' },
+export const PLACE_CATEGORIES: { key: PlaceCategory; label: string; icon: string; note?: string }[] = [
+  { key: 'coffee',   label: 'Coffee',        icon: 'cafe-outline' },
+  { key: 'food',     label: 'Food',          icon: 'restaurant-outline' },
+  { key: 'drinks',   label: 'Drinks',        icon: 'beer-outline' },
   {
-    key: 'cannabis', label: 'Cannabis', emoji: '🌿',
+    key: 'cannabis', label: 'Cannabis',      icon: 'leaf-outline',
     note: 'Recreational cannabis is legal in New York State for adults 21+. Public and in-vehicle consumption is not permitted. Laws vary — check your home state before traveling with any product.',
   },
-  { key: 'activity', label: 'Things to Do', emoji: '🎯' },
-  { key: 'arts',     label: 'Arts',         emoji: '🎭' },
-  { key: 'stay',     label: 'Where to Stay', emoji: '🏨' },
+  { key: 'activity', label: 'Things to Do', icon: 'compass-outline' },
+  { key: 'arts',     label: 'Arts',          icon: 'musical-notes-outline' },
+  { key: 'stay',     label: 'Where to Stay', icon: 'bed-outline' },
 ];
 
 export function getFeaturedPlaces(): Place[] {

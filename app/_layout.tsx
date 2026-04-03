@@ -22,7 +22,6 @@ import {
   Outfit_700Bold,
 } from '@expo-google-fonts/outfit';
 
-// Hold the splash screen until fonts are ready
 SplashScreen.preventAutoHideAsync();
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -118,7 +117,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // Keep showing splash until fonts are ready
   if (!fontsLoaded) return null;
 
   return (

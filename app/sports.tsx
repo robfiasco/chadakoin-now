@@ -9,8 +9,6 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 
-// ─── Types ────────────────────────────────────────────────────────
-
 interface GameResult {
   date: string; status: 'final' | 'live' | 'upcoming';
   opponentAbbr: string; opponentName: string; opponentLogo: string;
@@ -28,7 +26,7 @@ interface SabresData {
 const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
-const JCC_LOGO    = 'https://jccjayhawks.com/images/setup/logo-jayhawk.png';
+const JCC_LOGO    = require('../assets/jcc.png');
 
 function sportEmoji(sport: string): string {
   const s = sport.toLowerCase();
@@ -46,10 +44,8 @@ function sportEmoji(sport: string): string {
   return '🏅';
 }
 
-// ─── Fetch ────────────────────────────────────────────────────────
-
 // Transforms an ESPN-format game event into our GameResult shape.
-// Used by the web API route (/api/sabres); the native path uses the NHL API directly.
+// Used by the web API route (/api/sabres).
 function parseGame(event: any): GameResult | null {
   try {
     const comp = event.competitions?.[0]; if (!comp) return null;
@@ -71,6 +67,39 @@ function parseGame(event: any): GameResult | null {
   } catch { return null; }
 }
 
+// Transforms an NHL API v1 game (used on native — different shape from ESPN).
+function parseNHLGame(g: any): GameResult | null {
+  try {
+    const home = g.homeTeam; const away = g.awayTeam;
+    if (!home || !away) return null;
+    const weAreHome = (home.abbrev ?? '').toUpperCase() === 'BUF';
+    const us = weAreHome ? home : away;
+    const them = weAreHome ? away : home;
+    const state = (g.gameState ?? '').toUpperCase();
+    const status: GameResult['status'] = (state === 'FINAL' || state === 'OFF') ? 'final' : (state === 'LIVE' || state === 'CRIT') ? 'live' : 'upcoming';
+    const ourScore   = us.score   != null ? String(us.score)   : '—';
+    const theirScore = them.score != null ? String(them.score) : '—';
+    const won = status === 'final' ? parseInt(ourScore) > parseInt(theirScore) : null;
+    const abbrev = (them.abbrev ?? '').toUpperCase();
+    // NHL API returns SVG logos which React Native can't render — use ESPN PNG CDN instead
+    const opponentLogo = abbrev
+      ? `https://a.espncdn.com/i/teamlogos/nhl/500/${abbrev.toLowerCase()}.png`
+      : '';
+    return {
+      date: g.startTimeUTC ?? g.gameDate ?? '',
+      status,
+      opponentAbbr: abbrev || '???',
+      opponentName: them.placeName?.default ?? abbrev ?? 'Opponent',
+      opponentLogo,
+      ourScore, theirScore,
+      isHome: weAreHome,
+      won,
+      venue: g.venue?.default ?? '',
+      broadcast: '',
+    };
+  } catch { return null; }
+}
+
 // Fetch JCC results directly from their RSS feed (native only — no CORS restriction)
 async function fetchJCCNative(): Promise<JCCResult[]> {
   try {
@@ -82,11 +111,15 @@ async function fetchJCCNative(): Promise<JCCResult[]> {
     let m;
     while ((m = itemRx.exec(text)) !== null) {
       const block = m[1];
-      const get = (tag: string) => {
-        const r = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`);
-        const match = r.exec(block);
-        return match ? (match[1] ?? match[2] ?? '').trim() : '';
+      // Precompiled regexes — avoids dynamic RegExp construction (ReDoS risk)
+      const RX: Record<string, RegExp> = {
+        'ps:score':    /<ps:score[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:score>|<ps:score[^>]*>([^<]*)<\/ps:score>/,
+        'pubDate':     /<pubDate[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/pubDate>|<pubDate[^>]*>([^<]*)<\/pubDate>/,
+        'ps:opponent': /<ps:opponent[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:opponent>|<ps:opponent[^>]*>([^<]*)<\/ps:opponent>/,
+        'category':    /<category[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category[^>]*>([^<]*)<\/category>/,
+        'link':        /<link[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/link>|<link[^>]*>([^<]*)<\/link>/,
       };
+      const get = (tag: string) => { const match = RX[tag]?.exec(block); return match ? (match[1] ?? match[2] ?? '').trim() : ''; };
       const score    = get('ps:score');
       const pubDate  = get('pubDate');
       const opponent = get('ps:opponent');
@@ -125,12 +158,20 @@ async function fetchSabres(): Promise<SabresData> {
   const schedJson = await schedRes.json();
   const standJson = standRes.ok ? await standRes.json() : null;
   const statsJson = statsRes.ok ? await statsRes.json() : null;
-  const record = schedJson.team?.record?.items?.[0]?.summary ?? '';
-  const standing = standJson?.standings?.find((t: any) => t.teamAbbrev?.default === 'BUF')?.divisionName ?? '';
+  // Build record from standings (more reliable than schedJson.team.record)
+  const bufStanding = standJson?.standings?.find((t: any) => t.teamAbbrev?.default === 'BUF');
+  const record = bufStanding
+    ? `${bufStanding.wins ?? 0}-${bufStanding.losses ?? 0}-${bufStanding.otLosses ?? 0}`
+    : '';
+  const standing = bufStanding?.divisionName ?? '';
   const games: any[] = schedJson.games ?? [];
   const now = new Date();
-  const past = games.filter((g: any) => g.gameState === 'FINAL' || g.gameState === 'OFF').sort((a: any, b: any) => new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime());
-  const upcoming = games.filter((g: any) => (g.gameState === 'FUT' || g.gameState === 'PRE') && new Date(g.startTimeUTC) >= now).sort((a: any, b: any) => new Date(a.gameDate).getTime() - new Date(b.gameDate).getTime());
+  const past = games
+    .filter((g: any) => g.gameState === 'FINAL' || g.gameState === 'OFF')
+    .sort((a: any, b: any) => new Date(b.startTimeUTC).getTime() - new Date(a.startTimeUTC).getTime());
+  const upcoming = games
+    .filter((g: any) => (g.gameState === 'FUT' || g.gameState === 'PRE') && new Date(g.startTimeUTC) >= now)
+    .sort((a: any, b: any) => new Date(a.startTimeUTC).getTime() - new Date(b.startTimeUTC).getTime());
   const topScorers: Scorer[] = (statsJson?.skaters ?? [])
     .sort((a: any, b: any) => (b.points ?? 0) - (a.points ?? 0))
     .slice(0, 5)
@@ -142,16 +183,15 @@ async function fetchSabres(): Promise<SabresData> {
       points: p.points ?? 0,
       headshot: p.headshot ?? '',
     }));
-  return { record, standing, recentGame: past[0] ? parseGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, news: [] };
+  return { record, standing, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, news: [] };
 }
 
-// ─── Collapsible Team Section ─────────────────────────────────────
-
 function TeamSection({ id, logo, name, subtitle, children, acc, accRGB, glassWeb }: {
-  id: string; logo: string; name: string; subtitle?: string;
+  id: string; logo: string | number; name: string; subtitle?: string;
   children: React.ReactNode; acc: string; accRGB: string; glassWeb: any;
 }) {
   const [open, setOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const rot = useRef(new Animated.Value(0)).current;
 
   function toggle() {
@@ -167,7 +207,13 @@ function TeamSection({ id, logo, name, subtitle, children, acc, accRGB, glassWeb
     <View style={[{ overflow: 'hidden' }, rowStyle]}>
       {/* Header row — always visible */}
       <TouchableOpacity onPress={toggle} activeOpacity={0.7} style={styles.teamRow}>
-        <Image source={{ uri: logo }} style={styles.teamRowLogo} resizeMode="contain" />
+        {!logoError ? (
+          <Image source={typeof logo === 'string' ? { uri: logo } : logo} style={styles.teamRowLogo} resizeMode="contain" onError={() => setLogoError(true)} />
+        ) : (
+          <View style={[styles.teamRowLogo, { borderRadius: 22, backgroundColor: `rgba(${accRGB},0.12)`, alignItems: 'center', justifyContent: 'center' }]}>
+            <Ionicons name="trophy-outline" size={20} color={acc} />
+          </View>
+        )}
         <View style={{ flex: 1 }}>
           <Text style={[styles.teamRowName, { color: open ? acc : '#fff' }]}>{name}</Text>
           {subtitle ? <Text style={[styles.teamRowSub, { color: `rgba(${accRGB},0.5)` }]}>{subtitle}</Text> : null}
@@ -186,8 +232,6 @@ function TeamSection({ id, logo, name, subtitle, children, acc, accRGB, glassWeb
     </View>
   );
 }
-
-// ─── Game card ────────────────────────────────────────────────────
 
 function GameCard({ game, label, acc, accRGB, glassStyle }: { game: GameResult; label: string; acc: string; accRGB: string; glassStyle: any }) {
   const d = new Date(game.date);
@@ -215,8 +259,6 @@ function GameCard({ game, label, acc, accRGB, glassStyle }: { game: GameResult; 
     </View>
   );
 }
-
-// ─── Sports Screen ────────────────────────────────────────────────
 
 export default function SportsScreen() {
   const { theme } = useTheme();

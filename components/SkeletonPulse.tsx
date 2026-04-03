@@ -42,7 +42,6 @@ export function ErrorBanner({ message, accRGB }: { message: string; accRGB: stri
   return (
     <View style={[styles.banner, { backgroundColor: `rgba(${accRGB},0.08)`, borderColor: `rgba(${accRGB},0.2)` }]}>
       <View style={styles.bannerDot} />
-      {/* small warning text */}
       <Animated.Text style={[styles.bannerText, { color: `rgba(${accRGB},0.6)` }]}>
         {message}
       </Animated.Text>

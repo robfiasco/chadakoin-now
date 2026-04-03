@@ -5,8 +5,8 @@ export const Colors = {
   blueTeal: '#1F5673',
   navy: '#0F1A24',         // tab bar surface
   cream: '#F4EFE6',        // legacy / native fallback
-  warmWhite: '#FFFFFF',    // card surfaces
-  background: '#EEF2F3',   // content area background
+  warmWhite: '#FFFFFF',
+  background: '#EEF2F3',
   charcoal: '#14212B',
   amber: '#F59E0B',
   amberLight: '#FEF3C7',   // amber note background

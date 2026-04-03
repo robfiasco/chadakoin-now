@@ -91,10 +91,15 @@ export function ThemedBackground({ children }: { children: React.ReactNode }) {
     ? parseCSSGradientColors(theme.bgGradient)
     : null;
 
+  // Orbs only on web — on native there's no CSS blur, so they render as hard circles
   const content = (
     <>
-      <Orb color={theme.orb1} width={400} height={250} top={-60} right={-80} duration={12000} />
-      <Orb color={theme.orb2} width={280} height={200} bottom={120} left={-60} duration={9000} delay={3000} reverse />
+      {Platform.OS === 'web' && (
+        <>
+          <Orb color={theme.orb1} width={400} height={250} top={-60} right={-80} duration={12000} />
+          <Orb color={theme.orb2} width={280} height={200} bottom={120} left={-60} duration={9000} delay={3000} reverse />
+        </>
+      )}
       {children}
     </>
   );

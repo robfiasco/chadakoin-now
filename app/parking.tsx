@@ -49,7 +49,6 @@ export default function ParkingScreen() {
         }
       >
 
-        {/* Today hero */}
         {/* @ts-ignore */}
         <View style={[styles.card, panelGlow]}>
           {loading ? (
@@ -72,7 +71,6 @@ export default function ParkingScreen() {
           )}
         </View>
 
-        {/* Season + Switch time */}
         <View style={styles.halfRow}>
           {/* @ts-ignore */}
           <View style={[styles.halfCard, panel]}>
@@ -88,7 +86,7 @@ export default function ParkingScreen() {
           </View>
         </View>
 
-        {/* Live weekly schedule — computed from current date */}
+        {/* Weekly parking schedule */}
         <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>THIS WEEK</Text>
         {schedule.map(day => (
           <View key={day.date} style={[

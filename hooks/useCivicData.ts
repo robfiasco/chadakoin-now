@@ -3,8 +3,6 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { XMLParser } from 'fast-xml-parser';
 
-// ─── Types ────────────────────────────────────────────────────────
-
 export interface RecyclingWeek {
   material: string;
   dateRange: string;
@@ -84,8 +82,6 @@ export interface CivicData {
   refresh: () => void;
 }
 
-// ─── Constants ────────────────────────────────────────────────────
-
 const FEEDS = {
   // BPU iCalendar feed — full year recycling schedule including Metal weeks & holiday events
   recyclingICS: 'https://www.jamestownnybpu.gov/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24',
@@ -144,7 +140,6 @@ const DEFAULTS: Omit<CivicData, 'refresh'> = {
   lastUpdated: null,
 };
 
-// ─── CORS proxy (web only) ────────────────────────────────────────
 // Routes RSS/JSON requests through our own Expo Router API endpoint
 // to avoid browser CORS restrictions. Native fetches directly.
 function proxyUrl(url: string): string {
@@ -154,7 +149,6 @@ function proxyUrl(url: string): string {
   return url;
 }
 
-// ─── XML parser ───────────────────────────────────────────────────
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
@@ -192,7 +186,6 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-// ─── AsyncStorage cache helpers ───────────────────────────────────
 // Bump the version suffix here to bust all stale cached data in the wild
 const CACHE_PREFIX = 'civic_v16_';
 
@@ -214,7 +207,6 @@ async function setCache(key: string, data: unknown): Promise<void> {
   } catch {}
 }
 
-// ─── Parking (computed) ───────────────────────────────────────────
 // Jamestown alternate-side rules:
 //   Nov 1 – Mar 31 (daily):   even date → even side, odd date → odd side, move by 10:00 AM
 //   Apr 1 – Oct 31 (monthly): even month → even side, odd month → odd side, same all month
@@ -284,7 +276,6 @@ export function computeParkingSchedule() {
   });
 }
 
-// ─── Holiday delay (computed) ─────────────────────────────────────
 function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
   const today = new Date();
   const dow = today.getDay();
@@ -1003,8 +994,8 @@ function extractEventDate(title: string, pubDateStr: string): string {
 // Keyword list for event-like headlines
 const EVENT_KEYWORDS = /presents|to host|to perform|concert|exhibit|show|festival|expo|fair|forum|lecture|ceremony|opening|workshop|audition|celebration|annual|invites|parade|ribbon|groundbreaking|memorial|tribute|gala|reception|fundraiser|benefit|tournament|race|run|walk|market|sale|auction|screening|premiere|debut|launch|rally|vigil|conference|summit|symposium|performance|recital|competition|showcase/i;
 
-// Patterns that look event-like but aren't — news articles, calls for submissions, stats
-const NOT_EVENT = /calling for|call for|seeks? (volunteers?|presenters?|applicants?)|applications? (now )?open|(now )?accepting|crime (is |are )?(down|up)|statistics|report|survey|deadline|nominations|seeking/i;
+// Patterns that look event-like but aren't — news articles, calls for submissions, announcements
+const NOT_EVENT = /calling for|call for|seeks? (volunteers?|presenters?|applicants?)|applications? (now )?open|(now )?accepting|crime (is |are )?(down|up)|statistics|report|survey|deadline|nominations|seeking|to headline|headlines?|announces?|announced|set to (perform|appear|headline)|coming to jamestown|confirmed for|tickets? (now |go )?on sale|lineup (announced|revealed|set)/i;
 
 async function fetchWrfaEvents(): Promise<EventItem[]> {
   try {

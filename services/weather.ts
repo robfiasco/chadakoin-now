@@ -28,8 +28,6 @@ export interface WeatherData {
 
 let cache: { data: WeatherData; timestamp: number } | null = null;
 
-// ─── Open-Meteo fallback (no key needed, used on native) ──────────
-
 function omCodeToCondition(code: number): string {
   if (code === 0) return 'Clear';
   if (code <= 2) return 'Mostly Clear';
@@ -79,8 +77,6 @@ async function fetchFromOpenMeteo(): Promise<WeatherData> {
     icon: omCodeToIcon(json.current.weathercode),
   };
 }
-
-// ─── Main fetch ───────────────────────────────────────────────────
 
 export async function fetchWeather(): Promise<WeatherData> {
   const now = Date.now();

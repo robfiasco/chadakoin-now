@@ -54,7 +54,6 @@ export default function AlertsScreen() {
         }
       >
 
-        {/* Status card */}
         {loading ? (
           // @ts-ignore
           <View style={[styles.statusCard, panelGlow, { gap: 12 }]}>
@@ -89,7 +88,6 @@ export default function AlertsScreen() {
           </View>
         )}
 
-        {/* Alerts list */}
         <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>RECENT UPDATES</Text>
         {loading ? (
           [1, 2].map(i => (

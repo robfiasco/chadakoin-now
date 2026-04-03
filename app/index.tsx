@@ -15,7 +15,7 @@ import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { PLACES, PLACE_CATEGORIES, PlaceCategory } from '../data/places';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NowPlaying {
@@ -52,27 +52,26 @@ function getDateBadge() {
   return `${days[d.getDay()]} ${d.getDate()}`;
 }
 
-// Returns a note about when the parking mode next changes
-function getParkingModeNote(): string {
+// Returns a countdown note when within 60 days of a mode switch, otherwise null.
+function getParkingModeNote(): string | null {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const month = today.getMonth() + 1; // 1-indexed
   const isDaily = month >= 11 || month <= 3;
   if (isDaily) {
-    // Daily mode: next switch to monthly is Apr 1
     const year = month >= 4 ? today.getFullYear() + 1 : today.getFullYear();
     const end = new Date(year, 3, 1); // Apr 1
     const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (days > 60) return null;
     return `${days} day${days !== 1 ? 's' : ''} until monthly switching (Apr 1)`;
   }
-  // Monthly mode: next switch to daily is Nov 1
   const year = month >= 11 ? today.getFullYear() + 1 : today.getFullYear();
   const end = new Date(year, 10, 1); // Nov 1
   const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (days > 60) return null;
   return `${days} day${days !== 1 ? 's' : ''} until daily switching (Nov 1)`;
 }
 
-// ─── Live pulse dot ───────────────────────────────────────────────
 function LiveDot({ color }: { color: string }) {
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -86,7 +85,6 @@ function LiveDot({ color }: { color: string }) {
   return <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, opacity: pulse }} />;
 }
 
-// ─── Theme selector dropdown ──────────────────────────────────────
 function ThemeSelector() {
   const { theme, themeId, setThemeId } = useTheme();
   const [open, setOpen] = useState(false);
@@ -194,7 +192,6 @@ const tsStyles = StyleSheet.create({
   optionLabel: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
 });
 
-// ─── Stat chip ────────────────────────────────────────────────────
 function StatChip({ label, value, accRGB, loading }: { label: string; value: string; accRGB: string; loading?: boolean }) {
   return (
     <View style={[styles.statChip, { backgroundColor: `rgba(${accRGB},0.08)`, borderColor: `rgba(${accRGB},0.18)` }]}>
@@ -217,7 +214,7 @@ export default function HomeScreen() {
   const [radioPlaying, setRadioPlaying] = useState(false);
   const [radioLoading, setRadioLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
   const civic = useCivicData();
 
   // Load persisted visitor preference on first mount
@@ -235,32 +232,17 @@ export default function HomeScreen() {
     });
   }
 
-  // Clean up audio on unmount
-  useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync().catch(() => {});
-    };
-  }, []);
-
   async function toggleRadio() {
     if (radioLoading) return;
 
     if (radioPlaying) {
-      // Stop
+      radioPlayer.pause();
       setRadioPlaying(false);
-      await soundRef.current?.stopAsync().catch(() => {});
-      await soundRef.current?.unloadAsync().catch(() => {});
-      soundRef.current = null;
     } else {
-      // Play
       setRadioLoading(true);
       try {
-        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: 'https://radio.chadakoindigital.com/radio.mp3' },
-          { shouldPlay: true, isLooping: false }
-        );
-        soundRef.current = sound;
+        await setAudioModeAsync({ playsInSilentModeIOS: true });
+        radioPlayer.play();
         setRadioPlaying(true);
       } catch {
         // fallback: open in browser if native audio fails
@@ -488,7 +470,7 @@ export default function HomeScreen() {
           ═══════════════════════════════════════════ */
           <>
             {/* Featured places */}
-            {PLACES.filter(p => p.featured).map(place => (
+            {PLACES.filter(p => p.featured).map((place, idx) => (
               <TouchableOpacity
                 key={place.id}
                 activeOpacity={0.75}
@@ -498,14 +480,16 @@ export default function HomeScreen() {
                   borderRadius: 20, borderWidth: 1.5,
                   backgroundColor: `rgba(${theme.acc2RGB},0.1)`,
                   borderColor: `rgba(${theme.acc2RGB},0.35)`,
+                  marginTop: idx > 0 ? 10 : 0,
                   ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)' } : {}),
                 }]}
               >
                 <View style={styles.featuredBadge}>
-                  <Text style={[styles.featuredBadgeText, { color: theme.acc2 }]}>⭐ FEATURED</Text>
+                  <Ionicons name="star" size={9} color={theme.acc2} style={{ marginRight: 4 }} />
+                  <Text style={[styles.featuredBadgeText, { color: theme.acc2 }]}>FEATURED</Text>
                 </View>
                 <View style={styles.placeRow}>
-                  <Text style={styles.placeEmoji}>{place.emoji}</Text>
+                  <Ionicons name={place.icon as any} size={26} color={theme.acc2} style={{ marginTop: 2 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.placeName, { color: theme.acc2 }]}>{place.name}</Text>
                     {place.featuredNote && <Text style={styles.placeFeaturedNote}>{place.featuredNote}</Text>}
@@ -523,9 +507,12 @@ export default function HomeScreen() {
               if (items.length === 0) return null;
               return (
                 <View key={cat.key}>
-                  <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)` }]}>
-                    {cat.emoji} {cat.label.toUpperCase()}
-                  </Text>
+                  <View style={styles.sectionLabelRow}>
+                    <Ionicons name={cat.icon as any} size={11} color={`rgba(${theme.accRGB},0.5)`} />
+                    <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)`, marginTop: 0, marginBottom: 0, paddingLeft: 0 }]}>
+                      {cat.label.toUpperCase()}
+                    </Text>
+                  </View>
                   {cat.note && (
                     <Text style={[styles.categoryNote, { color: `rgba(${theme.accRGB},0.45)` }]}>
                       {cat.note}
@@ -540,7 +527,7 @@ export default function HomeScreen() {
                         onPress={() => place.website && Linking.openURL(place.website)}
                         style={[styles.placeListRow, i < items.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
                       >
-                        <Text style={{ fontSize: 18 }}>{place.emoji}</Text>
+                        <Ionicons name={place.icon as any} size={18} color={`rgba(${theme.accRGB},0.65)`} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.placeListName}>{place.name}</Text>
                           <Text style={styles.placeListDesc}>{place.description}</Text>
@@ -567,7 +554,7 @@ export default function HomeScreen() {
               if (weekend.length === 0) return null;
               return (
                 <>
-                  <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>🗓 THIS WEEKEND</Text>
+                  <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>THIS WEEKEND</Text>
                   {weekend.map((e, i) => {
                     const d = new Date(e.startDate);
                     const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -619,11 +606,13 @@ export default function HomeScreen() {
                   </Text>
                   <View style={[styles.parkingNote, { borderTopColor: `rgba(${theme.accRGB},0.1)` }]}>
                     <Text style={[styles.parkingNoteText, { color: `rgba(${theme.accRGB},0.5)` }]}>
-                      {parking.mode === 'daily' ? `Switches daily at ${parking.switchTime}` : 'Side stays same all month'}
+                      {parking.mode === 'daily' ? `Switches daily at ${parking.switchTime}` : 'Same side for the entire month'}
                     </Text>
-                    <Text style={[styles.parkingNoteText, { color: `rgba(${theme.accRGB},0.35)` }]}>
-                      {getParkingModeNote()}
-                    </Text>
+                    {getParkingModeNote() && (
+                      <Text style={[styles.parkingNoteText, { color: `rgba(${theme.accRGB},0.35)` }]}>
+                        {getParkingModeNote()}
+                      </Text>
+                    )}
                   </View>
                 </>
               )}
@@ -738,6 +727,9 @@ export default function HomeScreen() {
                     Live On Tape Delay
                     {civic.latestEpisode.episodeNumber ? ` · Ep. ${civic.latestEpisode.episodeNumber}` : ''}
                   </Text>
+                  <Text style={[styles.lotdTagline, { color: `rgba(${theme.acc2RGB},0.35)` }]}>
+                    Jamestown's longest running podcast
+                  </Text>
                   <Text style={styles.lotdTitle} numberOfLines={1}>{civic.latestEpisode.title}</Text>
                   {civic.latestEpisode.duration ? (
                     <Text style={[styles.lotdDuration, { color: `rgba(${theme.acc2RGB},0.45)` }]}>
@@ -745,7 +737,9 @@ export default function HomeScreen() {
                     </Text>
                   ) : null}
                 </View>
-                <Ionicons name="play-circle-outline" size={28} color={theme.acc2} />
+                <View style={[styles.playBtn, { borderColor: `rgba(${theme.acc2RGB},0.3)` }]}>
+                  <Ionicons name="play" size={18} color={`rgba(${theme.acc2RGB},0.7)`} />
+                </View>
               </TouchableOpacity>
             ) : null}
           </>
@@ -780,7 +774,7 @@ export default function HomeScreen() {
                 <Text style={styles.cdirArtist} numberOfLines={1}>{nowPlaying.artist}</Text>
               </>
             ) : (
-              <Text style={styles.cdirSub}>Chadakoin Digital Internet Radio · 24/7</Text>
+              <Text style={styles.cdirSub}>Local music and podcasts · 24/7</Text>
             )}
           </View>
 
@@ -822,6 +816,10 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 6, paddingBottom: 40 },
 
+  sectionLabelRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    marginBottom: 8, marginTop: 18, paddingLeft: 2,
+  },
   sectionLabel: {
     fontFamily: 'Outfit', fontSize: 9, fontWeight: '700',
     letterSpacing: 1.8, textTransform: 'uppercase',
@@ -890,10 +888,9 @@ const styles = StyleSheet.create({
 
   // Visitor mode
   categoryNote: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17, marginBottom: 8, paddingHorizontal: 2 },
-  featuredBadge: { marginBottom: 8 },
+  featuredBadge: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   featuredBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   placeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  placeEmoji: { fontSize: 28, marginTop: 2 },
   placeName: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', marginBottom: 4 },
   placeFeaturedNote: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 4, fontStyle: 'italic' },
   placeDesc: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
@@ -910,6 +907,7 @@ const styles = StyleSheet.create({
 
   // LOTD
   lotdCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  lotdTagline: { fontFamily: 'Outfit', fontSize: 10, marginTop: 1, marginBottom: 3, fontStyle: 'italic' },
   lotdArt: {
     width: 52, height: 52, borderRadius: 10, borderWidth: 1,
   },
