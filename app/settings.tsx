@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
 import { THEMES, ThemeId } from '../lib/themes';
@@ -78,6 +79,32 @@ export default function SettingsScreen() {
           );
         })}
 
+        {/* Feature your business CTA */}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://chadakoindigital.com')}
+          activeOpacity={0.75}
+          accessibilityLabel="Feature your business on Chadakoin Now"
+          accessibilityRole="link"
+          // @ts-ignore
+          style={[styles.ctaCard, {
+            borderRadius: 20, borderWidth: 1,
+            backgroundColor: `rgba(${theme.accRGB},0.06)`,
+            borderColor: `rgba(${theme.accRGB},0.18)`,
+            ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
+          }]}
+        >
+          <View style={styles.ctaRow}>
+            <Ionicons name="storefront-outline" size={20} color={theme.acc} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ctaTitle, { color: theme.acc }]}>Feature your business</Text>
+              <Text style={[styles.ctaSub, { color: `rgba(${theme.accRGB},0.5)` }]}>
+                Reach Jamestown residents directly in the app
+              </Text>
+            </View>
+            <Ionicons name="arrow-forward" size={16} color={`rgba(${theme.accRGB},0.4)`} />
+          </View>
+        </TouchableOpacity>
+
         <Text style={[styles.footer, { color: `rgba(${theme.accRGB},0.2)` }]}>
           Chadakoin Now · Built by Chadakoin Digital
         </Text>
@@ -108,5 +135,9 @@ const styles = StyleSheet.create({
   },
   activePillText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
   themeDesc: { fontFamily: 'Outfit', fontSize: 13, lineHeight: 20 },
+  ctaCard: { padding: 18 },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  ctaTitle: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', marginBottom: 3 },
+  ctaSub: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
   footer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 12 },
 });

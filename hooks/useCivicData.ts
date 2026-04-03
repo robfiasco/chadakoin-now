@@ -826,7 +826,7 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
     if (!res.ok) throw new Error('Reg Lenna fetch failed');
     const json = await res.json();
 
-    const items: any[] = json.items ?? [];
+    const items: any[] = json.upcoming ?? json.items ?? [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
