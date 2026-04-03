@@ -956,6 +956,23 @@ function extractEventDate(title: string, pubDateStr: string): string {
     }
   }
 
+  // Pattern: "in August", "this summer in July", "for September" — month mentioned without a day.
+  // Places the event on the 1st of that month so it shows in the right month, not on pubDate.
+  const monthOnlyPattern = new RegExp(
+    `\\b(?:in|this|next|for)\\s+(${Object.keys(MONTHS).join('|')})\\.?\\b`, 'i'
+  );
+  const monthOnlyMatch = t.match(monthOnlyPattern);
+  if (monthOnlyMatch) {
+    const month = MONTHS[monthOnlyMatch[1].toLowerCase().replace('.', '')];
+    if (month) {
+      const d = new Date(year, month - 1, 1, 12, 0, 0);
+      // If this month is already past, assume next year
+      if (d < new Date()) d.setFullYear(d.getFullYear() + 1);
+      // Only use if the resulting date is in the future relative to pubDate
+      if (d > pub) return d.toISOString();
+    }
+  }
+
   // Pattern: "opens saturday", "this friday", "next thursday", etc.
   const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   for (let wi = 0; wi < WEEKDAYS.length; wi++) {
