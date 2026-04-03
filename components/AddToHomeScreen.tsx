@@ -91,12 +91,12 @@ export function AddToHomeScreen() {
       ) : (
         <View style={styles.row}>
           <View style={[styles.iconWrap, { backgroundColor: `rgba(${theme.accRGB},0.12)` }]}>
-            <Ionicons name="phone-portrait-outline" size={20} color={theme.acc} />
+            <Ionicons name="logo-safari" size={20} color={theme.acc} />
           </View>
           <View style={styles.textWrap}>
-            <Text style={[styles.title, { color: '#fff' }]}>Add to Home Screen</Text>
+            <Text style={[styles.title, { color: '#fff' }]}>Open in Safari to install</Text>
             <Text style={[styles.body, { color: `rgba(255,255,255,0.5)` }]}>
-              Tap <Text style={{ color: `rgba(255,255,255,0.75)` }}>···</Text> then <Ionicons name="share-outline" size={13} color={`rgba(255,255,255,0.5)`} /> then <Text style={{ color: `rgba(255,255,255,0.75)` }}>"Add to Home Screen"</Text>
+              Safari is required to add this app to your home screen
             </Text>
           </View>
           <TouchableOpacity onPress={dismiss} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
