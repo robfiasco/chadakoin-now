@@ -17,7 +17,7 @@ function ThemedTabs() {
 
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={() => ({
         headerShown: false,
         tabBarStyle: {
           backgroundColor: theme.tabBarBg ?? 'rgba(0,5,15,0.92)',
@@ -35,7 +35,7 @@ function ThemedTabs() {
           fontWeight: '600',
           marginTop: 1,
         },
-      }}
+      })}
     >
       <Tabs.Screen
         name="index"

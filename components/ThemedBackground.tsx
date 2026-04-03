@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../lib/ThemeContext';
 
 interface OrbProps {
@@ -40,16 +41,10 @@ function Orb({ color, width, height, top, bottom, left, right, duration, delay =
     return () => anim.stop();
   }, []);
 
-  const tx = drift.interpolate({
-    inputRange: [0, 1],
-    outputRange: reverse ? [14, 0] : [0, 14],
-  });
-  const ty = drift.interpolate({
-    inputRange: [0, 1],
-    outputRange: reverse ? [16, 0] : [0, 16],
-  });
+  const tx = drift.interpolate({ inputRange: [0, 1], outputRange: reverse ? [14, 0] : [0, 14] });
+  const ty = drift.interpolate({ inputRange: [0, 1], outputRange: reverse ? [16, 0] : [0, 16] });
 
-  // blur works on web via filter CSS; on native, orbs are just soft transparent circles
+  // Web: CSS blur for soft glow. Native: slightly higher opacity compensates for no blur.
   const webBlur = Platform.OS === 'web' ? { filter: 'blur(60px)' } : {};
 
   return (
@@ -65,6 +60,8 @@ function Orb({ color, width, height, top, bottom, left, right, duration, delay =
           bottom,
           left,
           right,
+          // Slightly boost opacity on native since there's no blur spreading the color
+          opacity: Platform.OS === 'web' ? 1 : 1.6,
         },
         // @ts-ignore — web-only CSS property
         webBlur,
@@ -74,32 +71,50 @@ function Orb({ color, width, height, top, bottom, left, right, duration, delay =
   );
 }
 
+// Parse colors from a CSS linear-gradient string for use with expo-linear-gradient.
+// e.g. "linear-gradient(180deg, #050505 0%, #101010 50%, #1c1c1c 100%)" → ['#050505','#101010','#1c1c1c']
+function parseCSSGradientColors(gradient: string): string[] | null {
+  const matches = gradient.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/g);
+  return matches && matches.length >= 2 ? matches : null;
+}
+
 export function ThemedBackground({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
 
-  // On web, use CSS gradient if theme provides one
+  // Web: use the CSS gradient override if provided
   const webBg = Platform.OS === 'web' && theme.bgGradient
     ? { background: theme.bgGradient }
     : {};
 
+  // Native: use LinearGradient if the theme specifies a gradient, otherwise flat bg
+  const nativeGradientColors = Platform.OS !== 'web' && theme.bgGradient
+    ? parseCSSGradientColors(theme.bgGradient)
+    : null;
+
+  const content = (
+    <>
+      <Orb color={theme.orb1} width={400} height={250} top={-60} right={-80} duration={12000} />
+      <Orb color={theme.orb2} width={280} height={200} bottom={120} left={-60} duration={9000} delay={3000} reverse />
+      {children}
+    </>
+  );
+
+  if (nativeGradientColors) {
+    return (
+      <LinearGradient
+        colors={nativeGradientColors as any}
+        locations={nativeGradientColors.length === 3 ? [0, 0.5, 1] : undefined}
+        style={styles.container}
+      >
+        {content}
+      </LinearGradient>
+    );
+  }
+
   return (
     // @ts-ignore
     <View style={[styles.container, { backgroundColor: theme.bg }, webBg]}>
-      <Orb
-        color={theme.orb1}
-        width={400} height={250}
-        top={-60} right={-80}
-        duration={12000}
-      />
-      <Orb
-        color={theme.orb2}
-        width={280} height={200}
-        bottom={120} left={-60}
-        duration={9000}
-        delay={3000}
-        reverse
-      />
-      {children}
+      {content}
     </View>
   );
 }

@@ -71,6 +71,44 @@ function parseGame(event: any): GameResult | null {
   } catch { return null; }
 }
 
+// Fetch JCC results directly from their RSS feed (native only — no CORS restriction)
+async function fetchJCCNative(): Promise<JCCResult[]> {
+  try {
+    const res = await fetch('https://jccjayhawks.com/composite?print=rss');
+    if (!res.ok) return [];
+    const text = await res.text();
+    const items: JCCResult[] = [];
+    const itemRx = /<item>([\s\S]*?)<\/item>/g;
+    let m;
+    while ((m = itemRx.exec(text)) !== null) {
+      const block = m[1];
+      const get = (tag: string) => {
+        const r = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`);
+        const match = r.exec(block);
+        return match ? (match[1] ?? match[2] ?? '').trim() : '';
+      };
+      const score    = get('ps:score');
+      const pubDate  = get('pubDate');
+      const opponent = get('ps:opponent');
+      const category = get('category');
+      const link     = get('link');
+      if (!pubDate) continue;
+      const date = new Date(pubDate);
+      if (!score || score.trim() === '' || date >= new Date()) continue;
+      const parts = score.split(',').map((s: string) => s.trim());
+      const wl = parts[0];
+      const final = parts[1] ?? '';
+      if (final === '0-0') continue;
+      const opponentClean = opponent
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        .replace(/^(at|vs\.?)\s*/i, '');
+      items.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), result: wl, score: final, won: wl === 'W', link });
+    }
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
+  } catch { return []; }
+}
+
 async function fetchSabres(): Promise<SabresData> {
   if (Platform.OS === 'web') {
     const res = await fetch('/api/sabres');
@@ -78,20 +116,21 @@ async function fetchSabres(): Promise<SabresData> {
     const json = await res.json();
     return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc: json.jcc ?? [], news: [] };
   }
-  const [schedRes, standRes, statsRes] = await Promise.all([
+  const [schedRes, standRes, statsRes, jcc] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
     fetch('https://api-web.nhle.com/v1/standings/now'),
     fetch('https://api-web.nhle.com/v1/club-stats/BUF/now'),
+    fetchJCCNative(),
   ]);
   const schedJson = await schedRes.json();
   const standJson = standRes.ok ? await standRes.json() : null;
   const statsJson = statsRes.ok ? await statsRes.json() : null;
   const record = schedJson.team?.record?.items?.[0]?.summary ?? '';
   const standing = standJson?.standings?.find((t: any) => t.teamAbbrev?.default === 'BUF')?.divisionName ?? '';
-  const events: any[] = schedJson.events ?? [];
+  const games: any[] = schedJson.games ?? [];
   const now = new Date();
-  const past = events.filter(e => e.gameState === 'FINAL' || e.gameState === 'OFF').sort((a, b) => new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime());
-  const upcoming = events.filter(e => (e.gameState === 'FUT' || e.gameState === 'PRE') && new Date(e.startTimeUTC) >= now).sort((a, b) => new Date(a.gameDate).getTime() - new Date(b.gameDate).getTime());
+  const past = games.filter((g: any) => g.gameState === 'FINAL' || g.gameState === 'OFF').sort((a: any, b: any) => new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime());
+  const upcoming = games.filter((g: any) => (g.gameState === 'FUT' || g.gameState === 'PRE') && new Date(g.startTimeUTC) >= now).sort((a: any, b: any) => new Date(a.gameDate).getTime() - new Date(b.gameDate).getTime());
   const topScorers: Scorer[] = (statsJson?.skaters ?? [])
     .sort((a: any, b: any) => (b.points ?? 0) - (a.points ?? 0))
     .slice(0, 5)
@@ -103,8 +142,7 @@ async function fetchSabres(): Promise<SabresData> {
       points: p.points ?? 0,
       headshot: p.headshot ?? '',
     }));
-  // JCC results are only available via the web API route — native returns []
-  return { record, standing, recentGame: past[0] ? parseGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc: [], news: [] };
+  return { record, standing, recentGame: past[0] ? parseGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, news: [] };
 }
 
 // ─── Collapsible Team Section ─────────────────────────────────────
