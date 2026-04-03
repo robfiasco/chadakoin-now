@@ -81,7 +81,7 @@ export function AddToHomeScreen() {
           <View style={styles.textWrap}>
             <Text style={[styles.title, { color: '#fff' }]}>Add to Home Screen</Text>
             <Text style={[styles.body, { color: `rgba(255,255,255,0.5)` }]}>
-              Tap <Ionicons name="share-outline" size={13} color={`rgba(255,255,255,0.5)`} /> below, then <Text style={{ color: `rgba(255,255,255,0.75)` }}>"Add to Home Screen"</Text>
+              Tap <Text style={{ color: `rgba(255,255,255,0.75)` }}>···</Text> then <Ionicons name="share-outline" size={13} color={`rgba(255,255,255,0.5)`} /> then <Text style={{ color: `rgba(255,255,255,0.75)` }}>"Add to Home Screen"</Text>
             </Text>
           </View>
           <TouchableOpacity onPress={dismiss} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
