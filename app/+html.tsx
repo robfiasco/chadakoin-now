@@ -10,7 +10,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
         <ScrollViewStyleReset />
         <meta name="description" content="Whether you're here for the weekend or the rest of your life — your guide to Jamestown, NY." />
@@ -48,7 +48,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
             width: min(390px, 100%);
             height: 100vh;
             height: 100dvh;
-            max-height: 844px;
+            max-height: 900px;
             border-radius: 40px;
             box-shadow:
               0 30px 80px rgba(0,0,0,0.85),
@@ -86,6 +86,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
               border-radius: 0;
               border: none;
               box-shadow: none;
+              padding-bottom: env(safe-area-inset-bottom);
             }
           }
         `}</style>
