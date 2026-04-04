@@ -45,6 +45,7 @@ function ThemedTabs() {
           borderTopColor: `rgba(${theme.accRGB},0.14)`,
           elevation: 0,
           paddingTop: 8,
+          paddingBottom: 12,
         },
         tabBarActiveTintColor: theme.acc,
         tabBarInactiveTintColor: 'rgba(255,255,255,0.28)',
