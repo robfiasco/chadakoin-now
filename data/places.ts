@@ -7,7 +7,7 @@ export type PlaceCategory = 'coffee' | 'food' | 'drinks' | 'cannabis' | 'activit
 export interface Place {
   id: string;
   name: string;
-  category: PlaceCategory;
+  categories: PlaceCategory[];
   icon: string;  // Ionicons name (e.g. 'cafe-outline')
   description: string;
   address: string;
@@ -21,7 +21,7 @@ export const PLACES: Place[] = [
   {
     id: 'labyrinth-press',
     name: 'Labyrinth Press Co.',
-    category: 'coffee',
+    categories: ['coffee', 'food'],
     icon: 'cafe-outline',
     description: 'Full espresso bar, fresh vegetarian & vegan restaurant, and a seasonal outdoor patio. One of the best spots downtown for food and coffee. Vegan-friendly.',
     address: '10-12 E. 4th St, Jamestown',
@@ -32,7 +32,7 @@ export const PLACES: Place[] = [
   {
     id: 'crown-street-roasting',
     name: 'Crown Street Roasting Co.',
-    category: 'coffee',
+    categories: ['coffee'],
     icon: 'cafe-outline',
     description: 'Specialty coffee roasted right here in Jamestown. Café, whole beans, and merchandise.',
     address: 'Jamestown, NY',
@@ -43,7 +43,7 @@ export const PLACES: Place[] = [
   {
     id: 'the-eatery',
     name: 'The Eatery',
-    category: 'food',
+    categories: ['food'],
     icon: 'restaurant-outline',
     description: 'Breakfast and lunch in Jamestown. A local favorite for starting your morning right.',
     address: '180 Fluvanna Ave, Jamestown',
@@ -54,7 +54,7 @@ export const PLACES: Place[] = [
   {
     id: 'davidsons',
     name: "Davidson's Restaurant",
-    category: 'food',
+    categories: ['food'],
     icon: 'restaurant-outline',
     description: "Family-owned since 1950. Famous for their fish fry — they sell over 3 tons of fish a month. Burgers, fried chicken, and steaks too. A true Chautauqua County institution.",
     address: '398 E Fairmount Ave, Lakewood, NY',
@@ -65,7 +65,7 @@ export const PLACES: Place[] = [
   {
     id: 'taco-company',
     name: 'The Taco Company',
-    category: 'food',
+    categories: ['food'],
     icon: 'restaurant-outline',
     description: 'Local Jamestown taqueria serving fresh tacos, burritos, and more.',
     address: 'Jamestown, NY',
@@ -74,7 +74,7 @@ export const PLACES: Place[] = [
   {
     id: 'honest-johns',
     name: "Honest John's Pizzeria",
-    category: 'food',
+    categories: ['food'],
     icon: 'pizza-outline',
     description: 'Pizza, wings, and subs with delivery throughout Jamestown, Celeron, West Ellicott, and Falconer.',
     address: '1245 E. 2nd St, Jamestown',
@@ -85,7 +85,7 @@ export const PLACES: Place[] = [
   {
     id: 'paces',
     name: "Pace's Pizzeria",
-    category: 'food',
+    categories: ['food'],
     icon: 'pizza-outline',
     description: "The world's greatest pizza since 1953. Simple. Fresh. Delicious. Wine and beer selection.",
     address: '549 W 3rd St, Jamestown',
@@ -96,7 +96,7 @@ export const PLACES: Place[] = [
   {
     id: 'slice-of-home',
     name: 'A Slice of Home Pizzeria',
-    category: 'food',
+    categories: ['food'],
     icon: 'pizza-outline',
     description: 'Local Jamestown pizzeria.',
     address: 'Jamestown',
@@ -106,7 +106,7 @@ export const PLACES: Place[] = [
   {
     id: 'jamestown-farmers-market',
     name: 'Jamestown Farmers Market',
-    category: 'food',
+    categories: ['food'],
     icon: 'leaf-outline',
     description: 'Fresh local produce, artisan goods, and community vendors. Look for Durow Farms — farm-fresh eggs, hand-tapped maple syrup, small-batch coffee, and more from a local family farm. Winter market runs 2nd & 4th Saturdays at 410 N Main St. Summer market moves to 17 W 3rd St.',
     address: '410 N Main St (winter) · 17 W 3rd St (summer)',
@@ -117,7 +117,7 @@ export const PLACES: Place[] = [
   {
     id: 'art-of-flavors',
     name: 'The Art of Flavors',
-    category: 'food',
+    categories: ['food'],
     icon: 'restaurant-outline',
     description: 'Authentic family-owned Mexican restaurant. 98% recommended on Facebook. Dine-in and in-store pickup.',
     address: '679 Fairmount Ave, Jamestown',
@@ -128,7 +128,7 @@ export const PLACES: Place[] = [
   {
     id: 'archies-diner',
     name: "Archie's Airport Diner",
-    category: 'food',
+    categories: ['food'],
     icon: 'restaurant-outline',
     description: 'Breakfast diner inside the Jamestown Airport. Classic diner fare, 5-star rated.',
     address: '3163 Airport Dr, Jamestown',
@@ -138,7 +138,7 @@ export const PLACES: Place[] = [
   {
     id: 'crooked-stick',
     name: 'Crooked Stick Bar',
-    category: 'food',
+    categories: ['food', 'drinks'],
     icon: 'restaurant-outline',
     description: 'Newer bar and grill just outside Jamestown with cocktails, wings, outdoor seating, and a full kitchen menu. Highly rated on Google.',
     address: '4003 Route 380, Gerry, NY',
@@ -150,7 +150,7 @@ export const PLACES: Place[] = [
   {
     id: 'busti-tap-house',
     name: 'Busti Tap House',
-    category: 'drinks',
+    categories: ['drinks', 'food'],
     icon: 'beer-outline',
     description: 'Newly renovated restaurant and taphouse in the rolling hills of Busti — just outside Jamestown. Beautiful patio, full menu, catering available.',
     address: '792 Busti Sugar Grove Rd, Jamestown',
@@ -161,7 +161,7 @@ export const PLACES: Place[] = [
   {
     id: 'the-swamp',
     name: 'The Swamp',
-    category: 'drinks',
+    categories: ['drinks', 'food'],
     icon: 'beer-outline',
     description: 'Casual, down-to-earth bar and grill with craft beer, wings, cocktails, pool, darts, and a jukebox. A Jamestown classic.',
     address: '250 Jones and Gifford Ave, Jamestown',
@@ -171,7 +171,7 @@ export const PLACES: Place[] = [
   {
     id: 'cherry-lounge',
     name: 'The Cherry Lounge',
-    category: 'drinks',
+    categories: ['drinks', 'food'],
     icon: 'wine-outline',
     description: 'Full service bar and restaurant in the heart of downtown Jamestown.',
     address: 'Jamestown, NY',
@@ -181,7 +181,7 @@ export const PLACES: Place[] = [
   {
     id: 'brazil-lounge',
     name: 'Brazil Lounge',
-    category: 'drinks',
+    categories: ['drinks'],
     icon: 'wine-outline',
     description: 'Upstairs craft beer and wine bar above Labyrinth Press. Vegan-friendly menu.',
     address: '10-12 E. 4th St, Jamestown',
@@ -192,7 +192,7 @@ export const PLACES: Place[] = [
   {
     id: 'wicked-warrens',
     name: "Wicked Warren's",
-    category: 'drinks',
+    categories: ['drinks', 'food'],
     icon: 'beer-outline',
     description: 'Brewery and restaurant with outstanding craft beer and wood-fired pizza.',
     address: '119 W 3rd St, Jamestown',
@@ -204,7 +204,7 @@ export const PLACES: Place[] = [
   {
     id: 'lifted',
     name: 'Lifted Dispensary',
-    category: 'cannabis',
+    categories: ['cannabis'],
     icon: 'leaf-outline',
     description: 'Licensed cannabis dispensary serving Jamestown.',
     address: 'Jamestown',
@@ -216,7 +216,7 @@ export const PLACES: Place[] = [
   {
     id: 'comedy-center',
     name: 'National Comedy Center',
-    category: 'activity',
+    categories: ['activity'],
     icon: 'happy-outline',
     description: "America's official museum of comedy. Interactive, immersive, and one of a kind.",
     address: '203 W 2nd St, Jamestown',
@@ -228,7 +228,7 @@ export const PLACES: Place[] = [
   {
     id: 'reg-lenna',
     name: 'Reg Lenna Center for the Arts',
-    category: 'arts',
+    categories: ['arts'],
     icon: 'musical-notes-outline',
     description: 'Historic theater in downtown Jamestown. Shows, concerts, films, and community events.',
     address: '116 E 3rd St, Jamestown',
@@ -239,7 +239,7 @@ export const PLACES: Place[] = [
   {
     id: 'rtpi',
     name: 'Roger Tory Peterson Institute',
-    category: 'activity',
+    categories: ['activity'],
     icon: 'eye-outline',
     description: "Nature art, bird walks, and galleries honoring Jamestown's most famous naturalist.",
     address: '311 Curtis St, Jamestown',
@@ -250,7 +250,7 @@ export const PLACES: Place[] = [
   {
     id: 'fenton-history',
     name: 'Fenton History Center',
-    category: 'activity',
+    categories: ['activity'],
     icon: 'library-outline',
     description: 'Local history, rotating exhibits, and the beautiful Victorian-era Reuben Fenton mansion.',
     address: '67 Washington St, Jamestown',
@@ -261,7 +261,7 @@ export const PLACES: Place[] = [
   {
     id: 'robert-h-jackson-center',
     name: 'Robert H. Jackson Center',
-    category: 'activity',
+    categories: ['activity'],
     icon: 'ribbon-outline',
     description: "Dedicated to Jamestown native and U.S. Supreme Court Justice Robert H. Jackson, chief prosecutor at the Nuremberg Trials. Museum, library, and educational programming.",
     address: '305 E 4th St, Jamestown',
@@ -273,7 +273,7 @@ export const PLACES: Place[] = [
   {
     id: 'chautauqua-institution',
     name: 'Chautauqua Institution',
-    category: 'activity',
+    categories: ['activity'],
     icon: 'boat-outline',
     description: 'World-renowned arts, education, and lecture community on the shores of Chautauqua Lake. Season runs June–August.',
     address: 'Chautauqua, NY (20 min from Jamestown)',
@@ -284,7 +284,7 @@ export const PLACES: Place[] = [
   {
     id: 'chautauqua-harbor-hotel',
     name: 'The Chautauqua Harbor Hotel',
-    category: 'stay',
+    categories: ['stay'],
     icon: 'bed-outline',
     description: 'Upscale lakeside hotel on the shores of Chautauqua Lake in Celoron — just minutes from downtown Jamestown. Stunning water views, a full-service marina, and a great restaurant on site.',
     address: '10 Dunham Ave, Celoron, NY',
@@ -296,7 +296,7 @@ export const PLACES: Place[] = [
   {
     id: 'airbnb-jamestown',
     name: 'Airbnb & VRBO',
-    category: 'stay',
+    categories: ['stay'],
     icon: 'home-outline',
     description: 'Short-term rentals throughout Jamestown and the Chautauqua Lake area. Good option for groups or longer stays.',
     address: 'Various locations',
@@ -323,5 +323,5 @@ export function getFeaturedPlaces(): Place[] {
 }
 
 export function getPlacesByCategory(cat: PlaceCategory): Place[] {
-  return PLACES.filter(p => p.category === cat);
+  return PLACES.filter(p => p.categories.includes(cat));
 }

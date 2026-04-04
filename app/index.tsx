@@ -215,6 +215,7 @@ export default function HomeScreen() {
   const [radioPlaying, setRadioPlaying] = useState(false);
   const [radioLoading, setRadioLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [placeFilter, setPlaceFilter] = useState<'all' | PlaceCategory>('all');
   const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
   const civic = useCivicData();
 
@@ -481,7 +482,7 @@ export default function HomeScreen() {
                   borderRadius: 20, borderWidth: 1.5,
                   backgroundColor: `rgba(${theme.acc2RGB},0.1)`,
                   borderColor: `rgba(${theme.acc2RGB},0.35)`,
-                  marginTop: idx > 0 ? 10 : 0,
+                  marginTop: idx > 0 ? 10 : 18,
                   ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)' } : {}),
                 }]}
               >
@@ -502,31 +503,62 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
 
-            {/* Places by category */}
-            {PLACE_CATEGORIES.map(cat => {
-              const items = PLACES.filter(p => p.category === cat.key && !p.featured);
-              if (items.length === 0) return null;
+            {/* Place filter pills */}
+            {(() => {
+              const activeCats = PLACE_CATEGORIES.filter(cat =>
+                PLACES.some(p => !p.featured && p.categories.includes(cat.key))
+              );
               return (
-                <View key={cat.key}>
-                  <View style={styles.sectionLabelRow}>
-                    <Ionicons name={cat.icon as any} size={11} color={`rgba(${theme.accRGB},0.5)`} />
-                    <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.5)`, marginTop: 0, marginBottom: 0, paddingLeft: 0 }]}>
-                      {cat.label.toUpperCase()}
-                    </Text>
-                  </View>
-                  {cat.note && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginTop: 16, marginBottom: 4 }}
+                  contentContainerStyle={{ paddingHorizontal: 2, gap: 8 }}
+                >
+                  <TouchableOpacity
+                    onPress={() => setPlaceFilter('all')}
+                    style={[styles.filterPill, placeFilter === 'all' && { backgroundColor: `rgba(${theme.accRGB},0.18)`, borderColor: `rgba(${theme.accRGB},0.5)` }]}
+                  >
+                    <Text style={[styles.filterPillText, { color: placeFilter === 'all' ? theme.acc : 'rgba(255,255,255,0.4)' }]}>All</Text>
+                  </TouchableOpacity>
+                  {activeCats.map(cat => (
+                    <TouchableOpacity
+                      key={cat.key}
+                      onPress={() => setPlaceFilter(cat.key)}
+                      style={[styles.filterPill, placeFilter === cat.key && { backgroundColor: `rgba(${theme.accRGB},0.18)`, borderColor: `rgba(${theme.accRGB},0.5)` }]}
+                    >
+                      <Ionicons name={cat.icon as any} size={11} color={placeFilter === cat.key ? theme.acc : 'rgba(255,255,255,0.35)'} />
+                      <Text style={[styles.filterPillText, { color: placeFilter === cat.key ? theme.acc : 'rgba(255,255,255,0.4)' }]}>{cat.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              );
+            })()}
+
+            {/* Filtered places list */}
+            {(() => {
+              const filtered = PLACES.filter(p =>
+                !p.featured && (placeFilter === 'all' || p.categories.includes(placeFilter as PlaceCategory))
+              );
+              const note = placeFilter !== 'all'
+                ? PLACE_CATEGORIES.find(c => c.key === placeFilter)?.note
+                : null;
+              if (filtered.length === 0) return null;
+              return (
+                <>
+                  {note && (
                     <Text style={[styles.categoryNote, { color: `rgba(${theme.accRGB},0.45)` }]}>
-                      {cat.note}
+                      {note}
                     </Text>
                   )}
                   {/* @ts-ignore */}
                   <View style={[styles.card, panel, { padding: 0, overflow: 'hidden' }]}>
-                    {items.map((place, i) => (
+                    {filtered.map((place, i) => (
                       <TouchableOpacity
                         key={place.id}
                         activeOpacity={place.website ? 0.7 : 1}
                         onPress={() => place.website && Linking.openURL(place.website)}
-                        style={[styles.placeListRow, i < items.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
+                        style={[styles.placeListRow, i < filtered.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
                       >
                         <Ionicons name={place.icon as any} size={18} color={`rgba(${theme.accRGB},0.65)`} />
                         <View style={{ flex: 1 }}>
@@ -537,9 +569,9 @@ export default function HomeScreen() {
                       </TouchableOpacity>
                     ))}
                   </View>
-                </View>
+                </>
               );
-            })}
+            })()}
 
             {/* Weekend events */}
             {(() => {
@@ -890,6 +922,21 @@ const styles = StyleSheet.create({
 
   // Visitor mode
   categoryNote: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17, marginBottom: 8, paddingHorizontal: 2 },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  filterPillText: {
+    fontFamily: 'Outfit',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   featuredBadge: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   featuredBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   placeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
