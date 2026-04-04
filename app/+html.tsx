@@ -48,7 +48,6 @@ export default function Root({ children }: { children: React.ReactNode }) {
             width: min(390px, 100%);
             height: 100vh;
             height: 100dvh;
-            max-height: 900px;
             border-radius: 40px;
             box-shadow:
               0 30px 80px rgba(0,0,0,0.85),

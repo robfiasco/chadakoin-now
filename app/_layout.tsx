@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
@@ -35,6 +35,8 @@ function tabIcon(active: IoniconName, inactive: IoniconName) {
 // Separate component so useTheme() can access the ThemeProvider above it
 function ThemedTabs() {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 56 + Math.max(insets.bottom, 12);
 
   return (
     <Tabs
@@ -45,8 +47,8 @@ function ThemedTabs() {
           borderTopWidth: 1,
           borderTopColor: `rgba(${theme.accRGB},0.14)`,
           elevation: 0,
-          height: 68,
-          paddingBottom: 12,
+          height: tabBarHeight,
+          paddingBottom: Math.max(insets.bottom, 12),
           paddingTop: 8,
         },
         tabBarActiveTintColor: theme.acc,
