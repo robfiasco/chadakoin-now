@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +37,8 @@ function tabIcon(active: IoniconName, inactive: IoniconName) {
 function ThemedTabs() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const tabBarHeight = 56 + Math.max(insets.bottom, 12);
+  const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom;
+  const tabBarHeight = 56 + Math.max(bottomInset, 16);
 
   return (
     <Tabs
@@ -48,7 +50,7 @@ function ThemedTabs() {
           borderTopColor: `rgba(${theme.accRGB},0.14)`,
           elevation: 0,
           height: tabBarHeight,
-          paddingBottom: Math.max(insets.bottom, 12),
+          paddingBottom: Math.max(bottomInset, 16),
           paddingTop: 8,
         },
         tabBarActiveTintColor: theme.acc,

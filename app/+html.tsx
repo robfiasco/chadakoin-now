@@ -85,7 +85,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
               border-radius: 0;
               border: none;
               box-shadow: none;
-              padding-bottom: env(safe-area-inset-bottom);
+              overflow: visible;
             }
           }
         `}</style>
