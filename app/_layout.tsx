@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import PagerView from 'react-native-pager-view';
+import PagerView, { PagerViewHandle } from '../components/PagerViewCompat';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -43,7 +43,7 @@ const TABS: { key: string; label: string; active: IoniconName; inactive: Ionicon
 function AppLayout() {
   const { theme } = useTheme();
   const [activePage, setActivePage] = useState(0);
-  const pagerRef = useRef<PagerView>(null);
+  const pagerRef = useRef<PagerViewHandle>(null);
 
   const goToPage = (index: number) => {
     pagerRef.current?.setPage(index);
