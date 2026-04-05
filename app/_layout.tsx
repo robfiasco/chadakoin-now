@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { PanResponder, View } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
@@ -23,99 +23,71 @@ import {
   Outfit_700Bold,
 } from '@expo-google-fonts/outfit';
 
+// Screens imported as components so PagerView can render them natively
+import HomeScreen from './index';
+import SportsScreen from './sports';
+import NewsScreen from './news';
+import EventsScreen from './events';
+
 SplashScreen.preventAutoHideAsync();
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-function tabIcon(active: IoniconName, inactive: IoniconName) {
-  return ({ color, focused }: { color: string; focused: boolean }) => (
-    <Ionicons name={focused ? active : inactive} size={22} color={color} />
-  );
-}
+const TABS: { key: string; label: string; active: IoniconName; inactive: IoniconName }[] = [
+  { key: 'home',   label: 'Home',   active: 'home',      inactive: 'home-outline'      },
+  { key: 'sports', label: 'Sports', active: 'trophy',    inactive: 'trophy-outline'    },
+  { key: 'news',   label: 'News',   active: 'newspaper', inactive: 'newspaper-outline' },
+  { key: 'events', label: 'Events', active: 'calendar',  inactive: 'calendar-outline'  },
+];
 
-const TAB_ROUTES = ['/', '/sports', '/news', '/events'] as const;
-
-// Separate component so useTheme() can access the ThemeProvider above it
-function ThemedTabs() {
+function AppLayout() {
   const { theme } = useTheme();
-  const router = useRouter();
-  const pathname = usePathname();
-  const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
+  const [activePage, setActivePage] = useState(0);
+  const pagerRef = useRef<PagerView>(null);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      // Only claim gesture when movement is clearly horizontal (not a scroll)
-      onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > Math.abs(gs.dy) * 2 && Math.abs(gs.dx) > 20,
-      onPanResponderRelease: (_, gs) => {
-        if (Math.abs(gs.dx) < 50) return;
-        const current = TAB_ROUTES.indexOf(pathnameRef.current as any);
-        if (current === -1) return;
-        if (gs.dx < 0 && current < TAB_ROUTES.length - 1) {
-          router.navigate(TAB_ROUTES[current + 1]);
-        } else if (gs.dx > 0 && current > 0) {
-          router.navigate(TAB_ROUTES[current - 1]);
-        }
-      },
-    })
-  ).current;
+  const goToPage = (index: number) => {
+    pagerRef.current?.setPage(index);
+  };
 
   return (
-    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-    <Tabs
-      screenOptions={() => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: theme.tabBarBg ?? 'rgba(0,5,15,0.92)',
-          borderTopWidth: 1,
-          borderTopColor: `rgba(${theme.accRGB},0.14)`,
-          elevation: 0,
-          paddingTop: 8,
-          paddingBottom: 12,
-        },
-        tabBarActiveTintColor: theme.acc,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.28)',
-        tabBarLabelStyle: {
-          fontFamily: 'Outfit_600SemiBold',
-          fontSize: 11,
-          marginTop: 1,
-        },
-      })}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: tabIcon('home', 'home-outline'),
-        }}
-      />
-      <Tabs.Screen name="recycling" options={{ href: null }} />
-      <Tabs.Screen name="parking" options={{ href: null }} />
-      <Tabs.Screen name="alerts" options={{ href: null }} />
-      <Tabs.Screen
-        name="sports"
-        options={{
-          title: 'Sports',
-          tabBarIcon: tabIcon('trophy', 'trophy-outline'),
-        }}
-      />
-      <Tabs.Screen
-        name="news"
-        options={{
-          title: 'News',
-          tabBarIcon: tabIcon('newspaper', 'newspaper-outline'),
-        }}
-      />
-      <Tabs.Screen name="settings" options={{ href: null }} />
-      <Tabs.Screen
-        name="events"
-        options={{
-          title: 'Events',
-          tabBarIcon: tabIcon('calendar', 'calendar-outline'),
-        }}
-      />
-    </Tabs>
+    <View style={{ flex: 1 }}>
+      <PagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={0}
+        onPageSelected={(e) => setActivePage(e.nativeEvent.position)}
+        overdrag
+      >
+        <View key="home"   style={{ flex: 1 }}><HomeScreen /></View>
+        <View key="sports" style={{ flex: 1 }}><SportsScreen /></View>
+        <View key="news"   style={{ flex: 1 }}><NewsScreen /></View>
+        <View key="events" style={{ flex: 1 }}><EventsScreen /></View>
+      </PagerView>
+
+      <SafeAreaView
+        edges={['bottom']}
+        style={{ backgroundColor: theme.tabBarBg ?? 'rgba(0,5,15,0.92)' }}
+      >
+        <View style={[styles.tabBar, { borderTopColor: `rgba(${theme.accRGB},0.14)` }]}>
+          {TABS.map((tab, index) => {
+            const active = activePage === index;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={styles.tabItem}
+                onPress={() => goToPage(index)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={active ? tab.active : tab.inactive}
+                  size={22}
+                  color={active ? theme.acc : 'rgba(255,255,255,0.28)'}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -132,15 +104,12 @@ export default function RootLayout() {
     Outfit_500Medium,
     Outfit_600SemiBold,
     Outfit_700Bold,
-    // Alias 'Syne' and 'Outfit' so existing fontFamily references keep working
     Syne: Syne_700Bold,
     Outfit: Outfit_400Regular,
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
+    if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
@@ -148,8 +117,22 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <ThemedTabs />
+        <AppLayout />
       </ThemeProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    paddingVertical: 10,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+});
