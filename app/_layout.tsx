@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
-import { Tabs } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { PanResponder, View } from 'react-native';
+import { Tabs, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -32,10 +33,36 @@ function tabIcon(active: IoniconName, inactive: IoniconName) {
   );
 }
 
+const TAB_ROUTES = ['/', '/sports', '/news', '/events'] as const;
+
 // Separate component so useTheme() can access the ThemeProvider above it
 function ThemedTabs() {
   const { theme } = useTheme();
+  const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Only claim gesture when movement is clearly horizontal (not a scroll)
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > Math.abs(gs.dy) * 2 && Math.abs(gs.dx) > 20,
+      onPanResponderRelease: (_, gs) => {
+        if (Math.abs(gs.dx) < 50) return;
+        const current = TAB_ROUTES.indexOf(pathnameRef.current as any);
+        if (current === -1) return;
+        if (gs.dx < 0 && current < TAB_ROUTES.length - 1) {
+          router.navigate(TAB_ROUTES[current + 1]);
+        } else if (gs.dx > 0 && current > 0) {
+          router.navigate(TAB_ROUTES[current - 1]);
+        }
+      },
+    })
+  ).current;
+
   return (
+    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
     <Tabs
       screenOptions={() => ({
         headerShown: false,
@@ -89,6 +116,7 @@ function ThemedTabs() {
         }}
       />
     </Tabs>
+    </View>
   );
 }
 
