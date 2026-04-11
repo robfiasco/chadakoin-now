@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Linking, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivicData } from '../hooks/useCivicData';
+import { openLink } from '../lib/openLink';
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -122,7 +123,7 @@ export default function AlertsScreen() {
               ) : null}
               {alert.link ? (
                 <TouchableOpacity
-                  onPress={() => Linking.openURL(alert.link)}
+                  onPress={() => openLink(alert.link)}
                   accessibilityLabel={`Read more about: ${alert.title}`}
                   accessibilityRole="link"
                 >

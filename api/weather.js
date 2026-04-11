@@ -1,6 +1,3 @@
-// Vercel serverless function — OpenWeatherMap proxy
-// API key stays server-side, returns normalized weather data.
-
 const LAT = 42.097;
 const LON = -79.2353;
 
@@ -43,19 +40,22 @@ export default async function handler(req, res) {
       .split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
     const icon = codeToIcon(current.weather[0].id, current.weather[0].icon);
 
-    // High/low + precip from 24h forecast
     const periods = forecastJson?.list ?? [];
-    const high = periods.length
-      ? Math.round(Math.max(...periods.map(f => f.main.temp_max)))
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayPeriods = periods.filter(f => f.dt_txt.startsWith(todayStr));
+    // Fall back to next 8 periods when today's data is sparse (e.g. late-night call)
+    const hlPeriods = todayPeriods.length ? todayPeriods : periods.slice(0, 8);
+    const next24 = periods.slice(0, 8);
+    const high = hlPeriods.length
+      ? Math.round(Math.max(...hlPeriods.map(f => f.main.temp_max)))
       : Math.round(current.main.temp_max ?? temp);
-    const low = periods.length
-      ? Math.round(Math.min(...periods.map(f => f.main.temp_min)))
+    const low = hlPeriods.length
+      ? Math.round(Math.min(...hlPeriods.map(f => f.main.temp_min)))
       : Math.round(current.main.temp_min ?? temp);
-    const precip = periods.length
-      ? Math.round(Math.max(...periods.map(f => (f.pop ?? 0) * 100)))
+    const precip = next24.length
+      ? Math.round(Math.max(...next24.map(f => (f.pop ?? 0) * 100)))
       : 0;
 
-    // Build 5-day daily forecast from 3-hour intervals
     const dailyMap = {};
     for (const p of periods) {
       const date = p.dt_txt.split(' ')[0]; // "2026-03-11"
@@ -68,12 +68,11 @@ export default async function handler(req, res) {
       dailyMap[date].icons.push(p.weather[0].icon);
     }
 
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
     const forecast = Object.entries(dailyMap)
       .filter(([date]) => date >= today)
       .slice(0, 5)
       .map(([date, d]) => {
-        // Pick daytime icon if available (ends in 'd'), else first
         const dayIcon = d.icons.find(i => i.endsWith('d')) ?? d.icons[0];
         const dominantCode = d.codes.length
           ? d.codes.reduce((a, b) =>
@@ -89,7 +88,6 @@ export default async function handler(req, res) {
         };
       });
 
-    // Find when significant precip arrives (first period with pop >= 0.4)
     let precipAt = null;
     const currentWeatherId = current.weather[0].id;
     const isRainingNow = currentWeatherId >= 200 && currentWeatherId < 700;
@@ -105,7 +103,7 @@ export default async function handler(req, res) {
       }
     }
 
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60'); // 5 min edge cache
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({
       temp: `${temp}°`,

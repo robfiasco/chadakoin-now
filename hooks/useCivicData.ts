@@ -56,6 +56,7 @@ export interface NewsItem {
   link: string;
   pubDate: string;
   excerpt: string;
+  source?: string;
 }
 
 export interface PodcastEpisode {
@@ -83,13 +84,13 @@ export interface CivicData {
 }
 
 const FEEDS = {
-  // BPU iCalendar feed — full year recycling schedule including Metal weeks & holiday events
   recyclingICS: 'https://www.jamestownnybpu.gov/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24',
-  // recyclingRSS (legacy, only shows ~6 weeks): 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Recycling-Calendar-24',
   alerts: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=63&CID=Alerts-11',
   eventsFallback: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Jamestown-Board-Meeting-Calendar-23',
   news: 'https://www.wrfalp.com/feed/',
   cityNews: 'https://www.jamestownny.gov/feed/',
+  wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
+  wgrzWNY:    'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
   library: 'https://prendergastlibrary.org/feed/',
   lotd: 'https://rss.libsyn.com/shows/66268/destinations/266592.xml',
   regLenna: 'https://reglenna.com/events?format=json',
@@ -105,7 +106,7 @@ const TTL = {
   lotd:      12 * 60 * 60 * 1000,   // 12h — weekly show
 };
 
-// Update annually — used to detect holiday recycling delays
+// Update annually
 const FEDERAL_HOLIDAYS_2026 = [
   '2026-01-01', '2026-01-19', '2026-02-16', '2026-05-25',
   '2026-06-19', '2026-07-04', '2026-09-07', '2026-10-12',
@@ -186,7 +187,7 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-// Bump the version suffix here to bust all stale cached data in the wild
+// Bump to bust stale cached data across all clients
 const CACHE_PREFIX = 'civic_v16_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
@@ -213,9 +214,7 @@ async function setCache(key: string, data: unknown): Promise<void> {
 function computeParking(): ParkingData {
   const today = new Date();
   const day = today.getDate();
-  const month = today.getMonth() + 1; // 1-indexed
-
-  // Daily mode: November through March
+  const month = today.getMonth() + 1;
   const isWinter = month >= 11 || month <= 3;
 
   if (isWinter) {
@@ -230,7 +229,6 @@ function computeParking(): ParkingData {
     };
   }
 
-  // Monthly mode: April through October
   const side: 'EVEN' | 'ODD' = month % 2 === 0 ? 'EVEN' : 'ODD';
   return {
     active: true,
@@ -246,7 +244,7 @@ function computeParking(): ParkingData {
 // Daily mode (Nov–Mar): side flips by date. Monthly mode (Apr–Oct): same side all month.
 export function computeParkingSchedule() {
   const today = new Date();
-  const dow = today.getDay(); // 0=Sun
+  const dow = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
   monday.setHours(0, 0, 0, 0);
@@ -255,12 +253,8 @@ export function computeParkingSchedule() {
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   function sideForDate(d: Date): 'EVEN' | 'ODD' {
-    const m = d.getMonth() + 1; // 1-indexed
-    if (m >= 11 || m <= 3) {
-      // Daily mode: even date = even side
-      return d.getDate() % 2 === 0 ? 'EVEN' : 'ODD';
-    }
-    // Monthly mode: even month = even side
+    const m = d.getMonth() + 1;
+    if (m >= 11 || m <= 3) return d.getDate() % 2 === 0 ? 'EVEN' : 'ODD';
     return m % 2 === 0 ? 'EVEN' : 'ODD';
   }
 
@@ -284,7 +278,6 @@ function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
   monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
   monday.setHours(0, 0, 0, 0);
 
-  // Mon–Thu of current week
   const weekDays = [0, 1, 2, 3].map(offset => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + offset);
@@ -295,18 +288,9 @@ function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
   return { hasDelay: affected.length > 0, affectedDays: affected };
 }
 
-// ─── Recycling ICS fetcher ────────────────────────────────────────
-// BPU iCalendar feed: full year schedule, 4 material types + holiday delay events.
-// Material SUMMARY formats:
-//   "Corrugated Cardboard & Box Board Only"
-//   "Plastic Recycling- no plastic bags, no cat litter buckets,"
-//   "Paper Recycling Week: No gift wrap, tissues/napkins, boxes or shredded paper,"
-//   "Metal Recycling: Aluminum & Tin - Food and Beverage Containers ONLY."
-// Holiday SUMMARY formats: "LABOR DAY - NO GARBAGE...", "CHRISTMAS DAY = NO...", etc.
-
 function parseIcsDate(raw: string): Date | null {
-  // Handles "20260309T120000" and "20260309" (date-only) forms from DTSTART/DTEND
-  const clean = raw.replace(/.*:/,'').trim();    // strip "TZID=...:"
+  // ICS date formats: "20260309T120000" (datetime) or "20260309" (date-only)
+  const clean = raw.replace(/.*:/,'').trim(); // strip "TZID=...:" prefix
   if (clean.length >= 8) {
     const y = clean.slice(0,4), mo = clean.slice(4,6), d = clean.slice(6,8);
     const h = clean.slice(9,11)||'00', mi = clean.slice(11,13)||'00';
@@ -337,14 +321,12 @@ function parseRecyclingTitle(summary: string, description: string, start: Date |
     exclusions = exclusions.replace(/\s*https?:\/\/[^\s]+$/, '').trim();
   }
 
-  // Extract special instructions (like 'Flatten all boxes...')
   let note = '';
   const noteMatch = description.match(/\*\s*([Ff]latten[^\*]+)/);
   if (noteMatch) {
     note = noteMatch[1].trim();
   }
 
-  // Map to friendly material names based on SUMMARY
   let material: string;
   if (lowerSummary.includes('cardboard') || lowerSummary.includes('corrugated') || lowerSummary.includes('box board') || lowerSummary.includes('boxboard')) {
     material = 'Corrugated Cardboard & Boxboard';
@@ -361,11 +343,10 @@ function parseRecyclingTitle(summary: string, description: string, start: Date |
     material = cut ? cut[1].trim() : summary.replace(/,\s*$/, '').trim();
   }
 
-  // Build human-friendly date range e.g. "Mar 9 – Mar 13"
   let dateRange = '';
   if (start && end) {
     const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    // DTEND in ICS is exclusive (23:59:00 of end day), so same day = last day of pickup window
+    // DTEND in ICS is the exclusive end — same-day means it's the last day of the pickup window
     dateRange = `${fmt(start)} – ${fmt(end)}`;
   }
 
@@ -383,7 +364,6 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   if (!res.ok) throw new Error(`Recycling ICS fetch failed: ${res.status}`);
   const text = await res.text();
 
-  // Parse VEVENT blocks from ICS
   const eventRx = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
   const fieldRx = /^([A-Z\-]+(?:;[^:]+)?):(.*)/;
 
@@ -416,7 +396,6 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
     const start = parseIcsDate(dtstart);
     const end   = parseIcsDate(dtend);
 
-    // Holiday delay events ("NO GARBAGE OR RECYCLING")
     if (lower.includes('no garbage') || lower.includes('no recycling')) {
       if (start) holidayDates.push(start.toISOString().split('T')[0]);
       continue;
@@ -428,14 +407,12 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
     ].some(kw => lower.includes(kw));
     if (!isRecycling) continue;
 
-    // Pass both summary and description
     recyclingWeeks.push(parseRecyclingTitle(summary, description, start, end));
   }
 
-  // Sort chronologically (ICS is in reverse order)
+  // ICS feed is in reverse chronological order
   recyclingWeeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-  // Find this week's entry: most recent startDate <= today
   const today = new Date().toISOString().split('T')[0];
   let thisIdx = -1;
   for (let i = recyclingWeeks.length - 1; i >= 0; i--) {
@@ -444,14 +421,12 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
       break;
     }
   }
-  // If today is past the last week's start but within the window, use that
   if (thisIdx === -1 && recyclingWeeks.length > 0) thisIdx = 0;
 
   const thisWeek     = recyclingWeeks[thisIdx]     ?? EMPTY_WEEK;
   const nextWeek     = recyclingWeeks[thisIdx + 1] ?? EMPTY_WEEK;
   const upcomingWeeks = recyclingWeeks.slice(thisIdx + 2, thisIdx + 6);
 
-  // Holiday delay: is there a holiday date within this pickup's 7-day week?
   const thisStart = thisWeek.startDate;
   let thisEnd = '';
   if (thisStart) {
@@ -475,7 +450,6 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   return result;
 }
 
-// ─── Alerts fetcher ───────────────────────────────────────────────
 async function fetchAlerts(): Promise<AlertsData> {
   const cached = await getCached<AlertsData>('alerts', TTL.alerts);
   if (cached) return cached;
@@ -508,9 +482,7 @@ async function fetchAlerts(): Promise<AlertsData> {
   return result;
 }
 
-// ─── Curated seed events ──────────────────────────────────────────
-// Known Jamestown events that may not appear in any feed.
-// Add new entries here as they're confirmed. Keep sorted by startDate.
+// Known events that don't appear in any feed. Keep sorted by startDate.
 const CURATED_EVENTS: EventItem[] = [
 
   {
@@ -566,7 +538,6 @@ const CURATED_EVENTS: EventItem[] = [
     tags: ['Jackson Center'],
     link: 'https://www.roberthjackson.org/events/',
   },
-  // ─── Jamestown Farmers Market (2nd & 4th Saturdays) ──────────
   {
     title: 'Jamestown Farmers Market',
     startDate: '2026-03-14T09:00:00',
@@ -640,8 +611,6 @@ const CURATED_EVENTS: EventItem[] = [
     link: 'https://jfmny.org/',
   },
 
-  // ─── Fenton History Center ────────────────────────────────────
-
   {
     title: 'Trivia Night at Shawbucks',
     startDate: '2026-03-18T19:00:00',
@@ -669,7 +638,6 @@ const CURATED_EVENTS: EventItem[] = [
     tags: ['Fenton', 'Community'],
     link: 'https://fentonhistorycenter.org/events2/',
   },
-  // ─── Roger Tory Peterson Institute ───────────────────────────
   {
     title: 'Exhibition Opening: Art That Matters to the Planet',
     startDate: '2026-03-27T17:00:00',
@@ -725,13 +693,10 @@ const CURATED_EVENTS: EventItem[] = [
   },
 ];
 
-// ─── Events fetcher ───────────────────────────────────────────────
-
 async function fetchEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('events', TTL.events);
   if (cached) return cached;
 
-  // Fetch all sources in parallel
   const [wrfaEvents, libraryContent, regLennaEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
@@ -739,7 +704,6 @@ async function fetchEvents(): Promise<EventItem[]> {
   ]);
   const libraryEvents = libraryContent.events;
 
-  // BPU civic calendar fallback
   let bpuEvents: EventItem[] = [];
   try {
     const res = await fetch(proxyUrl(FEEDS.eventsFallback));
@@ -761,7 +725,6 @@ async function fetchEvents(): Promise<EventItem[]> {
     }
   } catch {}
 
-  // Merge all sources — normalized dedup key: title+date
   function dedupeKey(e: EventItem): string {
     return e.title.toLowerCase().replace(/\s+/g, '') +
       (e.startDate?.split('T')[0] ?? '');
@@ -805,8 +768,6 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
   return combined.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 }
 
-// ─── Reg Lenna events ─────────────────────────────────────────────
-
 async function fetchRegLennaEvents(): Promise<EventItem[]> {
   // Use own cache key so failures don't erase previous successful results
   const cached = await getCached<EventItem[]>('reglenna', TTL.events);
@@ -846,8 +807,6 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
   }
 }
 
-// ─── Chautauqua County alerts supplement ─────────────────────────
-
 async function fetchChautauquaAlerts(): Promise<AlertItem[]> {
   try {
     const res = await fetch(proxyUrl(FEEDS.chautauquaAlerts));
@@ -871,10 +830,7 @@ async function fetchChautauquaAlerts(): Promise<AlertItem[]> {
   }
 }
 
-// ─── LOTD podcast fetcher ─────────────────────────────────────────
-
 function parseEpisodeTitle(raw: string): { number: string; name: string } {
-  // "Episode 570 - Clowning Around" → { number: "570", name: "Clowning Around" }
   const m = raw.match(/Episode\s+(\d+)\s*[-–]+\s*(.+)/i);
   if (m) return { number: m[1], name: m[2].trim() };
   return { number: '', name: raw.trim() };
@@ -890,11 +846,10 @@ async function fetchLOTD(): Promise<PodcastEpisode | null> {
   const items = getRssItems(text);
   if (items.length === 0) return null;
 
-  const item = items[0]; // latest episode
+  const item = items[0];
   const rawTitle = getItemText(item.title ?? '');
   const { number, name } = parseEpisodeTitle(rawTitle);
 
-  // Enclosure holds the audio URL
   const enclosure = item.enclosure;
   const audioUrl = enclosure?.['@_url'] ?? getItemText(enclosure?.url ?? '');
 
@@ -913,11 +868,9 @@ async function fetchLOTD(): Promise<PodcastEpisode | null> {
   return episode;
 }
 
-// ─── Date extraction from article titles ─────────────────────────
-// WRFA articles embed event dates in natural language titles.
-// e.g. "Lecture Set For March 18", "Exhibition Opens Saturday"
-// We try to extract the real event date before falling back to pubDate.
-
+// WRFA articles often embed the event date in natural language titles
+// ("Lecture Set For March 18", "Exhibition Opens Saturday"). Extract it
+// before falling back to pubDate so events sort to the right month.
 function extractEventDate(title: string, pubDateStr: string): string {
   const pub = new Date(pubDateStr);
   const t = title.toLowerCase();
@@ -947,8 +900,7 @@ function extractEventDate(title: string, pubDateStr: string): string {
     }
   }
 
-  // Pattern: "in August", "this summer in July", "for September" — month mentioned without a day.
-  // Places the event on the 1st of that month so it shows in the right month, not on pubDate.
+  // Month without day — place on 1st so it sorts to the right month rather than pubDate
   const monthOnlyPattern = new RegExp(
     `\\b(?:in|this|next|for)\\s+(${Object.keys(MONTHS).join('|')})\\.?\\b`, 'i'
   );
@@ -957,20 +909,17 @@ function extractEventDate(title: string, pubDateStr: string): string {
     const month = MONTHS[monthOnlyMatch[1].toLowerCase().replace('.', '')];
     if (month) {
       const d = new Date(year, month - 1, 1, 12, 0, 0);
-      // If this month is already past, assume next year
       if (d < new Date()) d.setFullYear(d.getFullYear() + 1);
-      // Only use if the resulting date is in the future relative to pubDate
       if (d > pub) return d.toISOString();
     }
   }
 
-  // Pattern: "opens saturday", "this friday", "next thursday", etc.
   const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   for (let wi = 0; wi < WEEKDAYS.length; wi++) {
     if (t.includes(WEEKDAYS[wi])) {
       const pubDay = pub.getDay();
       let diff = wi - pubDay;
-      if (diff <= 0) diff += 7; // always look forward
+      if (diff <= 0) diff += 7; // always forward
       const d = new Date(pub);
       d.setDate(pub.getDate() + diff);
       d.setHours(12, 0, 0, 0);
@@ -978,7 +927,6 @@ function extractEventDate(title: string, pubDateStr: string): string {
     }
   }
 
-  // Pattern: "tonight", "tomorrow"
   if (t.includes('tonight')) {
     const d = new Date(pub); d.setHours(19, 0, 0, 0); return d.toISOString();
   }
@@ -986,15 +934,13 @@ function extractEventDate(title: string, pubDateStr: string): string {
     const d = new Date(pub); d.setDate(pub.getDate() + 1); d.setHours(12, 0, 0, 0); return d.toISOString();
   }
 
-  return pubDateStr; // fallback to publication date
+  return pubDateStr;
 }
 
-// ─── WRFA events supplement ───────────────────────────────────────
-
-// Keyword list for event-like headlines
 const EVENT_KEYWORDS = /presents|to host|to perform|concert|exhibit|show|festival|expo|fair|forum|lecture|ceremony|opening|workshop|audition|celebration|annual|invites|parade|ribbon|groundbreaking|memorial|tribute|gala|reception|fundraiser|benefit|tournament|race|run|walk|market|sale|auction|screening|premiere|debut|launch|rally|vigil|conference|summit|symposium|performance|recital|competition|showcase/i;
 
-// Patterns that look event-like but aren't — news articles, calls for submissions, announcements
+// NOT_EVENT catches headlines that look event-like but are actually news articles,
+// calls for submissions, or announcements about someone else's event
 const NOT_EVENT = /calling for|call for|seeks? (volunteers?|presenters?|applicants?)|applications? (now )?open|(now )?accepting|crime (is |are )?(down|up)|statistics|report|survey|deadline|nominations|seeking|to headline|headlines?|announces?|announced|set to (perform|appear|headline)|coming to jamestown|confirmed for|tickets? (now |go )?on sale|lineup (announced|revealed|set)/i;
 
 async function fetchWrfaEvents(): Promise<EventItem[]> {
@@ -1004,7 +950,7 @@ async function fetchWrfaEvents(): Promise<EventItem[]> {
     const text = await res.text();
     const items = getRssItems(text);
 
-    // Look back 14 days for articles (event may still be upcoming even if article is older)
+    // 14-day lookback: an article published last week may still be about an upcoming event
     const articleCutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1060,8 +1006,6 @@ async function fetchWrfaEvents(): Promise<EventItem[]> {
   }
 }
 
-// ─── Library fetcher ──────────────────────────────────────────────
-
 async function fetchLibraryContent(): Promise<{ events: EventItem[]; news: NewsItem[] }> {
   try {
     const res = await fetch(proxyUrl(FEEDS.library));
@@ -1071,13 +1015,12 @@ async function fetchLibraryContent(): Promise<{ events: EventItem[]; news: NewsI
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const articleCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // library posts less frequently
+    const articleCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // wider window: library posts infrequently
 
     const recentItems = items.filter(item =>
       new Date(getItemText(item.pubDate ?? '')) >= articleCutoff
     );
 
-    // Events: items that sound like something happening on a date
     const events: EventItem[] = recentItems
       .filter(item => EVENT_KEYWORDS.test(getItemText(item.title ?? '')) ||
                       /vote|application|registration|appointment|block party|program|storytime/i.test(getItemText(item.title ?? '')))
@@ -1091,7 +1034,6 @@ async function fetchLibraryContent(): Promise<{ events: EventItem[]; news: NewsI
         tags: ['Library'],
       }));
 
-    // News: top 2 items for the news strip
     const news: NewsItem[] = recentItems.slice(0, 2).map(item => ({
       title: stripHtml(getItemText(item.title)),
       link: getItemText(item.link),
@@ -1105,19 +1047,19 @@ async function fetchLibraryContent(): Promise<{ events: EventItem[]; news: NewsI
   }
 }
 
-// ─── News fetcher ─────────────────────────────────────────────────
 async function fetchNews(): Promise<NewsItem[]> {
   const cached = await getCached<NewsItem[]>('news', TTL.news);
   if (cached) return cached;
 
-  // Fetch WRFA, city, and Jackson Center in parallel
-  const [wrfaRes, cityRes, jacksonRes] = await Promise.allSettled([
+  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
     fetch(proxyUrl(FEEDS.cityNews)),
     fetch(proxyUrl(FEEDS.jackson)),
+    fetch(proxyUrl(FEEDS.wgrzSports)),
+    fetch(proxyUrl(FEEDS.wgrzWNY)),
   ]);
 
-  function toNewsItems(res: Response | null, raw: string, limit: number): NewsItem[] {
+  function toNewsItems(raw: string, limit: number, source: string): NewsItem[] {
     const items = getRssItems(raw);
     return items
       .filter(item => {
@@ -1130,22 +1072,49 @@ async function fetchNews(): Promise<NewsItem[]> {
         link: getItemText(item.link),
         pubDate: getItemText(item.pubDate),
         excerpt: stripHtml(getItemText(item.description ?? '')).slice(0, 140),
+        source,
       }));
   }
 
   const wrfaItems = wrfaRes.status === 'fulfilled' && wrfaRes.value.ok
-    ? toNewsItems(wrfaRes.value, await wrfaRes.value.text(), 3)
+    ? toNewsItems(await wrfaRes.value.text(), 5, 'WRFA-LP')
     : [];
 
   const cityItems = cityRes.status === 'fulfilled' && cityRes.value.ok
-    ? toNewsItems(cityRes.value, await cityRes.value.text(), 2)
+    ? toNewsItems(await cityRes.value.text(), 3, 'City of Jamestown')
     : [];
 
   const jacksonItems = jacksonRes.status === 'fulfilled' && jacksonRes.value.ok
-    ? toNewsItems(jacksonRes.value, await jacksonRes.value.text(), 2)
+    ? toNewsItems(await jacksonRes.value.text(), 3, 'Jackson Center')
     : [];
 
-  // Merge: WRFA → city → Jackson, dedupe by title, cap at 6
+  const JAMESTOWN_TERMS = /jamestown|jcc|chautauqua|falconer|lakewood|celoron|frewsburg|ellicott/i;
+  function toWGRZItems(raw: string, source: string): NewsItem[] {
+    const items = getRssItems(raw);
+    return items
+      .filter(item => {
+        const title = getItemText(item.title ?? '');
+        const desc  = getItemText(item.description ?? '');
+        return JAMESTOWN_TERMS.test(title) || JAMESTOWN_TERMS.test(desc);
+      })
+      .slice(0, 3)
+      .map(item => ({
+        title:   stripHtml(getItemText(item.title)),
+        link:    getItemText(item.link),
+        pubDate: getItemText(item.pubDate),
+        excerpt: stripHtml(getItemText(item.description ?? '')).slice(0, 140),
+        source,
+      }));
+  }
+
+  const wgrzSportsItems = wgrzSportsRes.status === 'fulfilled' && wgrzSportsRes.value.ok
+    ? toWGRZItems(await wgrzSportsRes.value.text(), 'WGRZ')
+    : [];
+
+  const wgrzWNYItems = wgrzWNYRes.status === 'fulfilled' && wgrzWNYRes.value.ok
+    ? toWGRZItems(await wgrzWNYRes.value.text(), 'WGRZ')
+    : [];
+
   const seen = new Set(wrfaItems.map(n => n.title.toLowerCase()));
   const addUnique = (items: NewsItem[]) =>
     items.filter(n => !seen.has(n.title.toLowerCase()) && seen.add(n.title.toLowerCase()));
@@ -1154,24 +1123,22 @@ async function fetchNews(): Promise<NewsItem[]> {
     ...wrfaItems,
     ...addUnique(cityItems),
     ...addUnique(jacksonItems),
-  ].slice(0, 6);
+    ...addUnique([...wgrzSportsItems, ...wgrzWNYItems]),
+  ].slice(0, 12);
 
   await setCache('news', news);
   return news;
 }
 
-// ─── Main hook ────────────────────────────────────────────────────
 export function useCivicData(): CivicData {
   const [state, setState] = useState<Omit<CivicData, 'refresh'>>(DEFAULTS);
 
   const load = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
-    // Always computed fresh
     const parking = computeParking();
     const { hasDelay, affectedDays } = computeHolidayDelay();
 
-    // Fetch all in parallel, individual failures don't block the rest
     const [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult] = await Promise.allSettled([
       fetchRecyclingICS(),
       fetchAlerts(),
@@ -1186,7 +1153,6 @@ export function useCivicData(): CivicData {
       ? recyclingResult.value
       : { ...DEFAULTS.recycling, holidayDelay: hasDelay, affectedDays };
 
-    // Merge BPU alerts + Chautauqua County alerts, dedupe by title
     const bpuAlerts = alertsResult.status === 'fulfilled' ? alertsResult.value : DEFAULTS.alerts;
     const countyAlerts = countyAlertsResult.status === 'fulfilled' ? (countyAlertsResult.value as AlertItem[]) : [];
     const seenAlertTitles = new Set(bpuAlerts.activeAlerts.map(a => a.title.toLowerCase()));
@@ -1203,7 +1169,6 @@ export function useCivicData(): CivicData {
       eventsResult.status === 'fulfilled' ? eventsResult.value : []
     );
 
-    // Merge WRFA + library news, dedupe by title, cap at 5 items
     const wrfaNews = newsResult.status === 'fulfilled' ? newsResult.value : [];
     const libraryNews = libraryResult.status === 'fulfilled' ? (libraryResult.value as any).news ?? [] : [];
     const seenTitles = new Set(wrfaNews.map((n: NewsItem) => n.title.toLowerCase()));

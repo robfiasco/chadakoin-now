@@ -5,9 +5,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
+import { openLink } from '../lib/openLink';
 
 interface GameResult {
   date: string; status: 'final' | 'live' | 'upcoming';
@@ -17,12 +19,15 @@ interface GameResult {
 }
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
 interface JCCResult { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
+interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
+interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; isHome: boolean; }
+interface MLBTeam     { id: number; name: string; abbr: string; record?: string; games: MLBGame[]; nextGame?: MLBNextGame | null; }
 interface SabresData {
-  record: string; standing: string;
+  record: string; standing: string; points?: number;
+  wins?: number; losses?: number; otLosses?: number;
   recentGame?: GameResult; nextGame?: GameResult;
-  topScorers?: Scorer[]; jcc?: JCCResult[]; news: any[];
+  topScorers?: Scorer[]; jcc?: JCCResult[]; mlb?: MLBTeam[]; news: any[];
 }
-
 const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
@@ -100,6 +105,70 @@ function parseNHLGame(g: any): GameResult | null {
   } catch { return null; }
 }
 
+// Fetch regional MLB recent results
+async function fetchMLB(): Promise<MLBTeam[]> {
+  try {
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/mlb');
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.teams ?? []) as MLBTeam[];
+    }
+    // Native: call MLB Stats API directly
+    const MLB_TEAMS = [
+      { id: 114, name: 'Guardians', abbr: 'CLE' },
+      { id: 141, name: 'Blue Jays', abbr: 'TOR' },
+      { id: 134, name: 'Pirates',   abbr: 'PIT' },
+      { id: 147, name: 'Yankees',   abbr: 'NYY' },
+    ];
+    const now   = new Date();
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
+    const fmt   = (d: Date) => d.toISOString().split('T')[0];
+    const year  = now.getFullYear();
+
+    // Standings for records
+    let standingsMap: Record<number, string> = {};
+    try {
+      const sRes  = await fetch(`https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${year}&standingsTypes=regularSeason&fields=records,teamRecords,team,id,wins,losses`);
+      const sJson = sRes.ok ? await sRes.json() : null;
+      for (const div of (sJson?.records ?? [])) {
+        for (const tr of (div.teamRecords ?? [])) {
+          if (tr.team?.id != null) standingsMap[tr.team.id] = `${tr.wins}-${tr.losses}`;
+        }
+      }
+    } catch {}
+
+    const results = await Promise.all(MLB_TEAMS.map(async t => {
+      try {
+        const url  = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,status,detailedState,gameDate,teams,away,home,team,id,name,score,isWinner`;
+        const res  = await fetch(url);
+        if (!res.ok) return { ...t, games: [], nextGame: null, record: standingsMap[t.id] ?? '' };
+        const json = await res.json();
+        const games: MLBGame[] = [];
+        let nextGame: MLBNextGame | null = null;
+        for (const dateObj of (json.dates ?? [])) {
+          for (const g of (dateObj.games ?? [])) {
+            const state = g.status?.detailedState ?? '';
+            if (state === 'Final' || state === 'Completed Early') {
+              const weAreHome = g.teams?.home?.team?.id === t.id;
+              const us   = weAreHome ? g.teams.home : g.teams.away;
+              const them = weAreHome ? g.teams.away : g.teams.home;
+              games.push({ date: dateObj.date, opponent: them?.team?.name ?? '???', ourScore: us?.score ?? 0, theirScore: them?.score ?? 0, isHome: weAreHome, won: us?.isWinner === true });
+            } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game')) {
+              const weAreHome = g.teams?.home?.team?.id === t.id;
+              const them = weAreHome ? g.teams?.away : g.teams?.home;
+              nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', isHome: weAreHome };
+            }
+          }
+        }
+        return { ...t, games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5), nextGame, record: standingsMap[t.id] ?? '' };
+      } catch { return { ...t, games: [], nextGame: null, record: '' }; }
+    }));
+    return results;
+  } catch { return []; }
+}
+
 // Fetch JCC results directly from their RSS feed (native only — no CORS restriction)
 async function fetchJCCNative(): Promise<JCCResult[]> {
   try {
@@ -144,25 +213,31 @@ async function fetchJCCNative(): Promise<JCCResult[]> {
 
 async function fetchSabres(): Promise<SabresData> {
   if (Platform.OS === 'web') {
-    const res = await fetch('/api/sabres');
-    if (!res.ok) throw new Error('Sabres API failed');
-    const json = await res.json();
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc: json.jcc ?? [], news: [] };
+    const [sabresRes, mlbRes] = await Promise.all([
+      fetch('/api/sabres'),
+      fetchMLB(),
+    ]);
+    if (!sabresRes.ok) throw new Error('Sabres API failed');
+    const json = await sabresRes.json();
+    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc: json.jcc ?? [], mlb: mlbRes, news: [] };
   }
-  const [schedRes, standRes, statsRes, jcc] = await Promise.all([
+  const [schedRes, standRes, statsRes, jcc, mlb] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
     fetch('https://api-web.nhle.com/v1/standings/now'),
     fetch('https://api-web.nhle.com/v1/club-stats/BUF/now'),
     fetchJCCNative(),
+    fetchMLB(),
   ]);
   const schedJson = await schedRes.json();
   const standJson = standRes.ok ? await standRes.json() : null;
   const statsJson = statsRes.ok ? await statsRes.json() : null;
   // Build record from standings (more reliable than schedJson.team.record)
   const bufStanding = standJson?.standings?.find((t: any) => t.teamAbbrev?.default === 'BUF');
-  const record = bufStanding
-    ? `${bufStanding.wins ?? 0}-${bufStanding.losses ?? 0}-${bufStanding.otLosses ?? 0}`
-    : '';
+  const wins    = bufStanding?.wins     ?? 0;
+  const losses  = bufStanding?.losses   ?? 0;
+  const otLosses = bufStanding?.otLosses ?? 0;
+  const points  = bufStanding?.points   ?? 0;
+  const record  = bufStanding ? `${wins}-${losses}-${otLosses}` : '';
   const standing = bufStanding?.divisionName ?? '';
   const games: any[] = schedJson.games ?? [];
   const now = new Date();
@@ -183,7 +258,7 @@ async function fetchSabres(): Promise<SabresData> {
       points: p.points ?? 0,
       headshot: p.headshot ?? '',
     }));
-  return { record, standing, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, news: [] };
+  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, mlb, news: [] };
 }
 
 function TeamSection({ id, logo, name, subtitle, children, acc, accRGB, glassWeb }: {
@@ -216,7 +291,7 @@ function TeamSection({ id, logo, name, subtitle, children, acc, accRGB, glassWeb
         )}
         <View style={{ flex: 1 }}>
           <Text style={[styles.teamRowName, { color: open ? acc : '#fff' }]}>{name}</Text>
-          {subtitle ? <Text style={[styles.teamRowSub, { color: `rgba(${accRGB},0.5)` }]}>{subtitle}</Text> : null}
+          {subtitle ? <Text style={[styles.teamRowSub, { color: `rgba(${accRGB},0.7)` }]}>{subtitle}</Text> : null}
         </View>
         <Animated.View style={chevronStyle}>
           <Ionicons name="chevron-down" size={18} color={`rgba(${accRGB},0.5)`} />
@@ -262,9 +337,10 @@ function GameCard({ game, label, acc, accRGB, glassStyle }: { game: GameResult; 
 
 export default function SportsScreen() {
   const { theme } = useTheme();
-  const [data, setData]       = useState<SabresData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]           = useState<SabresData | null>(null);
+  const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [mlbTeam, setMlbTeam]     = useState<string>('CLE');
 
   const glassWeb = Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {};
   const innerCard = { borderRadius: 14, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.18)`, ...glassWeb };
@@ -299,25 +375,59 @@ export default function SportsScreen() {
         }
       >
 
-        {/* ── Tarp Skunks banner ────────────────────── */}
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={() => Linking.openURL('https://www.jamestowntarpskunks.com/sports/bsb/2024-25/releases/202501232it6bg')}
-          // @ts-ignore
-          style={[styles.skunksBanner, {
-            borderRadius: 16, borderWidth: 1,
-            backgroundColor: `rgba(${theme.acc2RGB},0.1)`,
-            borderColor: `rgba(${theme.acc2RGB},0.3)`,
-            ...glassWeb,
-          }]}
-        >
-          <Text style={styles.skunksEmoji}>⚾</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.skunksTitle, { color: theme.acc2 }]}>Tarp Skunks 2026</Text>
-            <Text style={styles.skunksSub}>Season tickets on sale · Diethrick Park</Text>
+        {/* ── Tarp Skunks card ──────────────────────── */}
+        <View style={{ borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0,180,80,0.2)', overflow: 'hidden' }}>
+          <LinearGradient
+            colors={['rgba(0,80,40,0.4)', 'rgba(0,212,200,0.05)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            {/* Radial glow orb */}
+            <View
+              pointerEvents="none"
+              // @ts-ignore
+              style={[{ position: 'absolute', width: 120, height: 120, borderRadius: 60, top: -30, right: -30, backgroundColor: 'rgba(0,200,80,0.15)' }, Platform.OS === 'web' ? { filter: 'blur(30px)' } : {}]}
+            />
+          {/* Header row */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => Linking.openURL('https://www.jamestowntarpskunks.com')}
+            style={[styles.skunksBanner]}
+          >
+            <Text style={styles.skunksEmoji}>⚾</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.skunksTitle, { color: theme.acc2 }]}>Tarp Skunks 2026</Text>
+              <Text style={styles.skunksSub}>Perfect Game Collegiate League · Diethrick Park</Text>
+            </View>
+            <Ionicons name="open-outline" size={16} color={`rgba(${theme.acc2RGB},0.4)`} />
+          </TouchableOpacity>
+
+          {/* Upcoming home games */}
+          <View style={[styles.skunksScheduleHeader, { borderTopColor: `rgba(${theme.acc2RGB},0.1)` }]}>
+            <Text style={[styles.skunksScheduleLabel, { color: `rgba(${theme.acc2RGB},0.5)` }]}>UPCOMING HOME GAMES</Text>
           </View>
-          <Ionicons name="ticket-outline" size={18} color={`rgba(${theme.acc2RGB},0.5)`} />
-        </TouchableOpacity>
+          {[
+            { month: 'MAY', day: '29', opponent: 'vs. Olean Oilers',          time: '6:30 PM' },
+            { month: 'JUN', day: '2',  opponent: 'vs. Olean Oilers',          time: '6:30 PM' },
+            { month: 'JUN', day: '9',  opponent: 'vs. Olean Oilers',          time: '11:00 AM' },
+          ].map((game, i, arr) => (
+            <View
+              key={i}
+              style={[
+                styles.skunksGameRow,
+                i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+              ]}
+            >
+              <View style={styles.skunksDateCol}>
+                <Text style={[styles.skunksDay, { color: theme.acc2 }]}>{game.day}</Text>
+                <Text style={styles.skunksMonth}>{game.month}</Text>
+              </View>
+              <Text style={styles.skunksGameOpponent}>{game.opponent}</Text>
+              <Text style={[styles.skunksGameTime, { color: `rgba(${theme.acc2RGB},0.45)` }]}>{game.time}</Text>
+            </View>
+          ))}
+          </LinearGradient>
+        </View>
 
         {/* ── Buffalo Sabres ─────────────────────────── */}
         <TeamSection
@@ -333,8 +443,61 @@ export default function SportsScreen() {
             </View>
           ) : (
             <>
-              {data?.recentGame && <GameCard game={data.recentGame} label="Last Game" acc={theme.acc} accRGB={theme.accRGB} glassStyle={innerCard} />}
-              {data?.nextGame   && <GameCard game={data.nextGame}   label="Next Game" acc={theme.acc} accRGB={theme.accRGB} glassStyle={{ ...innerCard, borderColor: `rgba(${theme.accRGB},0.3)` }} />}
+              {/* 4-column stat grid */}
+              {(data?.wins != null || data?.record) && (() => {
+                // Parse record "W-L-OTL" if individual fields not set
+                const parts = (data?.record ?? '').split('-');
+                const w   = data?.wins     ?? parseInt(parts[0] ?? '0');
+                const l   = data?.losses   ?? parseInt(parts[1] ?? '0');
+                const otl = data?.otLosses ?? parseInt(parts[2] ?? '0');
+                const pts = data?.points   ?? 0;
+                const stats = [
+                  { label: 'W',   value: String(w) },
+                  { label: 'L',   value: String(l) },
+                  { label: 'OTL', value: String(otl) },
+                  { label: 'PTS', value: String(pts) },
+                ];
+                return (
+                  <View style={styles.statGrid}>
+                    {stats.map((s) => (
+                      <View key={s.label} style={styles.statGridCell}>
+                        <Text style={[styles.statGridLabel, { color: `rgba(${theme.accRGB},0.45)` }]}>{s.label}</Text>
+                        <Text style={[styles.statGridValue, { color: s.label === 'PTS' ? theme.acc : '#fff' }]}>{s.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })()}
+
+              {(data?.recentGame || data?.nextGame) && (
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {data?.recentGame && (
+                    // @ts-ignore
+                    <View style={[innerCard, { flex: 1, padding: 12 }]}>
+                      <Text style={{ fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 8 }}>Last Game</Text>
+                      <Text style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: '800', color: '#fff' }}>
+                        BUF {data.recentGame.ourScore} · {data.recentGame.opponentAbbr} {data.recentGame.theirScore}
+                      </Text>
+                      <Text style={{ fontFamily: 'Outfit', fontSize: 12, marginTop: 4, color: data.recentGame.won === true ? theme.acc : data.recentGame.won === false ? '#ef4444' : 'rgba(255,255,255,0.4)' }}>
+                        {data.recentGame.won === true ? 'Win' : data.recentGame.won === false ? 'Loss' : 'Final'}
+                      </Text>
+                    </View>
+                  )}
+                  {data?.nextGame && (
+                    // @ts-ignore
+                    <View style={[innerCard, { flex: 1, padding: 12, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+                      <Text style={{ fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 8 }}>Next Game</Text>
+                      <Text style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: '800', color: '#fff' }}>
+                        {data.nextGame.isHome ? 'vs' : '@'} {data.nextGame.opponentAbbr}
+                      </Text>
+                      <Text style={{ fontFamily: 'Outfit', fontSize: 12, marginTop: 4, color: 'rgba(255,255,255,0.4)' }}>
+                        {new Date(data.nextGame.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {' · '}{new Date(data.nextGame.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
               {/* Top scorers */}
               {data?.topScorers && data.topScorers.length > 0 && (
@@ -373,7 +536,7 @@ export default function SportsScreen() {
         <TeamSection
           id="jcc" logo={JCC_LOGO}
           name="JCC Jayhawks"
-          subtitle="Jamestown Community College"
+          subtitle="Jamestown Community College · NJCAA"
           acc={theme.acc2} accRGB={theme.acc2RGB} glassWeb={glassWeb}
         >
           {loading ? (
@@ -386,7 +549,7 @@ export default function SportsScreen() {
                 const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const resultColor = g.won ? '#2FBF71' : '#ef4444';
                 return (
-                  <TouchableOpacity key={i} onPress={() => g.link && Linking.openURL(g.link)} activeOpacity={0.7}
+                  <TouchableOpacity key={i} onPress={() => openLink(g.link)} activeOpacity={0.7}
                     style={[styles.jccRow, i < data.jcc!.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.acc2RGB},0.08)` }]}>
                     <Text style={[styles.jccResult, { color: resultColor }]}>{g.result}</Text>
                     <Text style={styles.jccSportIcon}>{sportEmoji(g.sport)}</Text>
@@ -407,7 +570,109 @@ export default function SportsScreen() {
           )}
         </TeamSection>
 
-        <Text style={[styles.source, { color: `rgba(${theme.accRGB},0.2)` }]}>Sabres via NHL · JCC via jccjayhawks.com</Text>
+        {/* ── Regional MLB ───────────────────────────── */}
+        {(() => {
+          const activeTeam = data?.mlb?.find(t => t.abbr === mlbTeam);
+          const teamLogoUri = `https://a.espncdn.com/i/teamlogos/mlb/500/${mlbTeam.toLowerCase()}.png`;
+          return (
+            <TeamSection
+              id="mlb"
+              logo="https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png"
+              name="Regional Major League Baseball"
+              subtitle="Guardians · Blue Jays · Pirates · Yankees"
+              acc={theme.acc3} accRGB={theme.acc3RGB} glassWeb={glassWeb}
+            >
+              {loading ? (
+                <SkeletonPulse width="100%" height={200} borderRadius={14} accRGB={theme.acc3RGB} />
+              ) : (
+                <>
+                  {/* Team selector tabs with logos */}
+                  <View style={styles.mlbTabs}>
+                    {(data?.mlb ?? []).map(t => {
+                      const active = t.abbr === mlbTeam;
+                      return (
+                        <TouchableOpacity
+                          key={t.abbr}
+                          onPress={() => setMlbTeam(t.abbr)}
+                          activeOpacity={0.7}
+                          style={[
+                            styles.mlbTab,
+                            active
+                              ? { backgroundColor: `rgba(${theme.acc3RGB},0.18)`, borderColor: `rgba(${theme.acc3RGB},0.4)` }
+                              : { borderColor: `rgba(${theme.acc3RGB},0.12)` },
+                          ]}
+                        >
+                          <Image
+                            source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }}
+                            style={styles.mlbTabLogo}
+                            resizeMode="contain"
+                          />
+                          <View>
+                            <Text style={[styles.mlbTabText, { color: active ? theme.acc3 : 'rgba(255,255,255,0.55)' }]}>{t.abbr}</Text>
+                            {t.record ? <Text style={[styles.mlbTabRecord, { color: active ? `rgba(${theme.acc3RGB},0.7)` : 'rgba(255,255,255,0.35)' }]}>{t.record}</Text> : null}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Next game */}
+                  {activeTeam?.nextGame && (() => {
+                    const ng = activeTeam.nextGame!;
+                    const dateStr = new Date(ng.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const timeStr = ng.gameTime ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+                    return (
+                      // @ts-ignore
+                      <View style={[innerCard, { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 }]}>
+                        <Text style={[styles.innerLabel, { color: `rgba(${theme.acc3RGB},0.4)`, margin: 0 }]}>NEXT</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff' }}>
+                            {ng.isHome ? 'vs' : '@'} {ng.opponent}
+                          </Text>
+                          <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: `rgba(${theme.acc3RGB},0.4)`, marginTop: 2 }}>
+                            {dateStr}{timeStr ? ` · ${timeStr}` : ''}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                  {/* Recent results */}
+                  {activeTeam && activeTeam.games.length > 0 ? (
+                    // @ts-ignore
+                    <View style={[innerCard, { padding: 0, overflow: 'hidden', borderColor: `rgba(${theme.acc3RGB},0.18)` }]}>
+                      {activeTeam.games.map((g, i) => {
+                        const dateStr = new Date(g.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const resultColor = g.won ? '#2FBF71' : '#ef4444';
+                        return (
+                          <View key={i} style={[styles.jccRow, i < activeTeam.games.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.acc3RGB},0.08)` }]}>
+                            <Text style={[styles.jccResult, { color: resultColor }]}>{g.won ? 'W' : 'L'}</Text>
+                            <Text style={styles.jccSportIcon}>⚾</Text>
+                            <View style={styles.jccCenter}>
+                              <Text style={styles.jccGame}>{g.isHome ? 'vs' : '@'} {g.opponent}</Text>
+                            </View>
+                            <View style={styles.jccRight}>
+                              <Text style={[styles.jccScore, { color: resultColor }]}>{g.ourScore}-{g.theirScore}</Text>
+                              <Text style={[styles.jccDate, { color: `rgba(${theme.acc3RGB},0.35)` }]}>{dateStr}</Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <Text style={{ fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>No recent results found.</Text>
+                  )}
+
+                  <TouchableOpacity onPress={() => Linking.openURL('https://www.mlb.com')} activeOpacity={0.7} style={styles.moreLink}>
+                    <Text style={[styles.moreLinkText, { color: `rgba(${theme.acc3RGB},0.4)` }]}>More on MLB.com →</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </TeamSection>
+          );
+        })()}
+
+        <Text style={[styles.source, { color: `rgba(${theme.accRGB},0.2)` }]}>Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API</Text>
       </ScrollView>
     </ThemedBackground>
   );
@@ -428,7 +693,7 @@ const styles = StyleSheet.create({
   // Team section
   teamRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   teamRowLogo: { width: 44, height: 44 },
-  teamRowName: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700' },
+  teamRowName: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700' },
   teamRowSub: { fontFamily: 'Outfit', fontSize: 11, marginTop: 2 },
   teamContent: { borderTopWidth: 1, padding: 12, gap: 10 },
   innerLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase', paddingLeft: 2 },
@@ -471,4 +736,27 @@ const styles = StyleSheet.create({
   jccDate: { fontFamily: 'Outfit', fontSize: 10 },
 
   source: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center' },
+
+  // MLB team tabs
+  mlbTabs:      { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  mlbTab:       { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  mlbTabLogo:   { width: 22, height: 22 },
+  mlbTabText:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
+  mlbTabRecord: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '600' },
+
+  // Stat grid
+  statGrid: { flexDirection: 'row', gap: 6 },
+  statGridCell: { flex: 1, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 12, padding: 10 },
+  statGridLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 },
+  statGridValue: { fontFamily: 'Syne', fontSize: 16, fontWeight: '800' },
+
+  // Tarp Skunks schedule
+  skunksScheduleHeader: { borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
+  skunksScheduleLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  skunksGameRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10 },
+  skunksDateCol: { width: 44, alignItems: 'center' },
+  skunksDay: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', lineHeight: 18 },
+  skunksMonth: { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8, textTransform: 'uppercase' },
+  skunksGameOpponent: { fontFamily: 'Outfit', flex: 1, fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.8)' },
+  skunksGameTime: { fontFamily: 'Outfit', fontSize: 11 },
 });

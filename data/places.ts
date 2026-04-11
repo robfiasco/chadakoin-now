@@ -1,6 +1,4 @@
-// Jamestown local business directory
 // featured: true = highlighted card (paid placement or owner's pick)
-// Add your personal favorites here, mark featured: true when a business pays for placement
 
 export type PlaceCategory = 'coffee' | 'food' | 'drinks' | 'cannabis' | 'activity' | 'arts' | 'stay';
 
@@ -27,14 +25,15 @@ export const PLACES: Place[] = [
     address: '10-12 E. 4th St, Jamestown',
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 8am–9pm',
-    featured: false,
+    featured: true,
+    featuredNote: 'Best coffee and food in downtown Jamestown.',
   },
   {
     id: 'crown-street-roasting',
     name: 'Crown Street Roasting Co.',
     categories: ['coffee'],
     icon: 'cafe-outline',
-    description: 'Specialty coffee roasted right here in Jamestown. Café, whole beans, and merchandise.',
+    description: "Local roaster doing it right. You can never have too much good coffee.",
     address: 'Jamestown, NY',
     website: 'https://www.crownstreetroasting.com/',
     featured: false,
@@ -45,7 +44,7 @@ export const PLACES: Place[] = [
     name: 'The Eatery',
     categories: ['food'],
     icon: 'restaurant-outline',
-    description: 'Breakfast and lunch in Jamestown. A local favorite for starting your morning right.',
+    description: "No-frills diner breakfast done well. Exactly what it needs to be.",
     address: '180 Fluvanna Ave, Jamestown',
     website: 'https://www.yelp.com/biz/the-eatery-restaurant-jamestown',
     hours: 'Daily 7am–2pm',
@@ -56,10 +55,8 @@ export const PLACES: Place[] = [
     name: "Davidson's Restaurant",
     categories: ['food'],
     icon: 'restaurant-outline',
-    description: "Family-owned since 1950. Famous for their fish fry — they sell over 3 tons of fish a month. Burgers, fried chicken, and steaks too. A true Chautauqua County institution.",
+    description: "Been coming here since I was a kid. Fish fry is the move, but they've recently added beef on weck and it doesn't disappoint. A Jamestown institution.",
     address: '398 E Fairmount Ave, Lakewood, NY',
-    website: 'https://www.davidsonsfishfry.com/',
-    hours: 'Check website for current hours',
     featured: false,
   },
   {
@@ -87,11 +84,12 @@ export const PLACES: Place[] = [
     name: "Pace's Pizzeria",
     categories: ['food'],
     icon: 'pizza-outline',
-    description: "The world's greatest pizza since 1953. Simple. Fresh. Delicious. Wine and beer selection.",
+    description: "I had birthday parties here as a kid in the early 80s. The pizza is just as good today. Some things shouldn't change.",
     address: '549 W 3rd St, Jamestown',
     website: 'https://paces.pizza/',
     hours: 'Wed–Sat 4pm–9pm · Sun 4pm–8pm',
-    featured: false,
+    featured: true,
+    featuredNote: "A Jamestown institution since 1953.",
   },
   {
     id: 'slice-of-home',
@@ -121,7 +119,6 @@ export const PLACES: Place[] = [
     icon: 'restaurant-outline',
     description: 'Authentic family-owned Mexican restaurant. 98% recommended on Facebook. Dine-in and in-store pickup.',
     address: '679 Fairmount Ave, Jamestown',
-    website: 'https://www.facebook.com/artofflavorsJamestownNY',
     hours: 'Mon–Sat 11am–8pm · Closed Sunday',
     featured: false,
   },
@@ -133,6 +130,16 @@ export const PLACES: Place[] = [
     description: 'Breakfast diner inside the Jamestown Airport. Classic diner fare, 5-star rated.',
     address: '3163 Airport Dr, Jamestown',
     hours: 'Closes 2pm',
+    featured: false,
+  },
+  {
+    id: '4-below-haggys',
+    name: "4 Below Haggy's Bar and Grill",
+    categories: ['food', 'drinks'],
+    icon: 'restaurant-outline',
+    description: 'Creative, fresh pub food at a great price point — Buffalo Chicken Wrap, Double Decker Patty Melt, Smash Burger. Warm vintage atmosphere with a customizable a la carte menu. A hidden gem downtown.',
+    address: '104 E 2nd St, Jamestown',
+    hours: 'Mon–Wed 4pm–11pm · Thu–Sat 11am–11pm · Sun Closed',
     featured: false,
   },
   {
@@ -175,7 +182,6 @@ export const PLACES: Place[] = [
     icon: 'wine-outline',
     description: 'Full service bar and restaurant in the heart of downtown Jamestown.',
     address: 'Jamestown, NY',
-    website: 'https://www.facebook.com/CherryLoungeJTNY/',
     featured: false,
   },
   {
@@ -194,11 +200,12 @@ export const PLACES: Place[] = [
     name: "Wicked Warren's",
     categories: ['drinks', 'food'],
     icon: 'beer-outline',
-    description: 'Brewery and restaurant with outstanding craft beer and wood-fired pizza.',
+    description: "Great spot across from the Comedy Center. Solid food, good craft beer, and a location that makes it an easy stop on any downtown visit.",
     address: '119 W 3rd St, Jamestown',
     website: 'https://wickedwarrens.com/jamestown',
     hours: 'Daily 11:30am–10pm',
-    featured: false,
+    featured: true,
+    featuredNote: 'Craft beer and wood-fired pizza downtown.',
   },
 
   {

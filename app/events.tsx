@@ -1,73 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Linking, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivicData, EventItem } from '../hooks/useCivicData';
 
-// Map categories to theme accent slots (acc, acc2, acc3)
-// so colors always match the active theme
-type AccentSlot = 'acc' | 'acc2' | 'acc3';
+const DAY_COLORS = ['#00D4C8', '#9B6DFF', '#FF6B8A', '#F5A623', '#5B8DB8'];
 
-const CATEGORY_ACCENT: Record<string, AccentSlot> = {
-  // Primary accent — civic, structural, informational
-  'Civic':               'acc',
-  'BPU':                 'acc',
-  'Government':          'acc',
-  'Jackson Center':      'acc',
-  'Education':           'acc',
-  'Lecture':             'acc',
-  'Library':             'acc',
-  // Secondary accent — community, nature, celebration
-  'Community':           'acc2',
-  "St. Patrick's Day":   'acc2',
-  'Annual':              'acc2',
-  'Family':              'acc2',
-  'Tarp Skunks':         'acc2',
-  'Baseball':            'acc2',
-  'Music':               'acc2',
-  'Festival':            'acc2',
-  // Tertiary accent — arts, culture, performance
-  'Theater':             'acc3',
-  'Arts':                'acc3',
-  'Arts & Entertainment':'acc3',
-  'Reg Lenna':           'acc3',
-  // Sports — secondary (energetic)
-  'Sports':              'acc2',
-  'Athletics':           'acc2',
-  'JPS':                 'acc2',
-  // News/WRFA — primary
-  'WRFA':                'acc',
-  'Local':               'acc',
-  'RTPI':                'acc3',
-  'Fenton':              'acc2',
-  'Farmers Market':      'acc2',
-};
-
-function getEventColor(event: EventItem, theme: { acc: string; acc2: string; acc3: string }): string {
-  for (const tag of event.tags) {
-    const slot = CATEGORY_ACCENT[tag];
-    if (slot) return theme[slot];
-  }
-  const slot = CATEGORY_ACCENT[event.category];
-  return slot ? theme[slot] : theme.acc3;
+function accentForDate(iso: string): string {
+  const day = new Date(iso).getDate();
+  return DAY_COLORS[day % DAY_COLORS.length];
 }
 
-function formatEventDate(iso: string): { weekday: string; date: string; time: string } {
-  if (!iso) return { weekday: '', date: '—', time: '' };
-  const d = new Date(iso);
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return { weekday, date, time };
+function hexToRGB(hex: string): string {
+  const h = hex.replace('#', '');
+  return `${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`;
 }
 
 function getEventMonth(iso: string): string {
   if (!iso) return '';
+  return new Date(iso).toLocaleString('default', { month: 'long' });
+}
+
+function formatParts(iso: string): { day: string; dayNum: string; time: string } {
+  if (!iso) return { day: '', dayNum: '—', time: '' };
   const d = new Date(iso);
-  return d.toLocaleString('default', { month: 'long' });
+  return {
+    day:    d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+    dayNum: String(d.getDate()),
+    time:   d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+  };
+}
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// Show current month + 5 more (6 total)
+function buildMonthRange(): string[] {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    return MONTH_NAMES[d.getMonth()];
+  });
 }
 
 export default function EventsScreen() {
@@ -77,55 +51,61 @@ export default function EventsScreen() {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const monthRange = buildMonthRange();
+
+  // Only show events that haven't started yet
+  const upcoming = events.filter(e => new Date(e.startDate) >= now);
+  const eventMonths = new Set(upcoming.map(e => getEventMonth(e.startDate)));
+  const currentMonth = activeMonth ?? (eventMonths.has(monthRange[0]) ? monthRange[0] : [...eventMonths][0] ?? monthRange[0]);
+
+  const filtered = upcoming
+    .filter(e => getEventMonth(e.startDate) === currentMonth)
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
   async function onRefresh() {
     setRefreshing(true);
     await civic.refresh();
     setRefreshing(false);
   }
 
-  // Derive available months from live events
-  const months = Array.from(new Set(events.map(e => getEventMonth(e.startDate)))).slice(0, 4);
-  const currentMonth = activeMonth ?? months[0] ?? new Date().toLocaleString('default', { month: 'long' });
-
-  const filtered = events
-    .filter(e => getEventMonth(e.startDate) === currentMonth)
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-
-  const glassWeb = Platform.OS === 'web'
-    ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
-    : {};
-  const panel     = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
         <Text style={styles.title}>Events</Text>
         <Text style={[styles.subhead, { color: theme.acc55 }]}>Upcoming in Jamestown</Text>
-      </SafeAreaView>
 
-      {months.length > 0 && (
-        <View style={styles.tabs}>
-          {months.map(m => {
-            const isActive = m === currentMonth;
+        {/* Month tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.monthsRow}>
+          {monthRange.map(m => {
+            const hasEvents = eventMonths.has(m);
+            const isActive  = m === currentMonth;
             return (
               <TouchableOpacity
                 key={m}
-                style={[styles.tab, isActive
-                  ? { backgroundColor: `rgba(${theme.accRGB},0.15)`, borderColor: `rgba(${theme.accRGB},0.3)` }
-                  : { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.1)' }
+                activeOpacity={hasEvents ? 0.7 : 1}
+                onPress={() => hasEvents && setActiveMonth(m)}
+                style={[
+                  styles.monthPill,
+                  isActive  ? [styles.monthActive,   { backgroundColor: theme.acc }] :
+                  hasEvents ? styles.monthInactive :
+                              styles.monthEmpty,
                 ]}
-                onPress={() => setActiveMonth(m)}
-                activeOpacity={0.7}
-                accessibilityLabel={`${m} events`}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
               >
-                <Text style={[styles.tabText, { color: isActive ? theme.acc : 'rgba(255,255,255,0.35)' }]}>{m}</Text>
+                <Text style={[
+                  styles.monthText,
+                  isActive  ? [styles.monthTextActive,   { color: theme.bg }] :
+                  hasEvents ? styles.monthTextInactive :
+                              styles.monthTextEmpty,
+                ]}>
+                  {m.slice(0, 3)}
+                </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
-      )}
+        </ScrollView>
+      </SafeAreaView>
 
       {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
@@ -133,72 +113,89 @@ export default function EventsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.acc}
-            colors={[theme.acc]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.acc} colors={[theme.acc]} />
         }
       >
-        <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>{currentMonth.toUpperCase()} EVENTS</Text>
+        <Text style={[styles.sectionLabel, { color: theme.acc }]}>{currentMonth.toUpperCase()} EVENTS</Text>
 
         {loading ? (
-          [1, 2, 3].map(i => (
-            // @ts-ignore
-            <View key={i} style={[styles.eventCard, panel, { gap: 8 }]}>
-              <SkeletonPulse width={50} height={14} borderRadius={4} accRGB={theme.accRGB} />
-              <SkeletonPulse width="80%" height={16} borderRadius={4} accRGB={theme.accRGB} />
-              <SkeletonPulse width="60%" height={12} borderRadius={4} accRGB={theme.accRGB} />
+          [1,2,3].map(i => (
+            <View key={i} style={[styles.card, { borderColor: 'rgba(255,255,255,0.07)', marginBottom: 8 }]}>
+              <View style={[styles.cardAccent, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+              <View style={[styles.cardInner, { gap: 10 }]}>
+                <SkeletonPulse width={38} height={50} borderRadius={6} accRGB={theme.accRGB} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <SkeletonPulse width="70%" height={13} borderRadius={4} accRGB={theme.accRGB} />
+                  <SkeletonPulse width="45%" height={10} borderRadius={4} accRGB={theme.accRGB} />
+                </View>
+              </View>
             </View>
           ))
         ) : filtered.length === 0 ? (
-          // @ts-ignore
-          <View style={[styles.eventCard, panel]}>
-            <Text style={styles.emptyText}>
-              {events.length === 0 ? 'No upcoming events found.' : `No events in ${currentMonth}.`}
-            </Text>
+          <View style={[styles.card, { borderColor: 'rgba(255,255,255,0.07)' }]}>
+            <View style={[styles.cardAccent, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+            <View style={styles.cardInner}>
+              <Text style={styles.emptyText}>
+                {events.length === 0 ? 'No upcoming events found.' : `No events in ${currentMonth}.`}
+              </Text>
+            </View>
           </View>
         ) : (
           filtered.map((event, i) => {
-            const { weekday, date, time } = formatEventDate(event.startDate);
-            const accentColor = getEventColor(event, theme);
+            const accent = accentForDate(event.startDate);
+            const accentRGB = hexToRGB(accent);
+            const { day, dayNum, time } = formatParts(event.startDate);
+            const isToday = event.startDate.startsWith(todayStr);
             return (
-              // @ts-ignore
-              <TouchableOpacity key={i} style={[styles.eventCard, panel, { borderLeftColor: accentColor, borderLeftWidth: 3 }]} activeOpacity={event.link ? 0.7 : 1} onPress={() => event.link && Linking.openURL(event.link)} accessibilityLabel={event.title} accessibilityRole={event.link ? 'link' : 'text'} accessibilityHint={event.link ? 'Opens event details' : undefined}>
-                <View style={styles.eventLeft}>
-                  {weekday ? <Text style={[styles.eventWeekday, { color: accentColor }]}>{weekday}</Text> : null}
-                  <Text style={[styles.eventDate, { color: accentColor }]}>{date}</Text>
-                  <Text style={styles.eventTime}>{time}</Text>
+              <View
+                key={i}
+                style={[styles.card, { borderColor: 'rgba(255,255,255,0.07)' }]}
+              >
+                <View style={[styles.cardAccent, { backgroundColor: accent }]} />
+                <View style={styles.cardInner}>
+                  {/* Date column */}
+                  <View style={styles.dateCol}>
+                    <Text style={styles.dateDayLabel}>{day}</Text>
+                    <Text style={[styles.dateNum, { color: accent }]}>{dayNum}</Text>
+                    {isToday && (
+                      <Text style={[styles.todayPill, { backgroundColor: theme.acc, color: theme.bg }]}>Today</Text>
+                    )}
+                    <Text style={styles.dateTime} numberOfLines={1}>{time}</Text>
+                  </View>
+
+                  {/* Vertical divider */}
+                  <View style={styles.dividerV} />
+
+                  {/* Event body */}
+                  <View style={styles.eventBody}>
+                    <Text style={styles.eventName} numberOfLines={2}>{event.title}</Text>
+                    {event.location ? (
+                      <Text style={styles.eventLoc} numberOfLines={1}>{event.location}</Text>
+                    ) : null}
+                    {event.tags.length > 0 && (
+                      <View style={styles.tagsRow}>
+                        {event.tags.slice(0, 3).map(tag => (
+                          <Text
+                            key={tag}
+                            style={[styles.tag, {
+                              color: `rgba(${accentRGB},0.8)`,
+                              backgroundColor: `rgba(${accentRGB},0.08)`,
+                              borderColor: `rgba(${accentRGB},0.2)`,
+                            }]}
+                          >
+                            {tag.toUpperCase()}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.dividerV} />
-                <View style={styles.eventRight}>
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                  {event.location ? (
-                    <View style={styles.locationRow}>
-                      <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.3)" />
-                      <Text style={styles.eventLocation}>{event.location}</Text>
-                    </View>
-                  ) : null}
-                  {event.tags.length > 0 && (
-                    <View style={styles.tags}>
-                      {event.tags.slice(0, 2).map(tag => (
-                        <View key={tag} style={[styles.tag, { backgroundColor: `rgba(${theme.accRGB},0.1)`, borderColor: `rgba(${theme.accRGB},0.2)` }]}>
-                          <Text style={[styles.tagText, { color: theme.acc55 }]}>{tag}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                {event.link && (
-                  <Ionicons name="open-outline" size={12} color={`rgba(${theme.accRGB},0.3)`} style={{ alignSelf: 'flex-start', marginTop: 2 }} />
-                )}
-              </TouchableOpacity>
+              </View>
             );
           })
         )}
 
-        <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.35)` }]}>
+        <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.25)` }]}>
           {civic.lastUpdated
             ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
             : 'Loading…'}
@@ -209,27 +206,46 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
-  title: { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
-  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
-  tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12, flexWrap: 'wrap' },
-  tab: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
-  tabText: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600' },
-  content: { padding: 16, paddingTop: 4, paddingBottom: 32 },
-  sectionLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 4, paddingLeft: 2 },
-  eventCard: { flexDirection: 'row', gap: 14, padding: 18, marginBottom: 8, alignItems: 'flex-start' },
-  eventLeft: { alignItems: 'center', minWidth: 44 },
-  eventWeekday: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.5, opacity: 0.7, marginBottom: 1 },
-  eventDate: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
-  eventTime: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 3 },
-  dividerV: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.07)' },
-  eventRight: { flex: 1 },
-  eventTitle: { fontFamily: 'Outfit', fontSize: 14, fontWeight: '700', color: '#fff', marginBottom: 5 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  eventLocation: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
-  tags: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  tag: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
-  tagText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '600' },
-  emptyText: { fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', fontSize: 13 },
+  header:   { paddingHorizontal: 20, paddingBottom: 0, paddingTop: 40, zIndex: 10 },
+  title:    { fontFamily: 'Syne', fontSize: 21, fontWeight: '700', color: '#fff' },
+  subhead:  { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1 },
+
+  // Month tabs
+  monthsRow:         { flexDirection: 'row', gap: 6, marginTop: 12, marginBottom: 16 },
+  monthPill:         { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+  monthActive:       {},
+  monthInactive:     { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  monthEmpty:        { borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', opacity: 0.4 },
+  monthText:         { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  monthTextActive:   {},
+  monthTextInactive: { color: 'rgba(255,255,255,0.4)' },
+  monthTextEmpty:    { color: 'rgba(255,255,255,0.15)' },
+
+  content:      { padding: 16, paddingTop: 4, paddingBottom: 32 },
+  sectionLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10, marginTop: 4 },
+
+  // Card
+  card:      { borderWidth: 1, borderRadius: 16, marginBottom: 8, flexDirection: 'row', overflow: 'hidden' },
+  cardAccent:{ width: 3, flexShrink: 0, alignSelf: 'stretch', borderRadius: 0 },
+  cardInner: { flexDirection: 'row', gap: 12, padding: 12, paddingLeft: 10, flex: 1 },
+
+  // Date column
+  dateCol:      { width: 44, flexShrink: 0, alignItems: 'center' },
+  dateDayLabel: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '600', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.6 },
+  dateNum:      { fontFamily: 'Syne', fontSize: 17, fontWeight: '800', lineHeight: 20 },
+  dateTime:     { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 4, textAlign: 'center' },
+  todayPill:    { fontFamily: 'Outfit', fontSize: 8, fontWeight: '800', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.4, overflow: 'hidden' },
+
+  // Divider
+  dividerV: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 2, flexShrink: 0 },
+
+  // Event body
+  eventBody: { flex: 1, minWidth: 0 },
+  eventName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff', letterSpacing: -0.2, lineHeight: 18, marginBottom: 4 },
+  eventLoc:  { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 6 },
+  tagsRow:   { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
+  tag:       { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, letterSpacing: 0.6, textTransform: 'uppercase', borderWidth: 1 },
+
+  emptyText:   { fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', fontSize: 13 },
   updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28 },
 });

@@ -1,4 +1,4 @@
-export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent' | 'aldos';
+export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent' | 'aldos' | 'swede' | 'lake';
 
 export interface Theme {
   id: ThemeId;
@@ -135,7 +135,6 @@ export const THEMES: Theme[] = [
     orb2: 'rgba(180,180,200,0.04)',
     warmWarn: { bg: 'rgba(255,200,50,0.08)', text: '#d4a820', borderColor: 'rgba(255,200,50,0.18)' },
     tabBarBg: 'rgba(6,6,6,0.97)',
-    bgGradient: 'linear-gradient(180deg, #050505 0%, #101010 50%, #1c1c1c 100%)',
   },
   {
     id: 'aldos',
@@ -159,7 +158,46 @@ export const THEMES: Theme[] = [
     orb2: 'rgba(255,208,96,0.08)',
     warmWarn: { bg: 'rgba(255,140,66,0.12)', text: '#ff8c42', borderColor: 'rgba(255,140,66,0.28)' },
     tabBarBg: 'rgba(14,8,2,0.97)',
-    bgGradient: 'linear-gradient(180deg, #1a1008 0%, #261508 50%, #1a1008 100%)',
+  },
+  {
+    id: 'swede',
+    label: 'Swede Hill',
+    sub: 'Built by Swedish hands',
+    description: 'By 1900, Jamestown had one of the highest concentrations of Swedish-born residents of any American city. Swedish immigrants built the furniture factories, the Lutheran churches, and the social clubs that shaped the city for generations. The neighborhood above downtown — Swede Hill — still carries the name. The yellow and blue here are the Swedish national colors.',
+    swatchColor: '#FFDB00',
+    bg: '#06080e',
+    acc: '#FFDB00',
+    acc55: 'rgba(255,219,0,0.55)',
+    acc45: 'rgba(255,219,0,0.45)',
+    accRGB: '255,219,0',
+    acc2: '#4a9fd4',
+    acc2RGB: '74,159,212',
+    acc3: '#f5e580',
+    acc3RGB: '245,229,128',
+    orb1: 'rgba(255,219,0,0.14)',
+    orb2: 'rgba(74,159,212,0.12)',
+    warmWarn: { bg: 'rgba(255,219,0,0.1)', text: '#FFDB00', borderColor: 'rgba(255,219,0,0.25)' },
+    tabBarBg: 'rgba(4,5,10,0.97)',
+  },
+  {
+    id: 'lake',
+    label: 'Lake Effect',
+    sub: 'Snowbelt, Erie side',
+    description: 'Jamestown sits in the snow belt east of Lake Erie and is one of the snowiest mid-size cities in the United States. Lake-effect storms roll in from November through March, dropping two or three feet overnight in narrow bands that hit Jamestown and nowhere else. Ask a Jamestowner about winter and watch their eyes go somewhere distant.',
+    swatchColor: '#b8d8f0',
+    bg: '#060a10',
+    acc: '#c8dff0',
+    acc55: 'rgba(200,223,240,0.55)',
+    acc45: 'rgba(200,223,240,0.45)',
+    accRGB: '200,223,240',
+    acc2: '#7ab8e0',
+    acc2RGB: '122,184,224',
+    acc3: '#4880a8',
+    acc3RGB: '72,128,168',
+    orb1: 'rgba(122,184,224,0.14)',
+    orb2: 'rgba(200,223,240,0.07)',
+    warmWarn: { bg: 'rgba(200,223,240,0.08)', text: '#c8dff0', borderColor: 'rgba(200,223,240,0.2)' },
+    tabBarBg: 'rgba(4,7,12,0.97)',
   },
 ];
 

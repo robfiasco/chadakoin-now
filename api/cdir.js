@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=10');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json(data);
-  } catch (err) {
-    res.status(502).json({ error: err.message });
+  } catch {
+    res.status(502).json({ error: 'CDIR fetch failed' });
   }
 }

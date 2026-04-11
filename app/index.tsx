@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image,
-  TouchableOpacity, Animated, Easing, Platform, Linking, RefreshControl,
+  TouchableOpacity, Animated, Easing, Platform, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useTheme } from '../lib/ThemeContext';
 import { THEMES, ThemeId } from '../lib/themes';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -14,9 +13,9 @@ import { fetchWeather, WeatherData } from '../services/weather';
 import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
-import { PLACES, PLACE_CATEGORIES, PlaceCategory } from '../data/places';
+import { openLink } from '../lib/openLink';
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import SettingsScreen from './settings';
 import { AddToHomeScreen } from '../components/AddToHomeScreen';
 
 interface NowPlaying {
@@ -53,11 +52,10 @@ function getDateBadge() {
   return `${days[d.getDay()]} ${d.getDate()}`;
 }
 
-// Returns a countdown note when within 60 days of a mode switch, otherwise null.
 function getParkingModeNote(): string | null {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const month = today.getMonth() + 1; // 1-indexed
+  const month = today.getMonth() + 1;
   const isDaily = month >= 11 || month <= 3;
   if (isDaily) {
     const year = month >= 4 ? today.getFullYear() + 1 : today.getFullYear();
@@ -116,7 +114,6 @@ function ThemeSelector() {
 
   return (
     <View style={tsStyles.wrap}>
-      {/* Trigger */}
       <TouchableOpacity
         onPress={toggle}
         activeOpacity={0.7}
@@ -131,7 +128,6 @@ function ThemeSelector() {
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={11} color={`rgba(${theme.accRGB},0.6)`} />
       </TouchableOpacity>
 
-      {/* Dropdown */}
       {open && (
         <Animated.View style={[
           tsStyles.dropdown,
@@ -196,7 +192,7 @@ const tsStyles = StyleSheet.create({
 function StatChip({ label, value, accRGB, loading }: { label: string; value: string; accRGB: string; loading?: boolean }) {
   return (
     <View style={[styles.statChip, { backgroundColor: `rgba(${accRGB},0.08)`, borderColor: `rgba(${accRGB},0.18)` }]}>
-      <Text style={[styles.statLabel, { color: `rgba(${accRGB},0.65)` }]}>{label}</Text>
+      <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.4)' }]}>{label}</Text>
       {loading
         ? <SkeletonPulse width={40} height={14} borderRadius={4} accRGB={accRGB} />
         : <Text style={styles.statValue}>{value}</Text>
@@ -205,34 +201,66 @@ function StatChip({ label, value, accRGB, loading }: { label: string; value: str
   );
 }
 
-// ─── Home Screen ─────────────────────────────────────────────────
+function ThemePillSwitcher() {
+  const { themeId, setThemeId } = useTheme();
+
+  // Animated widths for each dot — not compatible with useNativeDriver
+  const dotWidths = useRef(
+    Object.fromEntries(THEMES.map(t => [t.id, new Animated.Value(t.id === themeId ? 22 : 8)]))
+  ).current;
+
+  useEffect(() => {
+    THEMES.forEach(t => {
+      Animated.timing(dotWidths[t.id], {
+        toValue: t.id === themeId ? 22 : 8,
+        duration: 250,
+        useNativeDriver: false,
+        easing: Easing.out(Easing.ease),
+      }).start();
+    });
+  }, [themeId]);
+
+  return (
+    <View style={styles.themeDots}>
+      <Text style={styles.themeLabel}>THEME</Text>
+      {THEMES.map(t => {
+        const isActive = themeId === t.id;
+        return (
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => setThemeId(t.id as ThemeId)}
+            activeOpacity={0.7}
+            style={styles.dotWrap}
+          >
+            <Animated.View style={[
+              styles.dot,
+              {
+                width: dotWidths[t.id],
+                backgroundColor: t.swatchColor,
+                opacity: isActive ? 1 : 0.25,
+                shadowColor: isActive ? t.swatchColor : 'transparent',
+                shadowOpacity: isActive ? 0.8 : 0,
+                shadowRadius: isActive ? 6 : 0,
+                elevation: isActive ? 4 : 0,
+              },
+            ]} />
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { theme, themeId, setThemeId } = useTheme();
-  const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
-  const [visitorMode, setVisitorMode] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [radioPlaying, setRadioPlaying] = useState(false);
   const [radioLoading, setRadioLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [placeFilter, setPlaceFilter] = useState<'all' | PlaceCategory>('all');
   const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
   const civic = useCivicData();
-
-  // Load persisted visitor preference on first mount
-  useEffect(() => {
-    AsyncStorage.getItem('visitorMode').then(val => {
-      if (val === 'true') setVisitorMode(true);
-    }).catch(() => {});
-  }, []);
-
-  function toggleVisitorMode() {
-    setVisitorMode(v => {
-      const next = !v;
-      AsyncStorage.setItem('visitorMode', String(next)).catch(() => {});
-      return next;
-    });
-  }
 
   async function toggleRadio() {
     if (radioLoading) return;
@@ -272,7 +300,6 @@ export default function HomeScreen() {
     setRefreshing(false);
   }
 
-  // Poll CDIR every 30 seconds
   useEffect(() => {
     fetchNowPlaying().then(setNowPlaying).catch(() => {});
     const id = setInterval(() => {
@@ -284,100 +311,42 @@ export default function HomeScreen() {
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
     : {};
-  // Base panel — used for general cards
   const panel     = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.05)`, borderColor: `rgba(${theme.accRGB},0.16)`, ...glassWeb };
-  // Weather / primary panels — acc (primary)
   const panelGlow = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.accRGB},0.07)`, borderColor: `rgba(${theme.accRGB},0.22)`, ...glassWeb };
-  // Recycling panel — acc2 (secondary)
   const panel2    = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.acc2RGB},0.05)`, borderColor: `rgba(${theme.acc2RGB},0.16)`, ...glassWeb };
-  // News / subtle panel — acc3 (tertiary)
   const panel3    = { borderRadius: 20, borderWidth: 1, backgroundColor: `rgba(${theme.acc3RGB},0.04)`, borderColor: `rgba(${theme.acc3RGB},0.12)`, ...glassWeb };
 
   const { parking, recycling, alerts } = civic;
 
-  // Snow emergency: any active alert containing "snow emergency"
   const snowEmergency = alerts.activeAlerts.find(a =>
     a.title.toLowerCase().includes('snow emergency')
   );
 
   return (
     <ThemedBackground>
-      {/* ─── Header ─────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.appName}>
-              {visitorMode ? 'Welcome to Jamestown' : 'Chadakoin Now'}
-            </Text>
-            <Text style={[styles.appCity, { color: theme.acc55 }]}>
-              {visitorMode ? 'Your weekend guide' : 'Jamestown, NY'}
-            </Text>
+            <Text style={styles.appName}>Chadakoin Now</Text>
+            <Text style={[styles.appCity, { color: theme.acc55 }]}>Jamestown, NY</Text>
           </View>
           <View style={styles.headerRight}>
             <View style={[styles.dateBadge, { backgroundColor: `rgba(${theme.accRGB},0.1)`, borderColor: `rgba(${theme.accRGB},0.22)` }]}>
               <LiveDot color={theme.acc} />
               <Text style={[styles.dateBadgeText, { color: theme.acc }]}>{dateBadge}</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push('/settings')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <TouchableOpacity onPress={() => setSettingsOpen(true)} activeOpacity={0.7} style={{ padding: 4 }}>
               <Ionicons name="settings-outline" size={18} color={`rgba(${theme.accRGB},0.45)`} />
             </TouchableOpacity>
           </View>
         </View>
-        {/* Theme dots — tap to cycle, full details in Settings */}
-        <View style={styles.themeDots}>
-          {THEMES.map(t => (
-            <TouchableOpacity
-              key={t.id}
-              onPress={() => setThemeId(t.id as ThemeId)}
-              activeOpacity={0.7}
-              style={styles.dotWrap}
-            >
-              <View style={[
-                styles.dot,
-                {
-                  backgroundColor: t.swatchColor,
-                  opacity: themeId === t.id ? 1 : 0.25,
-                  transform: [{ scale: themeId === t.id ? 1.35 : 1 }],
-                  shadowColor: themeId === t.id ? t.swatchColor : 'transparent',
-                  shadowOpacity: themeId === t.id ? 0.8 : 0,
-                  shadowRadius: 5,
-                },
-              ]} />
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ThemePillSwitcher />
       </SafeAreaView>
 
       {civic.error && <ErrorBanner message={civic.error} accRGB={theme.accRGB} />}
 
-      {/* ─── Visitor mode toggle ──────────────────── */}
-      <TouchableOpacity
-        activeOpacity={0.75}
-        onPress={toggleVisitorMode}
-        // @ts-ignore
-        style={[styles.visitorToggle, {
-          backgroundColor: visitorMode ? `rgba(${theme.acc2RGB},0.15)` : `rgba(${theme.accRGB},0.06)`,
-          borderColor: visitorMode ? `rgba(${theme.acc2RGB},0.4)` : `rgba(${theme.accRGB},0.12)`,
-          ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
-        }]}
-      >
-        <Text style={{ fontSize: 16 }}>{visitorMode ? '🏠' : '🧳'}</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.visitorLabel, { color: visitorMode ? theme.acc2 : 'rgba(255,255,255,0.6)' }]}>
-            {visitorMode ? 'Visitor mode · Tap to switch to resident view' : 'Visiting Jamestown this weekend?'}
-          </Text>
-        </View>
-        <View style={[styles.visitorPill, {
-          backgroundColor: visitorMode ? `rgba(${theme.acc2RGB},0.2)` : 'rgba(255,255,255,0.06)',
-          borderColor: visitorMode ? `rgba(${theme.acc2RGB},0.4)` : 'rgba(255,255,255,0.12)',
-        }]}>
-          <Text style={[styles.visitorPillText, { color: visitorMode ? theme.acc2 : 'rgba(255,255,255,0.35)' }]}>
-            {visitorMode ? 'ON' : 'TAP'}
-          </Text>
-        </View>
-      </TouchableOpacity>
 
-      {/* ─── Snow emergency banner ─────────────────── */}
+
       {snowEmergency && (
         <View style={styles.snowBanner}>
           <Ionicons name="snow" size={18} color="#fff" />
@@ -388,7 +357,7 @@ export default function HomeScreen() {
             </Text>
           </View>
           {snowEmergency.link ? (
-            <TouchableOpacity onPress={() => Linking.openURL(snowEmergency.link)} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => openLink(snowEmergency.link)} activeOpacity={0.7}>
               <Text style={styles.snowBannerLink}>Details →</Text>
             </TouchableOpacity>
           ) : null}
@@ -409,7 +378,6 @@ export default function HomeScreen() {
         }
       >
 
-        {/* ─── Weather ──────────────────────────────── */}
         {/* @ts-ignore */}
         <View style={[styles.card, panelGlow]}>
           {weather ? (
@@ -419,7 +387,6 @@ export default function HomeScreen() {
                   <Text style={[styles.weatherTemp, { textShadowColor: `rgba(${theme.accRGB},0.45)`, textShadowRadius: 40 }]}>
                     {weather.temp}
                   </Text>
-                  {/* condition uses acc2 for contrast against the temp */}
                   <Text style={[styles.weatherCondition, { color: theme.acc2 }]}>{weather.condition}</Text>
                 </View>
                 <View style={styles.weatherRight}>
@@ -438,7 +405,6 @@ export default function HomeScreen() {
                 {weather.humidity && <StatChip label="HUMIDITY" value={weather.humidity} accRGB={theme.acc2RGB} />}
               </View>
 
-              {/* 5-day forecast strip */}
               {weather.forecast && weather.forecast.length > 1 && (
                 <View style={[styles.forecastStrip, { borderTopColor: `rgba(${theme.acc2RGB},0.12)` }]}>
                   {weather.forecast.map((day, i) => {
@@ -466,157 +432,203 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {visitorMode ? (
-          /* ═══════════════════════════════════════════
-             VISITOR MODE
-          ═══════════════════════════════════════════ */
+        <>
+        <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc2RGB},0.5)` }]}>FROM JAMESTOWN</Text>
+
+        {(civic.loading || civic.latestEpisode) && (
           <>
-            {/* Featured places */}
-            {PLACES.filter(p => p.featured).map((place, idx) => (
-              <TouchableOpacity
-                key={place.id}
-                activeOpacity={0.75}
-                onPress={() => place.website && Linking.openURL(place.website)}
-                // @ts-ignore
-                style={[styles.card, {
-                  borderRadius: 20, borderWidth: 1.5,
-                  backgroundColor: `rgba(${theme.acc2RGB},0.1)`,
-                  borderColor: `rgba(${theme.acc2RGB},0.35)`,
-                  marginTop: idx > 0 ? 10 : 18,
-                  ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)' } : {}),
-                }]}
-              >
-                <View style={styles.featuredBadge}>
-                  <Ionicons name="star" size={9} color={theme.acc2} style={{ marginRight: 4 }} />
-                  <Text style={[styles.featuredBadgeText, { color: theme.acc2 }]}>FEATURED</Text>
+            {civic.loading ? (
+              // @ts-ignore
+              <View style={[styles.lotdCard, panel2]}>
+                <SkeletonPulse width={40} height={40} borderRadius={8} accRGB={theme.acc2RGB} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <SkeletonPulse width="70%" height={14} borderRadius={4} accRGB={theme.acc2RGB} />
+                  <SkeletonPulse width="45%" height={11} borderRadius={4} accRGB={theme.acc2RGB} />
                 </View>
-                <View style={styles.placeRow}>
-                  <Ionicons name={place.icon as any} size={26} color={theme.acc2} style={{ marginTop: 2 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.placeName, { color: theme.acc2 }]}>{place.name}</Text>
-                    {place.featuredNote && <Text style={styles.placeFeaturedNote}>{place.featuredNote}</Text>}
-                    <Text style={styles.placeDesc} numberOfLines={2}>{place.description}</Text>
-                    {place.hours && <Text style={[styles.placeHours, { color: `rgba(${theme.acc2RGB},0.5)` }]}>{place.hours}</Text>}
-                  </View>
-                  {place.website && <Ionicons name="open-outline" size={14} color={`rgba(${theme.acc2RGB},0.4)`} />}
+              </View>
+            ) : civic.latestEpisode ? (
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => WebBrowser.openBrowserAsync(civic.latestEpisode!.pageUrl).catch(() => {})}
+                accessibilityLabel={`Play episode: ${civic.latestEpisode.title}`}
+                accessibilityRole="button"
+                // @ts-ignore
+                style={[styles.lotdCard, panel2]}
+              >
+                <Image
+                  source={{ uri: civic.latestEpisode.artworkUrl }}
+                  style={[styles.lotdArt, { borderColor: `rgba(${theme.acc2RGB},0.3)` }]}
+                  onError={() => {}}
+                  accessibilityLabel="Episode artwork"
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.lotdShow, { color: `rgba(${theme.acc2RGB},0.6)` }]}>
+                    Live On Tape Delay
+                    {civic.latestEpisode.episodeNumber ? ` · Ep. ${civic.latestEpisode.episodeNumber}` : ''}
+                  </Text>
+                  <Text style={[styles.lotdTagline, { color: theme.acc2, opacity: 0.8 }]}>
+                    Jamestown's longest running podcast
+                  </Text>
+                  <Text style={styles.lotdTitle} numberOfLines={1}>{civic.latestEpisode.title}</Text>
+                  {civic.latestEpisode.duration ? (
+                    <Text style={[styles.lotdDuration, { color: `rgba(${theme.acc2RGB},0.45)` }]}>
+                      {civic.latestEpisode.duration}
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={[styles.playBtnFilled, {
+                  backgroundColor: theme.acc2,
+                  shadowColor: theme.acc2,
+                }]}>
+                  <Ionicons name="play" size={16} color={theme.bg} />
                 </View>
               </TouchableOpacity>
-            ))}
+            ) : null}
+          </>
+        )}
 
-            {/* Place filter pills */}
-            {(() => {
-              const activeCats = PLACE_CATEGORIES.filter(cat =>
-                PLACES.some(p => !p.featured && p.categories.includes(cat.key))
-              );
-              return (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginTop: 16, marginBottom: 4 }}
-                  contentContainerStyle={{ paddingHorizontal: 2, gap: 8 }}
-                >
-                  <TouchableOpacity
-                    onPress={() => setPlaceFilter('all')}
-                    style={[styles.filterPill, placeFilter === 'all' && { backgroundColor: `rgba(${theme.accRGB},0.18)`, borderColor: `rgba(${theme.accRGB},0.5)` }]}
-                  >
-                    <Text style={[styles.filterPillText, { color: placeFilter === 'all' ? theme.acc : 'rgba(255,255,255,0.4)' }]}>All</Text>
-                  </TouchableOpacity>
-                  {activeCats.map(cat => (
-                    <TouchableOpacity
-                      key={cat.key}
-                      onPress={() => setPlaceFilter(cat.key)}
-                      style={[styles.filterPill, placeFilter === cat.key && { backgroundColor: `rgba(${theme.accRGB},0.18)`, borderColor: `rgba(${theme.accRGB},0.5)` }]}
-                    >
-                      <Ionicons name={cat.icon as any} size={11} color={placeFilter === cat.key ? theme.acc : 'rgba(255,255,255,0.35)'} />
-                      <Text style={[styles.filterPillText, { color: placeFilter === cat.key ? theme.acc : 'rgba(255,255,255,0.4)' }]}>{cat.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              );
-            })()}
+        {/* @ts-ignore */}
+        <View style={[styles.cdirCard, {
+          borderRadius: 20, borderWidth: 1,
+          backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.1)` : `rgba(${theme.accRGB},0.06)`,
+          borderColor: radioPlaying ? `rgba(${theme.accRGB},0.35)` : `rgba(${theme.accRGB},0.18)`,
+          ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
+        }]}>
+          <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})} activeOpacity={0.8} accessibilityLabel="Open CDIR radio website" accessibilityRole="button">
+            {nowPlaying?.artwork ? (
+              <Image source={{ uri: nowPlaying.artwork }} style={styles.cdirArt} resizeMode="cover" />
+            ) : (
+              <View style={styles.cdirDotWrap}>
+                <View style={[styles.cdirDot, { backgroundColor: theme.acc, shadowColor: theme.acc }]} />
+              </View>
+            )}
+          </TouchableOpacity>
 
-            {/* Filtered places list */}
-            {(() => {
-              const filtered = PLACES.filter(p =>
-                !p.featured && (placeFilter === 'all' || p.categories.includes(placeFilter as PlaceCategory))
-              );
-              const note = placeFilter !== 'all'
-                ? PLACE_CATEGORIES.find(c => c.key === placeFilter)?.note
-                : null;
-              if (filtered.length === 0) return null;
-              return (
-                <>
-                  {note && (
-                    <Text style={[styles.categoryNote, { color: `rgba(${theme.accRGB},0.45)` }]}>
-                      {note}
-                    </Text>
-                  )}
-                  {/* @ts-ignore */}
-                  <View style={[styles.card, panel, { padding: 0, overflow: 'hidden' }]}>
-                    {filtered.map((place, i) => (
-                      <TouchableOpacity
-                        key={place.id}
-                        activeOpacity={place.website ? 0.7 : 1}
-                        onPress={() => place.website && Linking.openURL(place.website)}
-                        style={[styles.placeListRow, i < filtered.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${theme.accRGB},0.08)` }]}
-                      >
-                        <Ionicons name={place.icon as any} size={18} color={`rgba(${theme.accRGB},0.65)`} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.placeListName}>{place.name}</Text>
-                          <Text style={styles.placeListDesc}>{place.description}</Text>
-                        </View>
-                        {place.website && <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />}
-                      </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR</Text>
+            <Text style={[styles.cdirStationName, { color: theme.acc }]}>Chadakoin Digital Internet Radio</Text>
+            {nowPlaying?.title ? (
+              <>
+                <Text style={styles.cdirNowLabel}>NOW PLAYING</Text>
+                <Text style={styles.cdirTrack} numberOfLines={1}>{nowPlaying.title}</Text>
+                <Text style={styles.cdirArtist} numberOfLines={1}>{nowPlaying.artist}</Text>
+              </>
+            ) : (
+              <Text style={styles.cdirSub}>Local music and podcasts · 24/7</Text>
+            )}
+          </View>
+
+          <View style={{ alignItems: 'center', gap: 5 }}>
+            <View style={styles.cdirLiveRow}>
+              <LiveDot color="#FF4D4D" />
+              <Text style={styles.cdirLiveLabel}>LIVE</Text>
+            </View>
+            <View style={{ borderRadius: 18, shadowColor: theme.acc, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8, elevation: 4 }}>
+            <TouchableOpacity
+              onPress={toggleRadio}
+              activeOpacity={0.7}
+              style={[styles.playBtnFilled, { backgroundColor: theme.acc }]}
+              accessibilityLabel={radioPlaying ? 'Stop radio' : 'Play CDIR radio'}
+              accessibilityRole="button"
+            >
+              {radioLoading
+                ? <Ionicons name="hourglass-outline" size={16} color={theme.bg} />
+                : radioPlaying
+                ? <Ionicons name="pause" size={16} color={theme.bg} />
+                : <Ionicons name="play" size={16} color={theme.bg} />
+              }
+            </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: theme.acc }]}>DID YOU KNOW?</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.card, panelGlow, styles.factCard, { borderLeftColor: theme.acc, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }]}>
+          <View style={styles.factIconRow}>
+            <Ionicons name="book-outline" size={16} color={theme.acc} style={{ opacity: 0.7 }} />
+          </View>
+          <Text style={[styles.factText, { color: 'rgba(255,255,255,0.88)' }]}>{getTodaysFact()}</Text>
+          <View style={styles.factFooter}>
+            <Text style={styles.factFooterLeft}>Jamestown History</Text>
+          </View>
+        </View>
+
+        {/* @ts-ignore */}
+        <View style={[styles.recyclingCard, { borderColor: `rgba(${theme.acc2RGB},0.18)`, backgroundColor: `rgba(${theme.acc2RGB},0.04)`, marginTop: 18 }]}>
+          <View style={styles.recyclingHeader}>
+            <View style={{ flex: 1 }}>
+              {civic.loading ? (
+                <SkeletonPulse width={120} height={22} borderRadius={6} accRGB={theme.acc2RGB} />
+              ) : (() => {
+                const pm = recycling.thisWeek.material.match(/^(.+?)\s*\((.+)\)$/);
+                const name = pm ? pm[1].trim() : recycling.thisWeek.material;
+                return (
+                  <Text style={[styles.recyclingCardName, { color: theme.acc2 }]}>{name}</Text>
+                );
+              })()}
+              <Text style={[styles.recyclingCardSub, { color: `rgba(${theme.acc2RGB},0.45)` }]}>
+                {recycling.thisWeek.dateRange || 'This week'}
+              </Text>
+            </View>
+            <Ionicons name="sync-outline" size={28} color={`rgba(${theme.acc2RGB},0.7)`} />
+          </View>
+
+          {!civic.loading && (() => {
+            const pm = recycling.thisWeek.material.match(/^(.+?)\s*\((.+)\)$/);
+            const acceptedRaw = pm ? pm[2].trim() : '';
+            // Keep only short, clean list items (skip paragraph-style BPU notes)
+            const clean = (raw: string) =>
+              raw.split(/,\s*/).map(s => s.trim()).filter(s => s.length > 1 && s.length <= 38).slice(0, 5);
+            const accepted = clean(acceptedRaw);
+            const excluded = recycling.thisWeek.exclusions ? clean(recycling.thisWeek.exclusions) : [];
+            if (!accepted.length && !excluded.length) return null;
+            return (
+              <View style={styles.recyclingColumns}>
+                {accepted.length > 0 && (
+                  <View style={[styles.recyclingCol, { backgroundColor: `rgba(${theme.acc2RGB},0.06)`, borderColor: `rgba(${theme.acc2RGB},0.2)` }]}>
+                    <Text style={[styles.recyclingColLabel, { color: theme.acc2 }]}>ACCEPTED</Text>
+                    {accepted.map((item, i) => (
+                      <Text key={i} style={[styles.recyclingColItem, { color: 'rgba(255,255,255,0.7)' }]}>· {item}</Text>
                     ))}
                   </View>
-                </>
-              );
-            })()}
+                )}
+                {excluded.length > 0 && (
+                  <View style={[styles.recyclingCol, { backgroundColor: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.15)' }]}>
+                    <Text style={[styles.recyclingColLabel, { color: '#ef4444' }]}>NOT ACCEPTED</Text>
+                    {excluded.map((item, i) => (
+                      <Text key={i} style={[styles.recyclingColItem, { color: 'rgba(255,255,255,0.55)' }]}>· {item}</Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
 
-            {/* Weekend events */}
-            {(() => {
-              const now = new Date();
-              const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-              const VISITOR_SKIP_TAGS = ['JPS', 'Athletics', 'Sports', 'Baseball', 'Tarp Skunks'];
-              const weekend = civic.events.filter(e => {
-                const d = new Date(e.startDate);
-                if (d < now || d > soon) return false;
-                // Skip school sports and athletics — not relevant to visitors
-                return !e.tags.some(t => VISITOR_SKIP_TAGS.includes(t));
-              }).slice(0, 4);
-              if (weekend.length === 0) return null;
-              return (
-                <>
-                  <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc3RGB},0.5)` }]}>THIS WEEKEND</Text>
-                  {weekend.map((e, i) => {
-                    const d = new Date(e.startDate);
-                    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                    return (
-                      // @ts-ignore
-                      <TouchableOpacity key={i} activeOpacity={e.link ? 0.7 : 1} onPress={() => e.link && Linking.openURL(e.link)}
-                        style={[styles.card, panel, { flexDirection: 'row', gap: 12, alignItems: 'flex-start' }]}>
-                        <View style={{ minWidth: 52 }}>
-                          <Text style={[styles.sectionLabel, { color: theme.acc3, margin: 0, fontSize: 11 }]}>{dateStr}</Text>
-                          <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{timeStr}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff' }} numberOfLines={2}>{e.title}</Text>
-                          <Text style={{ fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }} numberOfLines={1}>{e.location}</Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </>
-              );
-            })()}
-          </>
-        ) : (
-          /* ═══════════════════════════════════════════
-             RESIDENT MODE (original content)
-          ═══════════════════════════════════════════ */
-          <>
-        {/* ─── Parking Today ────────────────────────── */}
+          {!civic.loading && recycling.nextWeek.material !== '—' && (() => {
+            const npm = recycling.nextWeek.material.match(/^(.+?)\s*\((.+)\)$/);
+            const nextName = npm ? npm[1].trim() : recycling.nextWeek.material;
+            return (
+              <View style={[styles.recyclingNextRow, { borderTopColor: `rgba(${theme.acc2RGB},0.1)` }]}>
+                <Ionicons name="calendar-outline" size={13} color={`rgba(${theme.acc2RGB},0.4)`} />
+                <Text style={[styles.recyclingNextText, { color: `rgba(${theme.acc2RGB},0.4)` }]}>
+                  Next week: {nextName}
+                </Text>
+              </View>
+            );
+          })()}
+        </View>
+
+        {recycling.holidayDelay && (
+          // @ts-ignore
+          <View style={[styles.delayBanner, { backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.25)' }]}>
+            <Ionicons name="warning-outline" size={14} color="#f59e0b" />
+            <Text style={styles.delayText}>
+              Holiday this week — pickup schedule may shift by one day.
+            </Text>
+          </View>
+        )}
+
         {parking.active && (
           <>
             <Text style={[styles.sectionLabel, { color: theme.acc45 }]}>PARKING TODAY</Text>
@@ -653,184 +665,27 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* ─── Recycling This Week ──────────────────── */}
-        {/* acc2 zone */}
-        <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc2RGB},0.5)` }]}>RECYCLING THIS WEEK</Text>
-        {/* @ts-ignore */}
-        <View style={[styles.card, panel2]}>
-          {civic.loading ? (
-            <>
-              <SkeletonPulse width={140} height={32} borderRadius={6} accRGB={theme.acc2RGB} style={{ marginBottom: 10 }} />
-              <SkeletonPulse width="90%" height={14} borderRadius={4} accRGB={theme.acc2RGB} />
-            </>
-          ) : (() => {
-            // Split "Paper (newspaper, mail, magazines, office paper)" → name + detail
-            const parenMatch = recycling.thisWeek.material.match(/^(.+?)\s*\((.+)\)$/);
-            const materialName   = parenMatch ? parenMatch[1].trim() : recycling.thisWeek.material;
-            const materialDetail = parenMatch ? parenMatch[2].trim() : '';
-            const nextParenMatch = recycling.nextWeek.material.match(/^(.+?)\s*\((.+)\)$/);
-            const nextName = nextParenMatch ? nextParenMatch[1].trim() : recycling.nextWeek.material;
-            return (
-              <>
-                <Text style={[styles.recyclingName, {
-                  color: theme.acc2,
-                  textShadowColor: `rgba(${theme.acc2RGB},0.4)`,
-                  textShadowRadius: 30,
-                  fontSize: materialName.length > 20 ? 22 : 28,
-                  lineHeight: materialName.length > 20 ? 26 : 34,
-                }]}>
-                  {materialName}
-                </Text>
-                {materialDetail ? (
-                  <Text style={styles.recyclingDetail}>{materialDetail}</Text>
-                ) : null}
-                {recycling.thisWeek.note ? (
-                  <Text style={[styles.recyclingDetail, { color: `rgba(${theme.acc2RGB},0.6)`, marginTop: -8 }]}>
-                    {recycling.thisWeek.note}
-                  </Text>
-                ) : null}
-                {recycling.thisWeek.exclusions ? (
-                  <View style={[styles.recyclingNote, { borderTopColor: `rgba(${theme.acc2RGB},0.1)` }]}>
-                    <Text style={[styles.recyclingNoteText, { color: `rgba(${theme.acc2RGB},0.5)` }]}>
-                      Not accepted: {recycling.thisWeek.exclusions}
-                    </Text>
-                  </View>
-                ) : null}
-                {recycling.nextWeek.material !== '—' && (
-                  <View style={[styles.recyclingNote, { borderTopColor: `rgba(${theme.acc2RGB},0.08)` }]}>
-                    <Text style={[styles.recyclingNoteText, { color: `rgba(${theme.acc2RGB},0.35)` }]}>
-                      Next week: {nextName}
-                    </Text>
-                  </View>
-                )}
-              </>
-            );
-          })()}
-        </View>
-
-        {/* Holiday delay banner — only shown when there's actually a delay */}
-        {recycling.holidayDelay && (
-          // @ts-ignore
-          <View style={[styles.delayBanner, { backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.25)' }]}>
-            <Ionicons name="warning-outline" size={14} color="#f59e0b" />
-            <Text style={styles.delayText}>
-              Holiday this week — pickup schedule may shift by one day.
-            </Text>
-          </View>
-        )}
-
-        {/* ─── Jamestown history fact ───────────────── */}
-        <Text style={[styles.sectionLabel, { color: theme.acc }]}>DID YOU KNOW?</Text>
-        {/* @ts-ignore */}
-        <View style={[styles.card, panelGlow, styles.factCard, { borderLeftColor: theme.acc }]}>
-          <Text style={[styles.factText, { color: 'rgba(255,255,255,0.88)' }]}>{getTodaysFact()}</Text>
-        </View>
-
-
-        {/* ─── LOTD latest episode ──────────────────── */}
-        {(civic.loading || civic.latestEpisode) && (
-          <>
-            <Text style={[styles.sectionLabel, { color: `rgba(${theme.acc2RGB},0.5)` }]}>FROM JAMESTOWN</Text>
-            {civic.loading ? (
-              // @ts-ignore
-              <View style={[styles.lotdCard, panel2]}>
-                <SkeletonPulse width={40} height={40} borderRadius={8} accRGB={theme.acc2RGB} />
-                <View style={{ flex: 1, gap: 6 }}>
-                  <SkeletonPulse width="70%" height={14} borderRadius={4} accRGB={theme.acc2RGB} />
-                  <SkeletonPulse width="45%" height={11} borderRadius={4} accRGB={theme.acc2RGB} />
-                </View>
-              </View>
-            ) : civic.latestEpisode ? (
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={() => WebBrowser.openBrowserAsync(civic.latestEpisode!.pageUrl).catch(() => {})}
-                accessibilityLabel={`Play episode: ${civic.latestEpisode.title}`}
-                accessibilityRole="button"
-                // @ts-ignore
-                style={[styles.lotdCard, panel2]}
-              >
-                <Image
-                  source={{ uri: civic.latestEpisode.artworkUrl }}
-                  style={[styles.lotdArt, { borderColor: `rgba(${theme.acc2RGB},0.3)` }]}
-                  onError={() => {}}
-                  accessibilityLabel="Episode artwork"
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.lotdShow, { color: `rgba(${theme.acc2RGB},0.6)` }]}>
-                    Live On Tape Delay
-                    {civic.latestEpisode.episodeNumber ? ` · Ep. ${civic.latestEpisode.episodeNumber}` : ''}
-                  </Text>
-                  <Text style={[styles.lotdTagline, { color: `rgba(${theme.acc2RGB},0.35)` }]}>
-                    Jamestown's longest running podcast
-                  </Text>
-                  <Text style={styles.lotdTitle} numberOfLines={1}>{civic.latestEpisode.title}</Text>
-                  {civic.latestEpisode.duration ? (
-                    <Text style={[styles.lotdDuration, { color: `rgba(${theme.acc2RGB},0.45)` }]}>
-                      {civic.latestEpisode.duration}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={[styles.playBtn, { borderColor: `rgba(${theme.acc2RGB},0.3)` }]}>
-                  <Ionicons name="play" size={18} color={`rgba(${theme.acc2RGB},0.7)`} />
-                </View>
-              </TouchableOpacity>
-            ) : null}
-          </>
-        )}
-
-        {/* ─── CDIR card ────────────────────────────── */}
-        {/* @ts-ignore */}
-        <View style={[styles.cdirCard, {
-          borderRadius: 20, borderWidth: 1,
-          backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.1)` : `rgba(${theme.accRGB},0.06)`,
-          borderColor: radioPlaying ? `rgba(${theme.accRGB},0.35)` : `rgba(${theme.accRGB},0.18)`,
-          ...(Platform.OS === 'web' ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' } : {}),
-        }]}>
-          {/* Artwork — taps to open full site */}
-          <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})} activeOpacity={0.8} accessibilityLabel="Open CDIR radio website" accessibilityRole="button">
-            {nowPlaying?.artwork ? (
-              <Image source={{ uri: nowPlaying.artwork }} style={styles.cdirArt} resizeMode="cover" />
-            ) : (
-              <View style={styles.cdirDotWrap}>
-                <View style={[styles.cdirDot, { backgroundColor: theme.acc, shadowColor: theme.acc }]} />
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Track info */}
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.cdirTitle, { color: theme.acc }]}>CDIR</Text>
-            {nowPlaying?.title ? (
-              <>
-                <Text style={styles.cdirNowLabel}>NOW PLAYING</Text>
-                <Text style={styles.cdirTrack} numberOfLines={1}>{nowPlaying.title}</Text>
-                <Text style={styles.cdirArtist} numberOfLines={1}>{nowPlaying.artist}</Text>
-              </>
-            ) : (
-              <Text style={styles.cdirSub}>Local music and podcasts · 24/7</Text>
-            )}
-          </View>
-
-          {/* Play / pause / loading */}
-          <TouchableOpacity onPress={toggleRadio} activeOpacity={0.7} style={[styles.playBtn, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.15)` : 'transparent' }]} accessibilityLabel={radioPlaying ? 'Stop radio' : 'Play CDIR radio'} accessibilityRole="button">
-            {radioLoading
-              ? <Ionicons name="hourglass-outline" size={18} color={theme.acc} />
-              : radioPlaying
-              ? <Ionicons name="pause" size={18} color={theme.acc} />
-              : <Ionicons name="play" size={18} color={`rgba(${theme.accRGB},0.7)`} />
-            }
-          </TouchableOpacity>
-        </View>
-
           <Text style={[styles.updatedLine, { color: `rgba(${theme.accRGB},0.3)` }]}>
             {civic.lastUpdated
               ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
               : 'Loading…'}
           </Text>
-          </>
-        )}
+        </>
       </ScrollView>
       <AddToHomeScreen />
+
+      {settingsOpen && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 500 }}>
+          <SettingsScreen />
+          <TouchableOpacity
+            onPress={() => setSettingsOpen(false)}
+            activeOpacity={0.7}
+            style={{ position: 'absolute', top: 52, right: 20, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: 6 }}
+          >
+            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+        </View>
+      )}
     </ThemedBackground>
   );
 }
@@ -843,9 +698,10 @@ const styles = StyleSheet.create({
   appCity: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, letterSpacing: 1.2 },
   dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   dateBadgeText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' },
-  themeDots: { flexDirection: 'row', gap: 12, marginTop: 14, alignItems: 'center' },
-  dotWrap: { padding: 4 },
-  dot: { width: 10, height: 10, borderRadius: 5, shadowOffset: { width: 0, height: 0 } },
+  themeDots: { flexDirection: 'row', gap: 8, marginTop: 14, alignItems: 'center' },
+  themeLabel: { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: 1, textTransform: 'uppercase', marginRight: 4 },
+  dotWrap: { padding: 2 },
+  dot: { height: 8, borderRadius: 4, shadowOffset: { width: 0, height: 0 } },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 6, paddingBottom: 40 },
@@ -882,22 +738,38 @@ const styles = StyleSheet.create({
   statValue: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
 
   // Parking
-  parkingSide: { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', lineHeight: 34, marginBottom: 8, textShadowOffset: { width: 0, height: 0 } },
+  parkingSide: { fontFamily: 'Syne', fontSize: 22, fontWeight: '800', lineHeight: 28, marginBottom: 8, textShadowOffset: { width: 0, height: 0 } },
   parkingRule: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 16, lineHeight: 18 },
   parkingNote: { borderTopWidth: 1, paddingTop: 12, gap: 3 },
   parkingNoteText: { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.3 },
 
-  // Recycling — mirrors parking card style
-  recyclingName: {
-    fontFamily: 'Syne', fontSize: 28, fontWeight: '700', lineHeight: 34,
-    marginBottom: 8, textShadowOffset: { width: 0, height: 0 },
+  // Recycling two-column card
+  recyclingCard: {
+    borderRadius: 20, borderWidth: 1,
+    overflow: 'hidden',
   },
-  recyclingDetail: {
-    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)',
-    marginBottom: 16, lineHeight: 18,
+  recyclingHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 18, paddingTop: 18, paddingBottom: 12,
   },
-  recyclingNote: { borderTopWidth: 1, paddingTop: 12, gap: 3 },
-  recyclingNoteText: { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.3 },
+  recyclingCardName: { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', lineHeight: 26 },
+  recyclingCardSub: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3 },
+  recyclingCardEmoji: { fontSize: 28 },
+  recyclingColumns: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingBottom: 12 },
+  recyclingCol: {
+    flex: 1, borderWidth: 1, borderRadius: 12, padding: 10,
+  },
+  recyclingColLabel: {
+    fontFamily: 'Outfit', fontSize: 9, fontWeight: '700',
+    letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6,
+  },
+  recyclingColItem: { fontFamily: 'Outfit', fontSize: 10, lineHeight: 18 },
+  recyclingNextRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  recyclingNextText: { fontFamily: 'Outfit', fontSize: 11 },
 
   // Holiday delay banner
   delayBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 8 },
@@ -920,65 +792,44 @@ const styles = StyleSheet.create({
   snowBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
 
-  // Visitor mode
-  categoryNote: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17, marginBottom: 8, paddingHorizontal: 2 },
-  filterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  filterPillText: {
-    fontFamily: 'Outfit',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  featuredBadge: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  featuredBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
-  placeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  placeName: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  placeFeaturedNote: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 4, fontStyle: 'italic' },
-  placeDesc: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
-  placeHours: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4 },
-  placeListRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
-  placeListName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
-  placeListDesc: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
 
   // History fact
   factCard: { borderLeftWidth: 3 },
-  factText: { fontFamily: 'Outfit', fontSize: 14, lineHeight: 22 },
+  factIconRow: { marginBottom: 8 },
+  factText: { fontFamily: 'Outfit', fontSize: 13, lineHeight: 20 },
+  factFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  factFooterLeft: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.25)' },
+  factFooterRight: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.25)' },
 
 
 
   // LOTD
   lotdCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
-  lotdTagline: { fontFamily: 'Outfit', fontSize: 10, marginTop: 1, marginBottom: 3, fontStyle: 'italic' },
+  lotdTagline: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', marginTop: 1, marginBottom: 3 },
   lotdArt: {
-    width: 52, height: 52, borderRadius: 10, borderWidth: 1,
+    width: 54, height: 54, borderRadius: 12, borderWidth: 1,
   },
   lotdShow: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
   lotdTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
   lotdDuration: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3 },
-
-  // Visitor toggle
-  visitorToggle: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1, borderRadius: 14,
-    paddingHorizontal: 16, paddingVertical: 12,
-    marginHorizontal: 16, marginBottom: 4,
+  // Filled play button (LOTD)
+  playBtnFilled: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8, elevation: 6,
   },
-  visitorLabel: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '500' },
-  visitorPill: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  visitorPillText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
 
   // CDIR
   cdirCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     padding: 16, marginTop: 10,
+  },
+  cdirLiveRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
+  cdirLiveLabel: {
+    fontFamily: 'Outfit', fontSize: 9, fontWeight: '800',
+    color: '#FF4D4D', letterSpacing: 1,
   },
   cdirArt: { width: 52, height: 52, borderRadius: 10 },
   cdirDotWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
@@ -988,8 +839,9 @@ const styles = StyleSheet.create({
   },
   playBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   cdirTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700' },
+  cdirStationName: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', opacity: 0.8, marginTop: 2 },
   cdirSub: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
-  cdirNowLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginTop: 3 },
+  cdirNowLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.8, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: 2 },
   cdirTrack: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginTop: 1 },
   cdirArtist: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)' },
 

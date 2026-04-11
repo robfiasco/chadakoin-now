@@ -94,6 +94,15 @@ export function ThemedBackground({ children }: { children: React.ReactNode }) {
   // Orbs only on web — on native there's no CSS blur, so they render as hard circles
   const content = (
     <>
+      {/* Ambient top glow behind header — theme accent at ~18% opacity */}
+      <LinearGradient
+        colors={[`rgba(${theme.accRGB},0.18)`, 'transparent']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        // @ts-ignore
+        style={styles.ambientGlow}
+        pointerEvents="none"
+      />
       {Platform.OS === 'web' && (
         <>
           <Orb color={theme.orb1} width={400} height={250} top={-60} right={-80} duration={12000} />
@@ -129,5 +138,13 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
+  },
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 260,
+    zIndex: 0,
   },
 });

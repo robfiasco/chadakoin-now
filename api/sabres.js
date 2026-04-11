@@ -1,6 +1,3 @@
-// Vercel serverless function — Buffalo Sabres data via NHL official API
-// api-web.nhle.com is publicly accessible from server environments.
-
 async function fetchJCC(signal) {
   try {
     const res = await fetch('https://jccjayhawks.com/composite?print=rss', { signal });
@@ -32,19 +29,16 @@ async function fetchJCC(signal) {
       const date = new Date(pubDate);
       const now  = new Date();
 
-      // Parse score: "W, 89-85" or "L, 80-69"
       const hasResult = score && score.trim() !== '';
       const isPast    = date < now;
 
       if (hasResult && isPast) {
         const parts = score.split(',').map(s => s.trim());
-        const wl    = parts[0]; // "W" or "L"
+        const wl    = parts[0];
         const final = parts[1] ?? '';
 
-        // Skip entries with no real score (0-0 = postponed/cancelled/bad data)
-        if (final === '0-0') continue;
+        if (final === '0-0') continue; // postponed/cancelled/bad data
 
-        // Decode common HTML entities in opponent names
         const opponentClean = opponent
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
@@ -66,7 +60,6 @@ async function fetchJCC(signal) {
       }
     }
 
-    // Most recent 6 completed games across all sports, newest first
     return items
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 6);
@@ -167,7 +160,6 @@ export default async function handler(req, res) {
       };
     }
 
-    // Prioritize live game, then next upcoming, then most recent past
     const result = {
       record,
       standing,
@@ -182,7 +174,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json(result);
 
-  } catch (err) {
-    res.status(502).json({ error: err.message });
+  } catch {
+    res.status(502).json({ error: 'Sports data fetch failed' });
   }
 }
