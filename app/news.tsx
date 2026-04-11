@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedBackground } from '../components/ThemedBackground';
-import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivicData } from '../hooks/useCivicData';
 import { openLink } from '../lib/openLink';
@@ -86,7 +86,6 @@ export default function NewsScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
       <ScrollView
         contentContainerStyle={styles.content}

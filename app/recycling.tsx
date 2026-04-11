@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Platform, RefreshControl } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
-import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivicData, RecyclingWeek } from '../hooks/useCivicData';
 
@@ -38,7 +38,6 @@ export default function RecyclingScreen() {
         <Text style={[styles.subhead, { color: theme.acc55 }]}>Jamestown pickup schedule</Text>
       </SafeAreaView>
 
-      {error && <ErrorBanner message={error} accRGB={theme.accRGB} />}
 
       <ScrollView
         contentContainerStyle={styles.content}

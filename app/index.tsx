@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/ThemeContext';
 import { THEMES, ThemeId } from '../lib/themes';
 import { ThemedBackground } from '../components/ThemedBackground';
-import { SkeletonPulse, ErrorBanner } from '../components/SkeletonPulse';
+import { SkeletonPulse } from '../components/SkeletonPulse';
 import { fetchWeather, WeatherData } from '../services/weather';
 import { useCivicData } from '../hooks/useCivicData';
 import * as WebBrowser from 'expo-web-browser';
@@ -343,7 +343,6 @@ export default function HomeScreen() {
         <ThemePillSwitcher />
       </SafeAreaView>
 
-      {civic.error && <ErrorBanner message={civic.error} accRGB={theme.accRGB} />}
 
 
 
