@@ -5,6 +5,10 @@ const ALLOWED_HOSTS = new Set([
   'www.wrfalp.com',
   'jamestownny.gov',
   'www.jamestownny.gov',
+  'www.jamestownbpu.com',
+  'jamestownbpu.com',
+  'www.jamestownnybpu.gov',
+  'jamestownnybpu.gov',
   'www.roberthjackson.org',
   'roberthjackson.org',
   'jccjayhawks.com',
@@ -18,6 +22,13 @@ const ALLOWED_HOSTS = new Set([
   'api.weather.gov',
   'jfmny.org',
   'www.jfmny.org',
+  'prendergastlibrary.org',
+  'www.prendergastlibrary.org',
+  'rss.libsyn.com',
+  'reglenna.com',
+  'www.reglenna.com',
+  'chautauquacountyny.gov',
+  'www.chautauquacountyny.gov',
 ]);
 
 // In-memory rate limiter: 60 req/IP/min rolling window
