@@ -64,6 +64,7 @@ interface LocalFav {
   lat?: number;
   lng?: number;
   image?: string;  // web-accessible path e.g. '/photo.jpg'
+  imageAnchor?: 'top' | 'center';  // default center; 'top' shows upper portion of image
 }
 
 const LOCAL_FAVORITES: LocalFav[] = [
@@ -94,6 +95,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     quote: "Jamestown has no shortage of great pizza and wings, and Honest John's holds its own. The subs are solid too if you're in that mood.",
     lat: 42.11282, lng: -79.21690,
     image: '/honest%20johns.jpg',
+    imageAnchor: 'top',
   },
   {
     name: 'National Comedy Center',
@@ -336,7 +338,7 @@ function FavPanel({ fav }: { fav: LocalFav }) {
       <TouchableOpacity activeOpacity={0.88} onPress={toggle}>
         <Animated.View style={[styles.placePanelGrad, { height: anim }]}>
           {fav.image ? (
-            <Image source={{ uri: fav.image }} style={styles.favImage} />
+            <Image source={{ uri: fav.image }} style={[styles.favImage, fav.imageAnchor === 'top' && styles.favImageTop]} />
           ) : null}
           <LinearGradient
             colors={fav.image
@@ -688,7 +690,8 @@ const styles = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 16 },
 
-  favImage: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', resizeMode: 'cover', opacity: 0.55 },
+  favImage:    { position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', resizeMode: 'cover', opacity: 0.55 },
+  favImageTop: { bottom: undefined, height: 300 },  // tall + top-anchored so upper portion shows
 
   // ── Shared panel (Local Favorites, Chadakoin Approved, Also in Jamestown) ──
   placePanel:     { borderRadius: 16, overflow: 'hidden', marginBottom: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
