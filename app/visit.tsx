@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 16 },
 
   favImage:    { position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', resizeMode: 'cover', opacity: 0.55 },
-  favImageTop: { bottom: undefined, height: 300 },  // tall + top-anchored so upper portion shows
+  favImageTop: { bottom: undefined, height: 160 },  // smaller height = less zoom, more of photo visible
 
   // ── Shared panel (Local Favorites, Chadakoin Approved, Also in Jamestown) ──
   placePanel:     { borderRadius: 16, overflow: 'hidden', marginBottom: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
