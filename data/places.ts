@@ -13,6 +13,8 @@ export interface Place {
   hours?: string;
   featured: boolean;
   featuredNote?: string;  // custom tagline shown on featured card
+  lat?: number;
+  lng?: number;
 }
 
 export const PLACES: Place[] = [
@@ -27,6 +29,7 @@ export const PLACES: Place[] = [
     hours: 'Tue–Sat 8am–9pm',
     featured: true,
     featuredNote: 'Best coffee and food in downtown Jamestown.',
+    lat: 42.09711, lng: -79.24081,
   },
   {
     id: 'crown-street-roasting',
@@ -34,9 +37,10 @@ export const PLACES: Place[] = [
     categories: ['coffee'],
     icon: 'cafe-outline',
     description: "Local roaster doing it right. You can never have too much good coffee.",
-    address: 'Jamestown, NY',
+    address: '16 W 3rd St, Jamestown',
     website: 'https://www.crownstreetroasting.com/',
     featured: false,
+    lat: 42.09636, lng: -79.24202,
   },
 
   {
@@ -49,6 +53,7 @@ export const PLACES: Place[] = [
     website: 'https://www.yelp.com/biz/the-eatery-restaurant-jamestown',
     hours: 'Daily 7am–2pm',
     featured: false,
+    lat: 42.11482, lng: -79.24780,
   },
   {
     id: 'davidsons',
@@ -58,6 +63,7 @@ export const PLACES: Place[] = [
     description: "Been coming here since I was a kid. Fish fry is the move, but they've recently added beef on weck and it doesn't disappoint. A Jamestown institution.",
     address: '398 E Fairmount Ave, Lakewood, NY',
     featured: false,
+    lat: 42.09785, lng: -79.29656,
   },
   {
     id: 'taco-company',
@@ -78,6 +84,7 @@ export const PLACES: Place[] = [
     website: 'https://honestjohns.pizza/',
     hours: 'Daily 11am–10pm',
     featured: false,
+    lat: 42.11282, lng: -79.21690,
   },
   {
     id: 'paces',
@@ -90,6 +97,7 @@ export const PLACES: Place[] = [
     hours: 'Wed–Sat 4pm–9pm · Sun 4pm–8pm',
     featured: true,
     featuredNote: "A Jamestown institution since 1953.",
+    lat: 42.09483, lng: -79.24954,
   },
   {
     id: 'slice-of-home',
@@ -111,6 +119,7 @@ export const PLACES: Place[] = [
     website: 'https://jfmny.org/',
     hours: 'Saturdays 9am–1pm',
     featured: false,
+    lat: 42.09742, lng: -79.24152,
   },
   {
     id: 'art-of-flavors',
@@ -121,6 +130,7 @@ export const PLACES: Place[] = [
     address: '679 Fairmount Ave, Jamestown',
     hours: 'Mon–Sat 11am–8pm · Closed Sunday',
     featured: false,
+    lat: 42.09695, lng: -79.27851,
   },
   {
     id: 'archies-diner',
@@ -131,6 +141,7 @@ export const PLACES: Place[] = [
     address: '3163 Airport Dr, Jamestown',
     hours: 'Closes 2pm',
     featured: false,
+    lat: 42.15288, lng: -79.25726,
   },
   {
     id: '4-below-haggys',
@@ -141,6 +152,7 @@ export const PLACES: Place[] = [
     address: '104 E 2nd St, Jamestown',
     hours: 'Mon–Wed 4pm–11pm · Thu–Sat 11am–11pm · Sun Closed',
     featured: false,
+    lat: 42.09558, lng: -79.23947,
   },
   {
     id: 'crooked-stick',
@@ -164,6 +176,7 @@ export const PLACES: Place[] = [
     website: 'https://www.bustitaphouse.com/',
     hours: 'Wed–Thu 4:30–9pm · Fri 4:30–10pm · Sat 4–10pm · Sun 1–8pm',
     featured: false,
+    lat: 42.03408, lng: -79.28810,
   },
   {
     id: 'the-swamp',
@@ -174,6 +187,7 @@ export const PLACES: Place[] = [
     address: '250 Jones and Gifford Ave, Jamestown',
     hours: 'Closes 10pm',
     featured: false,
+    lat: 42.10733, lng: -79.26450,
   },
   {
     id: 'cherry-lounge',
@@ -194,6 +208,7 @@ export const PLACES: Place[] = [
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 11am–10pm',
     featured: false,
+    lat: 42.09711, lng: -79.24081,
   },
   {
     id: 'wicked-warrens',
@@ -206,6 +221,7 @@ export const PLACES: Place[] = [
     hours: 'Daily 11:30am–10pm',
     featured: true,
     featuredNote: 'Craft beer and wood-fired pizza downtown.',
+    lat: 42.09574, lng: -79.24332,
   },
 
   {
@@ -231,6 +247,7 @@ export const PLACES: Place[] = [
     hours: 'Wed–Sun 10am–5pm',
     featured: true,
     featuredNote: 'The only museum of its kind in America.',
+    lat: 42.09467, lng: -79.24365,
   },
   {
     id: 'reg-lenna',
@@ -242,6 +259,7 @@ export const PLACES: Place[] = [
     website: 'https://reglenna.com',
     hours: 'Box office open day-of-show',
     featured: false,
+    lat: 42.09631, lng: -79.23921,
   },
   {
     id: 'rtpi',
@@ -253,6 +271,7 @@ export const PLACES: Place[] = [
     website: 'https://rtpi.org',
     hours: 'Tue–Sun 10am–4pm',
     featured: false,
+    lat: 42.11832, lng: -79.22475,
   },
   {
     id: 'fenton-history',
@@ -264,6 +283,7 @@ export const PLACES: Place[] = [
     website: 'https://fentonhistorycenter.org',
     hours: 'Tue–Sat 10am–4pm',
     featured: false,
+    lat: 42.09122, lng: -79.23920,
   },
   {
     id: 'robert-h-jackson-center',
@@ -275,6 +295,7 @@ export const PLACES: Place[] = [
     website: 'https://www.roberthjackson.org/',
     hours: 'Mon–Fri 9am–5pm',
     featured: false,
+    lat: 42.09836, lng: -79.23769,
   },
 
   {
@@ -286,6 +307,7 @@ export const PLACES: Place[] = [
     address: 'Chautauqua, NY (20 min from Jamestown)',
     website: 'https://chq.org',
     featured: false,
+    lat: 42.21018, lng: -79.46664,
   },
 
   {
@@ -299,6 +321,7 @@ export const PLACES: Place[] = [
     hours: 'Front desk open 24 hours',
     featured: true,
     featuredNote: 'Lakeside hotel with marina views — 5 min from downtown.',
+    lat: 42.11021, lng: -79.28518,
   },
   {
     id: 'airbnb-jamestown',

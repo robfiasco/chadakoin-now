@@ -4,6 +4,8 @@
     { "source": "/api/weather", "destination": "/api/weather" },
     { "source": "/api/cdir", "destination": "/api/cdir" },
     { "source": "/api/sabres", "destination": "/api/sabres" },
+    { "source": "/api/jhs-sports", "destination": "/api/jhs-sports" },
+    { "source": "/api/mlb", "destination": "/api/mlb" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
