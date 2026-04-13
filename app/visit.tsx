@@ -363,22 +363,24 @@ function FavPanel({ fav }: { fav: LocalFav }) {
         </Animated.View>
         <View style={[styles.placeTagsRow, { backgroundColor: `rgba(${fav.rgb},0.08)` }]}>
           <Text style={[styles.placeMeta, { flex: 1, color: `rgba(${fav.rgb},0.5)` }]}>{fav.detail}</Text>
-          {fav.lat ? (
-            <TouchableOpacity onPress={e => { e.stopPropagation(); openMaps(`${fav.name}, Jamestown NY`); }} activeOpacity={0.6} style={styles.parkNavBtn}>
-              <Ionicons name="navigate-outline" size={12} color={`rgba(${fav.rgb},0.55)`} />
-            </TouchableOpacity>
-          ) : null}
           <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={`rgba(${fav.rgb},0.45)`} style={styles.parkChevron} />
         </View>
       </TouchableOpacity>
       {expanded && (
         <View style={[styles.placeExpanded, { backgroundColor: `rgba(${fav.rgb},0.03)`, borderTopColor: `rgba(${fav.rgb},0.08)` }]}>
           <Text style={[styles.placeDesc, { color: `rgba(${fav.rgb},0.6)`, fontStyle: 'italic' }]}>"{fav.quote}"</Text>
-          {fav.website ? (
-            <TouchableOpacity onPress={() => openLink(fav.website)} activeOpacity={0.7}>
-              <Text style={[styles.placeLink, { color: theme.acc }]}>Visit website →</Text>
-            </TouchableOpacity>
-          ) : null}
+          <View style={styles.favLinksRow}>
+            {fav.website ? (
+              <TouchableOpacity onPress={() => openLink(fav.website)} activeOpacity={0.7}>
+                <Text style={[styles.placeLink, { color: theme.acc }]}>Visit website →</Text>
+              </TouchableOpacity>
+            ) : null}
+            {fav.lat ? (
+              <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={styles.favNavBtn}>
+                <Ionicons name="navigate-outline" size={13} color={`rgba(${fav.rgb},0.6)`} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
       )}
     </View>
@@ -691,6 +693,8 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 16 },
 
   favImage:    { position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', resizeMode: 'cover', opacity: 0.55 },
+  favLinksRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  favNavBtn:   { padding: 4 },
   favImageTop: { bottom: undefined, height: 160 },  // smaller height = less zoom, more of photo visible
 
   // ── Shared panel (Local Favorites, Chadakoin Approved, Also in Jamestown) ──
