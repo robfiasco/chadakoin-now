@@ -349,7 +349,7 @@ function FavPanel({ fav }: { fav: LocalFav }) {
             end={fav.image ? { x: 1, y: 0.5 } : { x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          <View style={styles.parkBadgeRow}>
+          <View style={[styles.parkBadgeRow, { right: undefined, left: 12 }]}>
             {fav.visited && (
               <View style={[styles.parkVisitedBadge, { backgroundColor: `rgba(${theme.accRGB},0.08)`, borderColor: `rgba(${theme.accRGB},0.15)` }]}>
                 <View style={[styles.parkVisitedDot, { backgroundColor: theme.acc }]} />
