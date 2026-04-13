@@ -630,7 +630,7 @@ export default function VisitScreen() {
         {/* ── Chadakoin Approved ──────────────────────── */}
         {filteredApproved.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Chadakoin Approved</Text>
+            <Text style={[styles.sectionLabel, { color: theme.acc }]}>chadakoindigital.com approved</Text>
             {filteredApproved.map(place => <PlacePanel key={place.id} place={place} cat={place._cat} />)}
           </>
         )}
