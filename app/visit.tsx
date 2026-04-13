@@ -85,7 +85,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
   {
     name: "Honest John's Pizzeria",
     category: 'eat',
-    detail: 'Eat · Jamestown, NY',
+    detail: 'Eat · Daily 11am–10pm',
     website: 'https://honestjohns.pizza/',
     gradientStart: 'rgba(245,166,35,0.1)',
     gradientEnd:   'rgba(245,166,35,0.03)',
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   placePanel:     { borderRadius: 16, overflow: 'hidden', marginBottom: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   placePanelGrad: { overflow: 'hidden', justifyContent: 'flex-end' },
   placeTagsRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingLeft: 14, paddingRight: 8 },
-  placeMeta:      { fontSize: 10, fontFamily: 'Syne', fontWeight: '600', letterSpacing: 0.2 },
+  placeMeta:      { fontSize: 9, fontFamily: 'Outfit', fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   placeExpanded:  { paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, gap: 10 },
   placeDesc:      { fontSize: 11, fontFamily: 'Outfit', lineHeight: 17 },
   placeLink:      { fontSize: 11, fontFamily: 'Outfit', fontWeight: '700' },
