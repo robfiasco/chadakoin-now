@@ -372,12 +372,13 @@ function FavPanel({ fav }: { fav: LocalFav }) {
           <View style={styles.favLinksRow}>
             {fav.website ? (
               <TouchableOpacity onPress={() => openLink(fav.website)} activeOpacity={0.7}>
-                <Text style={[styles.placeLink, { color: theme.acc }]}>Visit website →</Text>
+                <Text style={[styles.placeLink, { color: theme.acc }]}>Visit website</Text>
               </TouchableOpacity>
             ) : null}
             {fav.lat ? (
-              <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={styles.favNavBtn}>
-                <Ionicons name="navigate-outline" size={13} color={`rgba(${fav.rgb},0.6)`} />
+              <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={styles.favMapBtn}>
+                <Ionicons name="navigate-outline" size={11} color={`rgba(${fav.rgb},0.7)`} />
+                <Text style={[styles.favMapLabel, { color: `rgba(${fav.rgb},0.7)` }]}>Map it</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -693,15 +694,16 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 16 },
 
   favImage:    { position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', resizeMode: 'cover', opacity: 0.55 },
-  favLinksRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  favNavBtn:   { padding: 4 },
+  favLinksRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  favMapBtn:   { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 4 },
+  favMapLabel: { fontSize: 11, fontFamily: 'Outfit', fontWeight: '700', letterSpacing: 0.4 },
   favImageTop: { bottom: undefined, height: 160 },  // smaller height = less zoom, more of photo visible
 
   // ── Shared panel (Local Favorites, Chadakoin Approved, Also in Jamestown) ──
   placePanel:     { borderRadius: 16, overflow: 'hidden', marginBottom: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   placePanelGrad: { overflow: 'hidden', justifyContent: 'flex-end' },
   placeTagsRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingLeft: 14, paddingRight: 8 },
-  placeMeta:      { fontSize: 10, fontFamily: 'Outfit' },
+  placeMeta:      { fontSize: 10, fontFamily: 'Syne', fontWeight: '600', letterSpacing: 0.2 },
   placeExpanded:  { paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, gap: 10 },
   placeDesc:      { fontSize: 11, fontFamily: 'Outfit', lineHeight: 17 },
   placeLink:      { fontSize: 11, fontFamily: 'Outfit', fontWeight: '700' },
