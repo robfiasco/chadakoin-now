@@ -446,8 +446,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   </View>
                 </TouchableOpacity>
               );
-            })()
-            ) : null}
+            })() : null}
           </>
         )}
 
