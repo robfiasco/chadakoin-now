@@ -545,7 +545,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <View style={styles.mediaLabelRow}>
-              <Text style={[styles.mediaLabel, { color: dark.category.city }]}>Chadakoin Digital Internet Radio</Text>
+              <Text style={[styles.mediaLabel, { color: dark.category.city, flex: 1 }]} numberOfLines={1}>Chadakoin Digital Internet Radio</Text>
               <View style={styles.liveChip}>
                 <LiveDot color="#fb7185" />
                 <Text style={styles.liveLabel}>LIVE</Text>
