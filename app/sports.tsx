@@ -1088,8 +1088,8 @@ const styles = StyleSheet.create({
   },
   nextUpLogoCol: { alignItems: 'center', gap: 6 },
   nextUpLogoBg: {
-    width: 76, height: 76, borderRadius: 38,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: 76, height: 76, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center', justifyContent: 'center',
   },
   nextUpHeaderLogo: { width: 72, height: 72, flexShrink: 0 },
