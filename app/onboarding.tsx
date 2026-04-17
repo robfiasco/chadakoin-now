@@ -156,52 +156,61 @@ export default function OnboardingScreen({ onDone }: Props) {
     return (
       <Animated.View style={[styles.container, { opacity: roleAnim }]} onLayout={onLayout}>
         <SafeAreaView edges={['top', 'bottom']} style={styles.pickerSafe}>
-          <View style={styles.pickerContent}>
-            {/* Slide-number style — picker is "00" */}
-            <Text style={styles.bigNum}>00</Text>
 
-            <Text style={styles.pickerEyebrow}>Chadakoin Now</Text>
-            <Text style={styles.pickerTitle}>
-              {'Your guide to\nJames-\n'}
-              <Text style={{ color: ACC }}>town.</Text>
-            </Text>
-            <Text style={styles.pickerBody}>
-              Whether you've been here your whole life or just rolled in — tell us who you are.
-            </Text>
-
-            <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('local')} style={styles.roleCard}>
-              <LinearGradient
-                colors={[`rgba(${ACC_RGB},0.10)`, 'transparent']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={[styles.roleIconWrap, { backgroundColor: `${ACC}15`, borderColor: `${ACC}28` }]}>
-                <Ionicons name="home-outline" size={20} color={ACC} />
-              </View>
-              <View style={styles.roleTextCol}>
-                <Text style={[styles.roleCardLabel, { color: ACC }]}>I live here</Text>
-                <Text style={styles.roleCardDesc}>Show me what matters day to day</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={`${ACC}60`} />
-            </TouchableOpacity>
-
-            <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('visitor')} style={styles.roleCard}>
-              <LinearGradient
-                colors={['rgba(251,191,36,0.09)', 'transparent']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(251,191,36,0.13)', borderColor: 'rgba(251,191,36,0.22)' }]}>
-                <Ionicons name="airplane-outline" size={20} color={GOLD} />
-              </View>
-              <View style={styles.roleTextCol}>
-                <Text style={[styles.roleCardLabel, { color: GOLD }]}>Just visiting</Text>
-                <Text style={styles.roleCardDesc}>Show me what to do, eat, and see</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="rgba(251,191,36,0.45)" />
-            </TouchableOpacity>
+          {/* Top: wordmark */}
+          <View style={styles.pickerTop}>
+            <View style={styles.wordmarkRow}>
+              <View style={styles.wordmarkDot} />
+              <Text style={styles.wordmark}>Chadakoin Now</Text>
+            </View>
           </View>
 
+          {/* Middle: headline + cards */}
+          <View style={styles.pickerMiddle}>
+            <Text style={styles.pickerHeadline}>
+              {'Who are you\nhere '}
+              <Text style={{ color: ACC }}>for?</Text>
+            </Text>
+            <Text style={styles.pickerBody}>
+              We'll show you what matters most.
+            </Text>
+
+            <View style={styles.pickerCards}>
+              <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('local')} style={[styles.roleCard, styles.roleCardLocal]}>
+                <LinearGradient
+                  colors={[`rgba(${ACC_RGB},0.12)`, `rgba(${ACC_RGB},0.04)`]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={[styles.roleIconWrap, { backgroundColor: `${ACC}18`, borderColor: `${ACC}35` }]}>
+                  <Ionicons name="home-outline" size={22} color={ACC} />
+                </View>
+                <Text style={[styles.roleCardLabel, { color: ACC }]}>I live here</Text>
+                <Text style={styles.roleCardDesc}>Recycling, alerts, news,{'\n'}sports & events</Text>
+                <View style={[styles.roleChevron, { borderColor: `${ACC}30` }]}>
+                  <Ionicons name="arrow-forward" size={14} color={ACC} />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('visitor')} style={[styles.roleCard, styles.roleCardVisitor]}>
+                <LinearGradient
+                  colors={['rgba(251,191,36,0.12)', 'rgba(251,191,36,0.04)']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(251,191,36,0.15)', borderColor: 'rgba(251,191,36,0.30)' }]}>
+                  <Ionicons name="airplane-outline" size={22} color={GOLD} />
+                </View>
+                <Text style={[styles.roleCardLabel, { color: GOLD }]}>Just visiting</Text>
+                <Text style={styles.roleCardDesc}>Food, events, attractions{'\n'}& what to do</Text>
+                <View style={[styles.roleChevron, { borderColor: 'rgba(251,191,36,0.28)' }]}>
+                  <Ionicons name="arrow-forward" size={14} color={GOLD} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Bottom: footer */}
           <Text style={styles.footer}>Chadakoin Now · Built in Jamestown, NY</Text>
         </SafeAreaView>
       </Animated.View>
@@ -316,47 +325,73 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'space-between',
+    paddingBottom: 16,
   },
-  pickerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingBottom: 12,
+  pickerTop: {
+    paddingTop: 20,
   },
-  pickerEyebrow: {
-    fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.3)',
-    letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10,
-  },
-  pickerTitle: {
-    fontFamily: 'Syne', fontSize: 38, fontWeight: '800',
-    color: '#fff', letterSpacing: -1, lineHeight: 44,
-    marginBottom: 14,
-  },
-  pickerBody: {
-    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.45)',
-    lineHeight: 21, marginBottom: 32,
-  },
-  roleCard: {
+  wordmarkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 14,
-    padding: 16,
+    gap: 8,
+  },
+  wordmarkDot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: ACC,
+  },
+  wordmark: {
+    fontFamily: 'Syne', fontSize: 13, fontWeight: '700',
+    color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5,
+  },
+  pickerMiddle: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  pickerHeadline: {
+    fontFamily: 'Syne', fontSize: 30, fontWeight: '800',
+    color: '#fff', letterSpacing: -0.5, lineHeight: 36,
     marginBottom: 10,
+  },
+  pickerBody: {
+    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.4)',
+    marginBottom: 28,
+  },
+  pickerCards: {
+    gap: 12,
+  },
+  roleCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
     overflow: 'hidden',
+    gap: 8,
+  },
+  roleCardLocal: {
+    borderColor: `rgba(${ACC_RGB},0.2)`,
+  },
+  roleCardVisitor: {
+    borderColor: 'rgba(251,191,36,0.18)',
   },
   roleIconWrap: {
-    width: 42, height: 42, borderRadius: 12,
+    width: 44, height: 44, borderRadius: 13,
     borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
+    marginBottom: 4,
   },
-  roleTextCol: { flex: 1, gap: 2 },
   roleCardLabel: {
-    fontFamily: 'Syne', fontSize: 15, fontWeight: '700',
+    fontFamily: 'Syne', fontSize: 18, fontWeight: '800',
   },
   roleCardDesc: {
-    fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.4)',
+    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)',
+    lineHeight: 19,
+  },
+  roleChevron: {
+    position: 'absolute',
+    top: 20, right: 20,
+    width: 30, height: 30, borderRadius: 15,
+    borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
   },
 
   // ── Slides ───────────────────────────────────────────────
@@ -384,11 +419,6 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontFamily: 'Outfit', fontSize: 11, fontWeight: '700',
     letterSpacing: 1.5, textTransform: 'uppercase',
-  },
-  bigNum: {
-    fontFamily: 'Syne', fontSize: 72, fontWeight: '800',
-    color: 'rgba(255,255,255,0.07)', lineHeight: 72,
-    letterSpacing: -2,
   },
   bigNumSlide: {
     fontFamily: 'Syne', fontSize: 72, fontWeight: '800',
