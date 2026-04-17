@@ -12,16 +12,8 @@ const BG_POOL = Platform.OS === 'web'
   ? [{ uri: '/jamestown.jpg' }, { uri: '/alley.jpg' }, { uri: '/lake.png' }]
   : [require('../public/jamestown.jpg'), require('../public/alley.jpg'), require('../public/lake.png')];
 
-// Shuffle once per session: [0] = picker, [1] = slide 0, [2] = slide 1
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-const BG_IMAGES = shuffled(BG_POOL);
+// One random image per session, used for the full onboarding flow
+const BG_SRC = BG_POOL[Math.floor(Math.random() * BG_POOL.length)];
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
@@ -104,23 +96,6 @@ export default function OnboardingScreen({ onDone }: Props) {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const pickerAnim = useRef(new Animated.Value(1)).current;
 
-  // 3 always-rendered bg layers, one per screen — ref-based to avoid batching issues
-  const activeBgRef = useRef(0);
-  const bgFades = useRef([
-    new Animated.Value(1), // picker — starts visible
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current;
-
-  function crossfadeTo(index: number) {
-    const prev = activeBgRef.current;
-    if (prev === index) return;
-    activeBgRef.current = index;
-    Animated.parallel([
-      Animated.timing(bgFades[prev],  { toValue: 0, duration: 500, useNativeDriver: true }),
-      Animated.timing(bgFades[index], { toValue: 1, duration: 500, useNativeDriver: true }),
-    ]).start();
-  }
 
   const slides = role === 'local' ? LOCAL_SLIDES : VISITOR_SLIDES;
   const isLast = slide === slides.length - 1;
@@ -136,7 +111,6 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   function pickRole(r: Role) {
     setRole(r);
-    crossfadeTo(1);
     Animated.timing(pickerAnim, { toValue: 0, duration: 220, useNativeDriver: true })
       .start(() => setPickerVisible(false));
   }
@@ -146,14 +120,12 @@ export default function OnboardingScreen({ onDone }: Props) {
     setSlide(0);
     slideAnim.setValue(0);
     pickerAnim.setValue(0);
-    crossfadeTo(0);
     Animated.timing(pickerAnim, { toValue: 1, duration: 220, useNativeDriver: true })
       .start(() => setRole(null));
   }
 
   function goNext() {
     if (!isLast) {
-      crossfadeTo(slide + 2); // slide+1 maps to BG index slide+2
       Animated.timing(slideAnim, {
         toValue: -(slide + 1) * containerWidth,
         duration: 260, useNativeDriver: true,
@@ -165,7 +137,6 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   function goBack() {
     if (slide > 0) {
-      crossfadeTo(slide); // going back: slide-1 maps to BG index slide
       Animated.timing(slideAnim, {
         toValue: -(slide - 1) * containerWidth,
         duration: 260, useNativeDriver: true,
@@ -177,12 +148,7 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      {/* ── 3 bg layers, one per screen, crossfaded via refs ── */}
-      {BG_IMAGES.map((src, i) => (
-        <Animated.View key={i} style={[StyleSheet.absoluteFill, { opacity: bgFades[i] }]} pointerEvents="none">
-          <ImageBackground source={src} resizeMode="cover" style={StyleSheet.absoluteFill} />
-        </Animated.View>
-      ))}
+      <ImageBackground source={BG_SRC} resizeMode="cover" style={StyleSheet.absoluteFill} />
       <LinearGradient
         colors={['rgba(0,5,15,0.40)', 'rgba(0,5,15,0.80)', 'rgba(0,5,15,0.97)']}
         locations={[0, 0.5, 1]}
