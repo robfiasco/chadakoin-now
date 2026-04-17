@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
+import PrivacyPolicyScreen from './privacy';
+import TermsOfUseScreen from './terms';
 import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 
@@ -26,6 +28,8 @@ const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
 
 export default function SettingsScreen() {
   const { theme, themeId, setThemeId } = useTheme();
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
     Object.fromEntries(NOTIFICATIONS.map(n => [n.id, false]))
   );
@@ -144,7 +148,14 @@ export default function SettingsScreen() {
           {ABOUT_ROWS.map((row, i) => (
             <View key={row.id}>
               {i > 0 && <View style={[styles.rowDivider, { backgroundColor: dark.border }]} />}
-              <TouchableOpacity activeOpacity={0.7} style={styles.aboutRow} onPress={() => {}}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.aboutRow}
+                onPress={
+                  row.id === 'privacy' ? () => setPrivacyOpen(true) :
+                  row.id === 'terms'   ? () => setTermsOpen(true)   : () => {}
+                }
+              >
                 <Ionicons name={row.icon} size={16} color={`rgba(${theme.accRGB},0.5)`} />
                 <Text style={styles.aboutLabel}>{row.label}</Text>
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />
@@ -178,6 +189,17 @@ export default function SettingsScreen() {
 
         <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
       </ScrollView>
+
+      {privacyOpen && (
+        <View style={styles.fullOverlay}>
+          <PrivacyPolicyScreen onClose={() => setPrivacyOpen(false)} />
+        </View>
+      )}
+      {termsOpen && (
+        <View style={styles.fullOverlay}>
+          <TermsOfUseScreen onClose={() => setTermsOpen(false)} />
+        </View>
+      )}
 
       {/* ── Theme description bottom sheet ─────────────── */}
       {/* In-tree overlay so it renders inside the app container on web */}
@@ -241,6 +263,8 @@ const styles = StyleSheet.create({
   ctaSub:  { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
 
   footer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
+
+  fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 300 },
 
   comingSoonRow: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
