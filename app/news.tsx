@@ -29,7 +29,7 @@ function matchesFilter(source: string, f: FilterKey): boolean {
 }
 
 // ── Category derivation ───────────────────────────────────────────
-type NewsCategory = 'Music' | 'City' | 'State' | 'JCC' | 'Education' | 'Community' | 'Breaking';
+type NewsCategory = 'Music' | 'City' | 'State' | 'JCC' | 'Education' | 'Community' | 'Breaking' | 'Local';
 
 function deriveCategory(title: string, source: string): NewsCategory {
   const t = title.toLowerCase();
@@ -39,6 +39,8 @@ function deriveCategory(title: string, source: string): NewsCategory {
   if (/music|concert|band|jazz|blues|rock|hip.hop|symphony|choir|festival|setlist/i.test(t)) return 'Music';
   if (/school board|city council|mayor|budget|vote|election|municipal|zoning|permit|ordinance/i.test(t)) return 'City';
   if (/governor|legislature|assembly|senate|nys|nysdot|nysdec|albany|state police/i.test(t)) return 'State';
+  // Incident/crime/safety — check before source-based fallbacks
+  if (/dies|died|dead|killed|fatal|crash|accident|shooting|stabbing|arrested|charged|overdose|injured|rescue|missing/i.test(t)) return 'Local';
   if (s.includes('city') || s.includes('jamestown') || s.includes('bpu')) return 'City';
   if (s.includes('nys') || s.includes('dec') || s.includes('dot') || s.includes('wgrz')) return 'State';
   return 'Community';
@@ -52,6 +54,7 @@ const CATEGORY_COLORS: Record<NewsCategory, string> = {
   Education: dark.category.jcc,        // violet
   Community: dark.category.community,  // emerald
   Breaking:  dark.category.breaking,   // rose
+  Local:     '#fb923c',                // orange-400 — incidents/safety
 };
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -98,6 +101,11 @@ const CATEGORY_BANNERS: Record<NewsCategory, {
     grad: ['rgba(52,211,153,0.40)', 'rgba(16,185,129,0.12)', 'rgba(6,14,24,0.2)'],
     gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
     icon: 'people-outline', bar: '#34d399',
+  },
+  Local:  {
+    grad: ['rgba(251,146,60,0.45)', 'rgba(234,88,12,0.12)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'newspaper-outline', bar: '#fb923c',
   },
 };
 
