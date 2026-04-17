@@ -29,15 +29,6 @@ function Bullet({ children }: { children: string }) {
   );
 }
 
-function Bold({ label, children }: { label: string; children: string }) {
-  return (
-    <Text style={s.body}>
-      <Text style={s.bold}>{label} </Text>
-      {children}
-    </Text>
-  );
-}
-
 export default function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
   return (
     <View style={s.container}>
@@ -56,66 +47,68 @@ export default function PrivacyPolicyScreen({ onClose }: { onClose: () => void }
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
         <Body>
-          Chadakoin Now is built by Rob Fiasco under the business name Chadakoin Digital. This policy explains what the app does and doesn't do with your data. It's short because the app doesn't do much with your data.
+          I built Chadakoin Now. This explains what the app does — and doesn't do — with your data. It's short because there isn't much to say.
         </Body>
 
-        <Section title="What we don't do">
-          <Bullet>We don't have user accounts. You don't sign up, log in, or create a profile.</Bullet>
-          <Bullet>We don't ask for your name, email, phone number, or location.</Bullet>
-          <Bullet>We don't sell, share, or rent data about you to anyone.</Bullet>
-          <Bullet>We don't track you across other apps or websites.</Bullet>
-          <Bullet>We don't use advertising networks inside the app.</Bullet>
+        <Section title="What I don't do">
+          <Bullet>No user accounts. You don't sign up, log in, or create a profile.</Bullet>
+          <Bullet>I don't ask for your name, email, phone number, or location.</Bullet>
+          <Bullet>I don't sell, share, or rent data about you to anyone. Ever.</Bullet>
+          <Bullet>I don't track you across other apps or websites.</Bullet>
+          <Bullet>There are no ads in the app.</Bullet>
         </Section>
 
-        <Section title="What the app does collect">
-          <Bold label="Notifications (Android).">
-            If you enable push notifications for parking changes, recycling pickup, news, or events, your device receives a notification token from Google's Firebase Cloud Messaging service. We use this only to send the notifications you opted in to. You can turn notifications off anytime in Settings or your phone's system settings.
-          </Bold>
-          <Bold label="Analytics.">
-            We use analytics software to understand how many people use the app and which screens get the most attention. Analytics data is aggregated — we see things like "200 people opened the News tab this week," not "Rob opened the News tab at 9:14 PM." The analytics tool may collect your device type, OS version, country-level location (derived from your IP, not GPS), and which screens you visit. We don't receive your IP address or anything that personally identifies you.
-          </Bold>
+        <Section title="What I do collect">
+          <Text style={s.body}>
+            <Text style={s.bold}>Notifications (Android). </Text>
+            If you turn on push notifications, your device gets a token from Google's Firebase so I can send you the alerts you asked for. You can turn them off anytime in Settings or your phone's system settings.
+          </Text>
           <Text style={[s.body, { marginTop: 12 }]}>
-            <Text style={s.bold}>That's it.</Text>
-            {' '}No precise location. No microphone. No camera. No contacts. No accounts.
+            <Text style={s.bold}>Analytics. </Text>
+            I use analytics to understand how many people use the app and which parts get the most attention. It's aggregated — I see things like "200 people opened the News tab this week," not anything tied to you specifically. The tool may log your device type, OS version, and country (from your IP, not GPS). I don't see your IP address or anything that identifies you personally.
+          </Text>
+          <Text style={[s.body, { marginTop: 12 }]}>
+            <Text style={s.bold}>That's it. </Text>
+            No location. No microphone. No camera. No contacts. No accounts.
           </Text>
         </Section>
 
-        <Section title="Where the app's content comes from">
+        <Section title="Where content comes from">
           <Body>
-            News headlines, event listings, and business information come from public sources — RSS feeds from local publications, public APIs, and content we've curated ourselves. We don't collect information about you when you view this content.
+            News, events, and business info come from public sources — RSS feeds, public APIs, and things I've added myself. I don't collect anything about you when you browse this content.
           </Body>
         </Section>
 
-        <Section title="Directions and maps">
+        <Section title="Directions">
           <Body>
-            When you tap "Directions" on a business or event, the app opens your phone's native maps app. At that point, whatever data you share is between you and the maps app. We don't see where you go or what you do there.
+            Tapping "Directions" opens your phone's maps app. Whatever happens after that is between you and the maps app — I don't see any of it.
           </Body>
         </Section>
 
         <Section title="Feedback">
           <Body>
-            If you use the feedback form to send a message, we receive what you type. We use it only to read and respond. We don't add you to any mailing list.
+            If you send feedback through the app, I receive what you type. I use it to read and respond. I won't add you to any list.
           </Body>
         </Section>
 
-        <Section title="Children">
+        <Section title="Kids">
           <Body>
-            The app is intended for general audiences. We don't knowingly collect information from children under 13.
+            The app is for general audiences. I don't knowingly collect data from children under 13.
           </Body>
         </Section>
 
-        <Section title="Changes to this policy">
+        <Section title="If this changes">
           <Body>
-            If we ever start collecting something new — user accounts, location, whatever — we'll update this policy and note the change in the app.
+            If I ever start collecting something new — accounts, location, anything — I'll update this policy and call it out clearly in the app. No quiet changes.
           </Body>
         </Section>
 
-        <Section title="Contact">
-          <Body>Questions about this policy can go to rob@robfiasco.dev.</Body>
+        <Section title="Questions">
+          <Body>rob@robfiasco.dev</Body>
         </Section>
 
         <Text style={s.footer}>
-          Chadakoin Now is built by Rob Fiasco, operating as Chadakoin Digital, Jamestown, NY.
+          Built by Rob Fiasco · Chadakoin Digital · Jamestown, NY
         </Text>
 
       </ScrollView>

@@ -50,91 +50,93 @@ export default function TermsOfUseScreen({ onClose }: { onClose: () => void }) {
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
         <Body>
-          Thanks for using Chadakoin Now. By using the app, you agree to these terms. They're short and written in plain English.
+          Thanks for using Chadakoin Now. By using the app, you agree to these terms. They're short and written like a normal person wrote them.
         </Body>
 
-        <Section title="Who we are">
-          <Body>Chadakoin Now is built by Rob Fiasco, operating as Chadakoin Digital in Jamestown, NY.</Body>
+        <Section title="Who made this">
+          <Body>I'm Rob Fiasco. I built Chadakoin Now under the name Chadakoin Digital, based in Jamestown, NY.</Body>
         </Section>
 
         <Section title="What the app does">
           <Body>
-            Chadakoin Now is a local information app for Jamestown, NY. It shows weather, local news, events, places to visit, city services, and other local content. The app pulls content from public RSS feeds, APIs, and information we've curated ourselves.
+            Chadakoin Now is a local information app for Jamestown, NY — weather, news, events, places to visit, city services. Content comes from public RSS feeds, public APIs, and things I've added myself.
           </Body>
         </Section>
 
-        <Section title="Information accuracy">
+        <Section title="Accuracy">
           <Body>
-            Most of the information in the app comes from outside sources that we don't control. We do our best to keep things current, but:
+            A lot of what's in the app comes from outside sources I don't control. I try to keep things current, but:
           </Body>
           <View style={{ marginTop: 10 }}>
-            <Bullet label="Events">can change or be cancelled. Check with the venue before you go.</Bullet>
+            <Bullet label="Events">can change or get cancelled. Check with the venue before you go.</Bullet>
             <Bullet label="Business hours and addresses">can change. Call ahead if it matters.</Bullet>
-            <Bullet label="News">comes from third-party publishers. We link to their stories but don't verify them.</Bullet>
-            <Bullet label="City services information">comes from the City of Jamestown and the BPU. In a conflict, the city's information is the official version.</Bullet>
+            <Bullet label="News">comes from third-party publishers. I link to their stories but don't verify them.</Bullet>
+            <Bullet label="City services info">comes from the City of Jamestown and the BPU. If there's a conflict, their information is the official version.</Bullet>
           </View>
           <Text style={[s.body, { marginTop: 12 }]}>
-            Don't make consequential decisions based solely on what you see in the app. If hours, prices, or dates matter, verify them directly with the business or venue.
+            Don't make important decisions based solely on what you see here. If hours, prices, or dates matter, verify them directly.
           </Text>
         </Section>
 
         <Section title="How businesses get listed">
-          <Text style={[s.body, { marginBottom: 10 }]}>The app lists businesses in the Visit section. Two things to know:</Text>
+          <Text style={[s.body, { marginBottom: 10 }]}>
+            The Visit section lists local businesses. Two things to know:
+          </Text>
           <Text style={s.body}>
-            <Text style={s.bold}>Editorial content. </Text>
-            Some businesses appear because Rob personally visited them and thinks they're worth recommending. These are called "Editor's Picks." They reflect personal experience, not paid endorsement. If Rob didn't like a place, it's simply not listed.
+            <Text style={s.bold}>Editor's Picks. </Text>
+            These are places I've personally visited and think are worth recommending. They reflect my own experience — not paid endorsement. If I haven't been there or didn't like it, it's not listed.
           </Text>
           <Text style={[s.body, { marginTop: 10 }]}>
             <Text style={s.bold}>Featured placement. </Text>
-            Some businesses appear in a "Featured" section because they've paid for the placement. Featured listings are always clearly marked. Featured placement does not become an Editor's Pick, and Editor's Picks are never for sale.
+            Some businesses pay to be featured. Featured listings are always clearly marked. Paying doesn't make something an Editor's Pick, and Editor's Picks are never for sale.
           </Text>
           <Text style={[s.body, { marginTop: 10 }]}>
-            If you own or represent a business and want to request a correction or removal, email rob@robfiasco.dev.
+            Own a business and want a correction or removal? Email rob@robfiasco.dev.
           </Text>
         </Section>
 
-        <Section title="What the app isn't">
-          <Body>Chadakoin Now is an information app. It is not:</Body>
+        <Section title="What this app isn't">
+          <Body>Chadakoin Now is an information app. It's not:</Body>
           <View style={{ marginTop: 10 }}>
             <Bullet>A booking, reservation, or ticketing service</Bullet>
             <Bullet>An emergency service or authoritative source for civic information</Bullet>
             <Bullet>A review platform or comparison tool</Bullet>
-            <Bullet>A substitute for contacting businesses directly</Bullet>
+            <Bullet>A substitute for contacting a business directly</Bullet>
           </View>
         </Section>
 
-        <Section title="Your use of the app">
-          <Body>You can use Chadakoin Now however you want, for any lawful purpose. Don't:</Body>
+        <Section title="Your use">
+          <Body>Use the app however you want, for any lawful purpose. Please don't:</Body>
           <View style={{ marginTop: 10 }}>
-            <Bullet>Attempt to reverse engineer, scrape, or repurpose the app's content for a competing service</Bullet>
-            <Bullet>Use the app in any way that violates the law</Bullet>
+            <Bullet>Scrape or repurpose the app's content to build a competing service</Bullet>
+            <Bullet>Use the app in any way that breaks the law</Bullet>
           </View>
         </Section>
 
-        <Section title="Content ownership">
+        <Section title="Ownership">
           <Body>
-            The app's design, code, editorial content, and Chadakoin Now name are owned by Rob Fiasco / Chadakoin Digital. Business names, logos, trademarks, and third-party content belong to their respective owners.
+            The app's design, code, editorial content, and the Chadakoin Now name belong to me. Business names, logos, and third-party content belong to their respective owners.
           </Body>
         </Section>
 
         <Section title="No warranty">
           <Body>
-            The app is provided as-is. We don't promise it will always work, be accurate, or meet your needs. To the extent allowed by law, we're not liable for any damages that arise from using the app or relying on its content.
+            The app is provided as-is. I can't promise it will always work perfectly or that every piece of information is accurate. To the extent the law allows, I'm not liable for damages that come from using the app or relying on its content.
           </Body>
         </Section>
 
-        <Section title="Changes to these terms">
+        <Section title="If these change">
           <Body>
-            We may update these terms from time to time. When we do, we'll update the date at the top. Continued use of the app means you accept the updated terms.
+            I may update these terms from time to time. I'll update the date at the top when I do. Continued use means you're good with the changes.
           </Body>
         </Section>
 
-        <Section title="Contact">
-          <Body>Questions, corrections, or concerns: rob@robfiasco.dev</Body>
+        <Section title="Questions">
+          <Body>rob@robfiasco.dev</Body>
         </Section>
 
         <Text style={s.footer}>
-          Chadakoin Now is built by Rob Fiasco, operating as Chadakoin Digital, Jamestown, NY.
+          Built by Rob Fiasco · Chadakoin Digital · Jamestown, NY
         </Text>
 
       </ScrollView>
