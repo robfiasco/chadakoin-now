@@ -22,7 +22,7 @@ interface GameResult {
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
 interface JCCResult { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
 interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
-interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; isHome: boolean; }
+interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; opponentAbbr?: string; isHome: boolean; }
 interface MLBTeam     { id: number; name: string; abbr: string; record?: string; games: MLBGame[]; nextGame?: MLBNextGame | null; }
 interface PlayoffSeries {
   round: number; roundLabel: string;
@@ -158,7 +158,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
 
     const results = await Promise.all(MLB_TEAMS.map(async t => {
       try {
-        const url  = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,status,detailedState,gameDate,teams,away,home,team,id,name,score,isWinner`;
+        const url  = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,status,detailedState,gameDate,teams,away,home,team,id,name,abbreviation,score,isWinner`;
         const res  = await fetch(url);
         if (!res.ok) return { ...t, games: [], nextGame: null, record: standingsMap[t.id] ?? '' };
         const json = await res.json();
@@ -176,7 +176,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const weAreHome = g.teams?.home?.team?.id === t.id;
               const them = weAreHome ? g.teams?.away : g.teams?.home;
               // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
-              nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', isHome: weAreHome };
+              nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', opponentAbbr: them?.team?.abbreviation ?? '', isHome: weAreHome };
             }
           }
         }
@@ -371,6 +371,7 @@ export default function SportsScreen() {
   const [data, setData]           = useState<SabresData | null>(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedMlbAbbr, setExpandedMlbAbbr] = useState<string | null>(null);
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -389,7 +390,7 @@ export default function SportsScreen() {
   // Compute nearest upcoming game for "Next Up" hero
   const nextUp = useMemo(() => {
     if (!data) return null;
-    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; };
+    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; };
     const candidates: C[] = [];
     const now = new Date();
 
@@ -406,6 +407,8 @@ export default function SportsScreen() {
           accent: ACC.sabres,
           gradStart: 'rgba(96,165,250,0.28)',
           gradEnd: 'rgba(6,14,24,0.7)',
+          ourLogoUrl: SABRES_LOGO,
+          oppLogoUrl: data.nextGame.opponentLogo || undefined,
         });
       }
     }
@@ -424,6 +427,8 @@ export default function SportsScreen() {
             accent: ACC.mlb,
             gradStart: 'rgba(167,139,250,0.28)',
             gradEnd: 'rgba(6,14,24,0.7)',
+            ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
+            oppLogoUrl: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined,
           });
         }
       }
@@ -533,7 +538,10 @@ export default function SportsScreen() {
                   </View>
                 </LinearGradient>
                 <View style={styles.nextUpBody}>
-                  <View style={{ flex: 1 }}>
+                  {nextUp.ourLogoUrl ? (
+                    <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpLogo} resizeMode="contain" />
+                  ) : null}
+                  <View style={{ flex: 1, marginHorizontal: nextUp.ourLogoUrl ? 12 : 0 }}>
                     <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                       <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary }}>{nextUp.dateLabel}</Text>
@@ -545,6 +553,9 @@ export default function SportsScreen() {
                       )}
                     </View>
                   </View>
+                  {nextUp.oppLogoUrl ? (
+                    <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpLogo} resizeMode="contain" />
+                  ) : null}
                 </View>
               </View>
             ) : null}
@@ -866,18 +877,71 @@ export default function SportsScreen() {
                       : '';
                     nextStr = `${ng.isHome ? 'vs' : '@'} ${opp} · ${dayLabel}${timeStr ? ` ${timeStr}` : ''}`;
                   }
+                  const isExpanded = expandedMlbAbbr === t.abbr;
                   return (
-                    <View key={t.abbr} style={[styles.mlbTeamRow, i < (data?.mlb?.length ?? 0) - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                      <Image
-                        source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }}
-                        style={styles.mlbLogo}
-                        resizeMode="contain"
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.mlbTeamName}>{t.name}</Text>
-                        {nextStr ? <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text> : null}
-                      </View>
-                      {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
+                    <View key={t.abbr} style={[i < (data?.mlb?.length ?? 0) - 1 && !isExpanded && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                      <TouchableOpacity
+                        onPress={() => setExpandedMlbAbbr(isExpanded ? null : t.abbr)}
+                        activeOpacity={0.7}
+                        style={styles.mlbTeamRow}
+                      >
+                        <Image
+                          source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }}
+                          style={styles.mlbLogo}
+                          resizeMode="contain"
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.mlbTeamName}>{t.name}</Text>
+                          {nextStr ? <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text> : null}
+                        </View>
+                        {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
+                        <Ionicons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={13}
+                          color="rgba(255,255,255,0.2)"
+                          style={{ marginLeft: 4 }}
+                        />
+                      </TouchableOpacity>
+
+                      {/* Expanded: last 5 games + next game */}
+                      {isExpanded && (
+                        <View style={[styles.mlbExpanded, { borderTopColor: dark.border }]}>
+                          {ng && (
+                            <View style={styles.mlbExpandedNext}>
+                              <Text style={[styles.mlbExpandLabel, { color: ACC.mlb }]}>Next</Text>
+                              <Image
+                                source={{ uri: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined }}
+                                style={styles.mlbExpandLogo}
+                                resizeMode="contain"
+                              />
+                              <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '700' }]}>
+                                {ng.isHome ? 'vs' : '@'} {ng.opponent.split(' ').pop()}
+                              </Text>
+                              <Text style={{ color: dark.text.subtle, fontSize: 10 }}>·</Text>
+                              <Text style={[styles.mlbExpandText, { color: dark.text.muted }]}>{nextStr.split('· ')[1] ?? ''}</Text>
+                            </View>
+                          )}
+                          {t.games.length > 0 && (
+                            <>
+                              <Text style={[styles.mlbExpandLabel, { color: dark.text.subtle, marginTop: ng ? 10 : 0, marginBottom: 6 }]}>Last {t.games.length} Games</Text>
+                              {t.games.map((g, gi) => {
+                                const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                return (
+                                  <View key={gi} style={styles.mlbGameRow}>
+                                    <Text style={[styles.mlbGameResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.won ? 'W' : 'L'}</Text>
+                                    <Text style={[styles.mlbExpandText, { color: dark.text.muted, width: 60 }]}>{g.isHome ? 'vs' : '@'} {g.opponent.split(' ').pop()}</Text>
+                                    <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '600' }]}>{g.ourScore}–{g.theirScore}</Text>
+                                    <Text style={[styles.mlbExpandText, { color: dark.text.subtle, marginLeft: 'auto' }]}>{dateStr}</Text>
+                                  </View>
+                                );
+                              })}
+                            </>
+                          )}
+                        </View>
+                      )}
+                      {i < (data?.mlb?.length ?? 0) - 1 && (
+                        <View style={{ height: 1, backgroundColor: dark.border }} />
+                      )}
                     </View>
                   );
                 })}
@@ -891,7 +955,6 @@ export default function SportsScreen() {
           )}
         </TeamCard>
 
-        <Text style={styles.source}>Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API</Text>
       </ScrollView>
     </ThemedBackground>
   );
@@ -929,6 +992,7 @@ const styles = StyleSheet.create({
   nextUpPillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   nextUpBody: { padding: 14, flexDirection: 'row', alignItems: 'center' },
   nextUpMatchup: { fontFamily: 'Syne', fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+  nextUpLogo: { width: 44, height: 44, flexShrink: 0 },
 
   // Team cards
   teamCard: {
@@ -982,7 +1046,14 @@ const styles = StyleSheet.create({
   mlbNext:     { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
   mlbRecord:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
 
-  source: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', color: 'rgba(255,255,255,0.18)' },
+  // MLB expanded detail
+  mlbExpanded:     { paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: 1, backgroundColor: 'rgba(255,255,255,0.02)' },
+  mlbExpandedNext: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  mlbExpandLabel:  { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
+  mlbExpandLogo:   { width: 20, height: 20 },
+  mlbExpandText:   { fontFamily: 'Outfit', fontSize: 12 },
+  mlbGameRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  mlbGameResult:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '800', width: 14 },
 
   playoffsBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   playoffsBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 1 },

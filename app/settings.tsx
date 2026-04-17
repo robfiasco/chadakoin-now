@@ -191,6 +191,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
+        <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via NWS</Text>
       </ScrollView>
 
       {feedbackOpen && (
@@ -270,7 +271,8 @@ const styles = StyleSheet.create({
   ctaTitle:{ fontFamily: 'Syne', fontSize: 15, fontWeight: '700', marginBottom: 3 },
   ctaSub:  { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
 
-  footer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
+  footer:  { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
+  sources: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 6, color: 'rgba(255,255,255,0.1)', lineHeight: 16 },
 
   fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 600, flex: 1 },
 

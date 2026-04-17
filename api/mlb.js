@@ -31,7 +31,7 @@ async function fetchTeamGames(teamId) {
   const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
   const fmt   = d => d.toISOString().split('T')[0];
-  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,gamePk,status,detailedState,gameDate,teams,away,home,team,id,name,score,isWinner`;
+  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,gamePk,status,detailedState,gameDate,teams,away,home,team,id,name,abbreviation,score,isWinner`;
 
   const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) return { games: [], nextGame: null };
@@ -60,10 +60,11 @@ async function fetchTeamGames(teamId) {
         const weAreHome = g.teams?.home?.team?.id === teamId;
         const them = weAreHome ? g.teams?.away : g.teams?.home;
         nextGame = {
-          date:     dateObj.date,
-          gameTime: g.gameDate ?? null,   // ISO timestamp with tip-off time
-          opponent: them?.team?.name ?? '???',
-          isHome:   weAreHome,
+          date:         dateObj.date,
+          gameTime:     g.gameDate ?? null,
+          opponent:     them?.team?.name ?? '???',
+          opponentAbbr: them?.team?.abbreviation ?? '',
+          isHome:       weAreHome,
         };
       }
     }
