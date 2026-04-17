@@ -1,12 +1,17 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch,
-  Animated, LayoutChangeEvent,
+  Animated, LayoutChangeEvent, ImageBackground, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { dark } from '../lib/colors';
+
+// Works on native via Metro bundler; web serves from /public/
+const BG_SRC = Platform.OS === 'web'
+  ? { uri: '/jamestown.jpg' }
+  : require('../public/jamestown.jpg');
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
@@ -150,6 +155,13 @@ export default function OnboardingScreen({ onDone }: Props) {
   if (role === null) {
     return (
       <Animated.View style={[styles.container, { opacity: roleAnim }]} onLayout={onLayout}>
+        <ImageBackground source={BG_SRC} resizeMode="cover" style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={['rgba(0,5,15,0.45)', 'rgba(0,5,15,0.82)', 'rgba(0,5,15,0.97)']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <SafeAreaView edges={['top', 'bottom']} style={styles.pickerSafe}>
 
           {/* Logo lockup */}
@@ -210,6 +222,13 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   return (
     <View style={styles.container} onLayout={onLayout}>
+      <ImageBackground source={BG_SRC} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={['rgba(0,5,15,0.45)', 'rgba(0,5,15,0.82)', 'rgba(0,5,15,0.97)']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <Animated.View style={[
         styles.strip,
         { width: containerWidth * slides.length, transform: [{ translateX: slideAnim }] },
@@ -346,9 +365,9 @@ const styles = StyleSheet.create({
   },
   pickerRows: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'rgba(0,5,15,0.55)',
     overflow: 'hidden',
   },
   roleRow: {
@@ -423,9 +442,9 @@ const styles = StyleSheet.create({
   },
   featureCard: {
     width: '47.5%',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,5,15,0.45)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 12,
     padding: 14,
     gap: 4,
@@ -446,8 +465,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
-    backgroundColor: dark.bg,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,5,15,0.75)',
     gap: 12,
   },
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' },
