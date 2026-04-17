@@ -11,6 +11,7 @@ import { useTheme } from '../lib/ThemeContext';
 import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
+import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 
 function openMaps(query: string) {
   openLink(`https://maps.google.com/?q=${encodeURIComponent(query)}`);
@@ -681,27 +682,7 @@ export default function VisitScreen() {
         )}
 
         {/* ── Footer CTA ──────────────────────────────────── */}
-        <TouchableOpacity
-          onPress={() => Linking.openURL('https://chadakoindigital.com/featured')}
-          activeOpacity={0.75}
-          style={[styles.ctaCard, {
-            backgroundColor: `rgba(${theme.accRGB},0.05)`,
-            borderColor: `rgba(${theme.accRGB},0.15)`,
-          }]}
-        >
-          <View style={styles.ctaRow}>
-            <Ionicons name="storefront-outline" size={18} color={`rgba(${theme.accRGB},0.55)`} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.ctaTitle, { color: `rgba(${theme.accRGB},0.7)` }]}>
-                Feature your business
-              </Text>
-              <Text style={[styles.ctaSub, { color: `rgba(${theme.accRGB},0.4)` }]}>
-                chadakoindigital.com/featured
-              </Text>
-            </View>
-            <Ionicons name="arrow-forward" size={14} color={`rgba(${theme.accRGB},0.3)`} />
-          </View>
-        </TouchableOpacity>
+        <FeatureYourBusiness />
 
       </ScrollView>
     </ThemedBackground>

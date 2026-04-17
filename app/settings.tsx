@@ -13,6 +13,7 @@ import TermsOfUseScreen from './terms';
 import FeedbackScreen from './feedback';
 import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
+import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 
 const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
   { id: 'parking',   label: 'Parking reminders',   sub: 'Alternate-side · Nov–Mar only' },
@@ -172,27 +173,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── Feature CTA ────────────────────────────────── */}
-        <TouchableOpacity
-          onPress={() => Linking.openURL('https://chadakoindigital.com/featured')}
-          activeOpacity={0.75}
-          accessibilityLabel="Feature your business on Chadakoin Now"
-          accessibilityRole="link"
-          style={[styles.ctaCard, {
-            backgroundColor: `rgba(${theme.accRGB},0.06)`,
-            borderColor: `rgba(${theme.accRGB},0.18)`,
-          }]}
-        >
-          <View style={styles.ctaRow}>
-            <Ionicons name="storefront-outline" size={20} color={theme.acc} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.ctaTitle, { color: theme.acc }]}>Feature your business</Text>
-              <Text style={[styles.ctaSub, { color: `rgba(${theme.accRGB},0.5)` }]}>
-                chadakoindigital.com/featured
-              </Text>
-            </View>
-            <Ionicons name="arrow-forward" size={16} color={`rgba(${theme.accRGB},0.4)`} />
-          </View>
-        </TouchableOpacity>
+        <FeatureYourBusiness />
 
         <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
         <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via NWS</Text>
