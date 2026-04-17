@@ -8,7 +8,8 @@ const INCLUDES = [
   { icon: 'chatbubble-ellipses-outline' as const, text: "A short note in Rob's voice" },
   { icon: 'star-outline' as const,                text: 'Featured badge + top placement' },
   { icon: 'search-outline' as const,              text: 'Appear in Visit tab searches' },
-  { icon: 'refresh-outline' as const,             text: 'One-time setup, no subscription' },
+  { icon: 'calendar-outline' as const,            text: 'Monthly fee · renew or cancel anytime' },
+  { icon: 'people-outline' as const,              text: 'Only 5 slots available per month' },
 ];
 
 export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
