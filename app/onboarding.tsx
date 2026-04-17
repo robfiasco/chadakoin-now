@@ -8,9 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { dark } from '../lib/colors';
 
-const BG_SRC = Platform.OS === 'web'
-  ? { uri: '/jamestown.jpg' }
-  : require('../public/jamestown.jpg');
+const BG_IMAGES = Platform.OS === 'web'
+  ? [{ uri: '/jamestown.jpg' }, { uri: '/alley.jpg' }]
+  : [require('../public/jamestown.jpg'), require('../public/alley.jpg')];
+
+const BG_SRC = BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)];
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
@@ -91,7 +93,6 @@ export default function OnboardingScreen({ onDone }: Props) {
   const [dontShow, setDontShow]       = useState(true);
   const [containerWidth, setContainerWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
-  // 1 = picker fully visible, 0 = picker fully hidden
   const pickerAnim = useRef(new Animated.Value(1)).current;
 
   const slides = role === 'local' ? LOCAL_SLIDES : VISITOR_SLIDES;
@@ -291,7 +292,8 @@ const styles = StyleSheet.create({
     flex: 1, paddingHorizontal: 24,
     justifyContent: 'space-between', paddingBottom: 24,
   },
-  pickerTop: { paddingTop: 16 },
+  // extra top padding compensates for Dynamic Island on web (SafeAreaView unreliable in mobile Safari)
+  pickerTop: { paddingTop: Platform.OS === 'web' ? 56 : 16 },
   lockup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   lockupIcon: {
     width: 36, height: 36, borderRadius: 10,
@@ -327,15 +329,15 @@ const styles = StyleSheet.create({
   // ── Slides ───────────────────────────────────────────────
   strip: { flex: 1, flexDirection: 'row' },
   slide: { flex: 1 },
-  slideInner: { flex: 1, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 12 },
+  slideInner: { flex: 1, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 12, justifyContent: 'flex-end' },
   roleLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 18 },
   roleLabel: {
     fontFamily: 'Outfit', fontSize: 11, fontWeight: '700',
     letterSpacing: 1.5, textTransform: 'uppercase',
   },
   slideTitle: {
-    fontFamily: 'Syne', fontSize: 22, fontWeight: '700',
-    color: '#fff', letterSpacing: -0.3, lineHeight: 30, marginBottom: 10,
+    fontFamily: 'DMSans_700Bold', fontSize: 22,
+    color: '#fff', letterSpacing: -0.3, lineHeight: 32, marginBottom: 10,
   },
   slideBody: {
     fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)',
