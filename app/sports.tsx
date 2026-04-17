@@ -753,7 +753,7 @@ export default function SportsScreen() {
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
-            <Text style={{ fontFamily: 'Syne', fontSize: 11, fontWeight: '800', color: ACC.mlb, letterSpacing: -0.5 }}>MLB</Text>
+            <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
           name="Regional MLB"
           subtitle="NYM · CLE · TOR · PIT · NYY"
