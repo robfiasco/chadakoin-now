@@ -7,12 +7,12 @@
     "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "backgroundColor": "#163A59"
+      "backgroundColor": "#0f0b08"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/files/icon-chadakoin.png",
-        "backgroundColor": "#163A59"
+        "backgroundColor": "#0f0b08"
       },
       "versionCode": 2,
       "package": "com.chadakoinnow"
@@ -20,7 +20,8 @@
     "scheme": "chadakoin-now",
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/files/favicon-chadakoin.png"
     },
     "plugins": [
       "expo-router",

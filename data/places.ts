@@ -13,6 +13,7 @@ export interface Place {
   hours?: string;
   featured: boolean;
   featuredNote?: string;  // custom tagline shown on featured card
+  visited?: boolean;       // personally visited — shows "Been there" badge
   lat?: number;
   lng?: number;
 }
@@ -29,6 +30,7 @@ export const PLACES: Place[] = [
     hours: 'Tue–Sat 8am–9pm',
     featured: true,
     featuredNote: 'Best coffee and food in downtown Jamestown.',
+    visited: true,
     lat: 42.09711, lng: -79.24081,
   },
   {
@@ -63,6 +65,7 @@ export const PLACES: Place[] = [
     description: "Been coming here since I was a kid. Fish fry is the move, but they've recently added beef on weck and it doesn't disappoint. A Jamestown institution.",
     address: '398 E Fairmount Ave, Lakewood, NY',
     featured: false,
+    visited: true,
     lat: 42.09785, lng: -79.29656,
   },
   {
@@ -84,6 +87,7 @@ export const PLACES: Place[] = [
     website: 'https://honestjohns.pizza/',
     hours: 'Daily 11am–10pm',
     featured: false,
+    visited: true,
     lat: 42.11282, lng: -79.21690,
   },
   {
@@ -97,6 +101,7 @@ export const PLACES: Place[] = [
     hours: 'Wed–Sat 4pm–9pm · Sun 4pm–8pm',
     featured: true,
     featuredNote: "A Jamestown institution since 1953.",
+    visited: true,
     lat: 42.09483, lng: -79.24954,
   },
   {
@@ -221,6 +226,7 @@ export const PLACES: Place[] = [
     hours: 'Daily 11:30am–10pm',
     featured: true,
     featuredNote: 'Craft beer and wood-fired pizza downtown.',
+    visited: true,
     lat: 42.09574, lng: -79.24332,
   },
 
@@ -237,6 +243,31 @@ export const PLACES: Place[] = [
   },
 
   {
+    id: 'yeti-greenery',
+    name: 'Yeti Greenery',
+    categories: ['cannabis'],
+    icon: 'leaf-outline',
+    description: 'Small-business cannabis store in Jamestown. 4.6 stars, 177 Google reviews.',
+    address: '607 W 3rd St, Jamestown',
+    website: 'https://www.yetigreenery.com',
+    hours: 'Closes 9PM',
+    featured: false,
+    lat: 42.09404, lng: -79.25231,
+  },
+
+  {
+    id: 'liquid-monkey',
+    name: 'Liquid Monkey Cannabis Dispensary',
+    categories: ['cannabis'],
+    icon: 'leaf-outline',
+    description: 'Cannabis dispensary on Fluvanna Ave. 4.8 stars, 188 Google reviews.',
+    address: '177 Fluvanna Ave, Jamestown',
+    hours: 'Closes 8PM',
+    featured: false,
+    lat: 42.09652, lng: -79.22744,
+  },
+
+  {
     id: 'comedy-center',
     name: 'National Comedy Center',
     categories: ['activity'],
@@ -247,6 +278,7 @@ export const PLACES: Place[] = [
     hours: 'Wed–Sun 10am–5pm',
     featured: true,
     featuredNote: 'The only museum of its kind in America.',
+    visited: true,
     lat: 42.09467, lng: -79.24365,
   },
   {
@@ -335,14 +367,27 @@ export const PLACES: Place[] = [
   },
 ];
 
+export const CANNABIS_RULES = {
+  can: [
+    'Purchase from any licensed dispensary — no medical card needed',
+    'Possess up to 3 oz flower or 24g concentrate',
+    'Consume in a private residence or on private property with permission',
+    'Consume where tobacco smoking is permitted (most outdoor areas)',
+  ],
+  cannot: [
+    'Consume in a vehicle — parked or moving',
+    'Consume in public parks, sidewalks, or near schools',
+    'Cross state lines with any product — federal law applies',
+    'Consume in hotels, Airbnbs, or rentals without explicit permission',
+  ],
+  note: 'NY law applies at point of purchase. Check your home state before traveling with any product.',
+};
+
 export const PLACE_CATEGORIES: { key: PlaceCategory; label: string; icon: string; note?: string }[] = [
   { key: 'coffee',   label: 'Coffee',        icon: 'cafe-outline' },
   { key: 'food',     label: 'Food',          icon: 'restaurant-outline' },
   { key: 'drinks',   label: 'Drinks',        icon: 'beer-outline' },
-  {
-    key: 'cannabis', label: 'Cannabis',      icon: 'leaf-outline',
-    note: 'Recreational cannabis is legal in New York State for adults 21+. Public and in-vehicle consumption is not permitted. Laws vary — check your home state before traveling with any product.',
-  },
+  { key: 'cannabis', label: 'Cannabis',      icon: 'leaf-outline' },
   { key: 'activity', label: 'Things to Do', icon: 'compass-outline' },
   { key: 'arts',     label: 'Arts',          icon: 'musical-notes-outline' },
   { key: 'stay',     label: 'Where to Stay', icon: 'bed-outline' },

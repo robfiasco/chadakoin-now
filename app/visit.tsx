@@ -1,70 +1,63 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Image,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity,
+  Image, TextInput, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
-import { PLACES, Place } from '../data/places';
+import { PLACES, CANNABIS_RULES, Place } from '../data/places';
+import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 
 function openMaps(query: string) {
   openLink(`https://maps.google.com/?q=${encodeURIComponent(query)}`);
 }
 
-type FilterCat = 'all' | 'stay' | 'eat' | 'do' | 'see';
+type FilterCat = 'all' | 'eat' | 'stay' | 'do' | 'see' | 'shop';
+
+const FILTERS: { key: FilterCat; label: string }[] = [
+  { key: 'all',  label: 'All'  },
+  { key: 'eat',  label: 'Eat'  },
+  { key: 'stay', label: 'Stay' },
+  { key: 'do',   label: 'Do'   },
+  { key: 'see',  label: 'See'  },
+  { key: 'shop', label: 'Shop' },
+];
+
+// Per-category accent colors — consistent across all themes
+const CAT_COLOR: Record<string, string> = {
+  eat:  '#fbbf24',  // amber
+  stay: '#60a5fa',  // blue
+  do:   '#2dd4bf',  // teal
+  see:  '#a78bfa',  // purple
+  shop: '#34d399',  // green
+};
 
 function mapCategory(place: Place): FilterCat {
   const cats = place.categories;
   if (cats.includes('stay'))     return 'stay';
   if (cats.includes('arts'))     return 'see';
   if (cats.includes('activity')) return 'do';
-  return 'eat';
+  if (cats.includes('cannabis')) return 'shop';
+  return 'eat'; // coffee, food, drinks
 }
 
-function categoryLabel(cat: FilterCat): string {
-  if (cat === 'stay') return 'Stay';
-  if (cat === 'eat')  return 'Eat';
-  if (cat === 'do')   return 'Do';
-  if (cat === 'see')  return 'See';
-  return '';
-}
-
-// Map visit category to one of the three theme accents so panels stay on-palette
-function catAccentRGB(cat: FilterCat, accRGB: string, acc2RGB: string, acc3RGB: string): string {
-  if (cat === 'eat')  return acc2RGB;
-  if (cat === 'stay') return acc3RGB;
-  if (cat === 'do')   return accRGB;
-  if (cat === 'see')  return acc3RGB;
-  return accRGB;
-}
-
-const FILTERS: { key: FilterCat; label: string }[] = [
-  { key: 'all',  label: 'All'  },
-  { key: 'stay', label: 'Stay' },
-  { key: 'eat',  label: 'Eat'  },
-  { key: 'do',   label: 'Do'   },
-  { key: 'see',  label: 'See'  },
-];
-
-// ─── Local Favorites ─────────────────────────────────────────────
+// ─── Local Favorites (Editor's Picks) ────────────────────────────
 interface LocalFav {
   name: string;
   category: FilterCat;
   detail: string;
   website?: string;
-  gradientStart: string;
-  gradientEnd: string;
-  borderColor: string;
   rgb: string;
   visited: boolean;
   quote: string;
   lat?: number;
   lng?: number;
-  image?: string;  // web-accessible path e.g. '/photo.jpg'
-  imageAnchor?: 'top' | 'center';  // default center; 'top' shows upper portion of image
+  image?: string;
+  imageAnchor?: 'top' | 'center';
 }
 
 const LOCAL_FAVORITES: LocalFav[] = [
@@ -73,9 +66,6 @@ const LOCAL_FAVORITES: LocalFav[] = [
     category: 'eat',
     detail: 'Eat · Drink · Tue–Sat 8am–9pm',
     website: 'https://www.labpressco.com/',
-    gradientStart: 'rgba(0,212,200,0.1)',
-    gradientEnd:   'rgba(0,212,200,0.03)',
-    borderColor:   'rgba(0,212,200,0.2)',
     rgb: '0,212,200',
     visited: true,
     quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
@@ -87,9 +77,6 @@ const LOCAL_FAVORITES: LocalFav[] = [
     category: 'eat',
     detail: 'Eat · Daily 11am–10pm',
     website: 'https://honestjohns.pizza/',
-    gradientStart: 'rgba(245,166,35,0.1)',
-    gradientEnd:   'rgba(245,166,35,0.03)',
-    borderColor:   'rgba(245,166,35,0.2)',
     rgb: '245,166,35',
     visited: true,
     quote: "Jamestown has no shortage of great pizza and wings, and Honest John's holds its own. The subs are solid too if you're in that mood.",
@@ -102,9 +89,6 @@ const LOCAL_FAVORITES: LocalFav[] = [
     category: 'see',
     detail: 'See · Wed–Sun, 10am–5pm',
     website: 'https://comedycenter.org',
-    gradientStart: 'rgba(155,109,255,0.1)',
-    gradientEnd:   'rgba(155,109,255,0.03)',
-    borderColor:   'rgba(155,109,255,0.2)',
     rgb: '155,109,255',
     visited: true,
     quote: "I've been three times and would go back. Comedy is my thing, so take that for what it's worth — but this is genuinely the best museum I've ever been to. If you visit Jamestown and skip it, you made a mistake.",
@@ -113,10 +97,9 @@ const LOCAL_FAVORITES: LocalFav[] = [
   },
 ];
 
-// ─── Also in Jamestown ───────────────────────────────────────────
+// ─── Also in Jamestown (hotels / lodging) ────────────────────────
 interface AlsoEntry {
   name: string;
-  category: FilterCat;
   detail: string;
   note: string;
   caveats: string[];
@@ -127,7 +110,6 @@ interface AlsoEntry {
 const ALSO_IN_JAMESTOWN: AlsoEntry[] = [
   {
     name: 'DoubleTree by Hilton',
-    category: 'stay',
     detail: 'Stay · Downtown · Limited parking',
     note: "The old Holiday Inn — now a DoubleTree. Pearl City Hops bar on-site if you need a drink without going far.",
     caveats: ['Chain', 'Limited parking'],
@@ -135,51 +117,43 @@ const ALSO_IN_JAMESTOWN: AlsoEntry[] = [
   },
   {
     name: 'La Quinta Inn & Suites',
-    category: 'stay',
     detail: 'Stay · Near downtown · Limited parking',
     note: "Solid no-frills option. Pet friendly but no real green space nearby for dogs.",
-    caveats: ['Chain', 'Limited parking', 'Pet friendly'],
+    caveats: ['Chain', 'Pet friendly'],
     lat: 42.09605, lng: -79.24421,
   },
   {
     name: 'Holiday Inn Express & Suites',
-    category: 'stay',
     detail: 'Stay · Off I-86 · Free parking',
     note: "Not walkable to downtown but right off the interstate — easy in and out if you're passing through.",
-    caveats: ['Chain', 'Free parking', 'Pet friendly'],
+    caveats: ['Chain', 'Free parking'],
     lat: 42.11996, lng: -79.24420,
   },
   {
     name: 'Chautauqua Harbor Hotel',
-    category: 'stay',
-    detail: 'Stay · Celoron · 5 min drive from downtown',
+    detail: 'Stay · Celoron · 5 min drive',
     note: "Nicest hotel in the area. Lakeside views and marina on-site. Not walkable to downtown — you'll need a car.",
     caveats: ['Not walkable', 'Celoron'],
     lat: 42.11021, lng: -79.28518,
   },
   {
     name: 'Airbnb & VRBO',
-    category: 'stay',
     detail: 'Stay · Various locations',
     note: "Short-term rentals throughout Jamestown and the Chautauqua Lake area. Good option for groups or longer stays.",
-    caveats: ['Self check-in', 'Prices vary'],
+    caveats: ['Prices vary'],
   },
 ];
 
-// IDs that appear in Local Favorites or Also in Jamestown — exclude from Chadakoin Approved
-const EXCLUDE_FROM_APPROVED = new Set(['labyrinth-press', 'comedy-center', 'chautauqua-harbor-hotel', 'airbnb-jamestown']);
-
-// ─── Parks & History ─────────────────────────────────────────────
+// ─── Parks & History ──────────────────────────────────────────────
 type ParkId = 'dow' | 'baker' | 'mccrea' | 'allen' | 'bergman' | 'jackson';
 
-// Which theme accent each park draws from, and how strong the gradient saturation is
-const PARK_ACCENT: Record<ParkId, { key: 'acc' | 'acc2' | 'acc3'; strength: number }> = {
-  dow:     { key: 'acc',  strength: 0.18 },
-  baker:   { key: 'acc2', strength: 0.20 },
-  mccrea:  { key: 'acc3', strength: 0.16 },
-  allen:   { key: 'acc2', strength: 0.14 },
-  bergman: { key: 'acc',  strength: 0.12 },
-  jackson: { key: 'acc3', strength: 0.20 },
+const PARK_COLOR: Record<ParkId, string> = {
+  dow:     '77,192,140',
+  baker:   '91,141,184',
+  mccrea:  '64,196,220',
+  allen:   '200,168,76',
+  bergman: '155,109,255',
+  jackson: '220,110,90',
 };
 
 interface ParkEntry {
@@ -217,7 +191,7 @@ const PARKS: ParkEntry[] = [
     visited: true,
     hasHistory: true,
     historyNote: "Donated by Col. Henry Baker · 1845 · Former burial ground · Remains moved to W. 5th St cemetery",
-    quote: "My dad tried to teach me to ride a bike here. It didn't go well. Named after Colonel Henry Baker, a War of 1812 veteran who donated this land in 1845 on one condition — that it always remain a public square. There's also a historical marker noting that this site was once a burial ground. Make of that what you will.",
+    quote: "My dad tried to teach me to ride a bike here. It didn't go well. Named after Colonel Henry Baker, a War of 1812 veteran who donated this land in 1845 on one condition — that it always remain a public square.",
     lat: 42.09679, lng: -79.24704,
   },
   {
@@ -227,7 +201,7 @@ const PARKS: ParkEntry[] = [
     features: ['Boat Launch', 'Fishing', 'Riverwalk'],
     visited: true,
     hasHistory: false,
-    quote: "This was right down the street from where I grew up. In the 80s and 90s it was basically just the boat landing — you went down to skip rocks or, if you were unlucky, got talked into getting into a small boat at 6am to go fishing. It's better now. The Riverwalk connects through here and the area has more going on than it used to. But honestly it's still underdeveloped. The industrial history along this stretch of the Chadakoin is deep — there's a real story here that hasn't been fully told yet. The bones are there for something special.",
+    quote: "This was right down the street from where I grew up. The Riverwalk connects through here and the area has more going on than it used to. The industrial history along this stretch of the Chadakoin is deep — the bones are there for something special.",
     lat: 42.10136, lng: -79.25461,
   },
   {
@@ -237,7 +211,7 @@ const PARKS: ParkEntry[] = [
     features: ['Strider Field', 'Bandshell', 'Splash Pad', 'Trails'],
     visited: true,
     hasHistory: false,
-    quote: "Growing up on the other side of town, Allen Park always felt like a trek. Strider Field is here — I caught a few JHS football games there as a kid. It's a 35-acre park with walking trails through wooded areas, a splash pad in summer, soccer fields, and the Goranson Bandshell where the Jamestown Municipal Band plays on Wednesday nights. Honestly, I don't get up this way enough. Neither do most people who don't live nearby.",
+    quote: "35 acres with walking trails, a splash pad, soccer fields, and the Goranson Bandshell where the Jamestown Municipal Band plays Wednesday nights. Honestly, I don't get up this way enough.",
     lat: 42.08381, lng: -79.22231,
   },
   {
@@ -247,7 +221,7 @@ const PARKS: ParkEntry[] = [
     features: ['Disc Golf', 'Baseball', 'Basketball', 'Events'],
     visited: true,
     hasHistory: false,
-    quote: "If you grew up in Jamestown, you've probably been to something here. Picnics, reunions, holiday events — Bergman is where a lot of that happens. The Labor Day celebration is the big one, and it's worth going to. That said, as a kid it always meant summer was ending and school was starting, so the feelings are complicated. The park also has a free 18-hole disc golf course that opened in 2022, baseball fields, basketball, and walking paths. The World Series of Cars Show is held here too if that's your thing.",
+    quote: "If you grew up in Jamestown, you've probably been to something here. The Labor Day celebration is the big one. Free 18-hole disc golf course opened in 2022.",
     lat: 42.07983, lng: -79.25810,
   },
   {
@@ -258,127 +232,83 @@ const PARKS: ParkEntry[] = [
     visited: false,
     hasHistory: true,
     historyNote: "Named for Isabelle Jackson, Vivian & Lula Taylor · Lula was the first African American woman county legislator in NY State · Renamed 2019",
-    quote: "I'll be honest — I grew up in Jamestown and had never heard of this park until recently. It was called Chadakoin Park for decades before being renamed in 2019 to honor three community figures who gave a lot to this city: Isabelle Jackson, a JCC faculty member and YWCA director who spent 30 years serving Jamestown, and Vivian and Lula Taylor — Vivian served 23 years on City Council and was a World War II veteran, and Lula was the first African American woman county legislator in New York State. At 152 acres it's one of the largest parks in the city. I haven't been. It's on my list.",
+    quote: "At 152 acres, one of the largest parks in the city. Named in 2019 to honor Isabelle Jackson, Vivian Taylor — 23 years on City Council, a World War II veteran — and Lula Taylor, the first African American woman county legislator in New York State. I haven't been. It's on my list.",
     lat: 42.10578, lng: -79.24903,
   },
 ];
 
-function PlacePanel({ place, cat }: { place: Place & { _cat: FilterCat }; cat: FilterCat }) {
-  const { theme } = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const anim = useRef(new Animated.Value(80)).current;
-  const isVisited = (place as any).visited === true;
-  const rgb = catAccentRGB(cat, theme.accRGB, theme.acc2RGB, theme.acc3RGB);
+// Places excluded from Browse (already in Editor's Picks)
+const EDITOR_PICKS_IDS = new Set(['labyrinth-press', 'comedy-center', 'honest-johns']);
 
-  function toggle() {
-    Animated.timing(anim, { toValue: expanded ? 80 : 120, duration: 220, useNativeDriver: false }).start();
-    setExpanded(e => !e);
-  }
+// ─── Editor's Pick hero card ──────────────────────────────────────
+function EditorPickCard({ fav }: { fav: LocalFav }) {
+  const { theme } = useTheme();
+  const [expanded, setExpanded] = useState(true);
+  const catColor = CAT_COLOR[fav.category] ?? theme.acc;
 
   return (
-    <View style={styles.placePanel}>
-      <TouchableOpacity activeOpacity={0.88} onPress={toggle}>
-        <Animated.View style={[styles.placePanelGrad, { height: anim }]}>
-          <LinearGradient
-            colors={[`rgba(${rgb},0)`, `rgba(${rgb},0.18)`, `rgba(${rgb},0.1)`, `rgba(${rgb},0.02)`] as any}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
+    <View style={hero.card}>
+      {/* Image header */}
+      <View style={hero.imgWrap}>
+        {fav.image ? (
+          <Image
+            source={{ uri: fav.image }}
+            style={[hero.img, fav.imageAnchor === 'top' && hero.imgTop]}
           />
-          <View style={styles.parkBadgeRow}>
-            {isVisited && (
-              <View style={[styles.parkVisitedBadge, { backgroundColor: `rgba(${theme.accRGB},0.08)`, borderColor: `rgba(${theme.accRGB},0.15)` }]}>
-                <View style={[styles.parkVisitedDot, { backgroundColor: theme.acc }]} />
-                <Text style={[styles.parkVisitedText, { color: `rgba(${theme.accRGB},0.7)` }]}>Visited</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.parkNameBlock}>
-            <Text style={styles.parkName}>{place.name}</Text>
-            {place.address ? <Text style={[styles.parkAddress, { color: `rgba(${rgb},0.45)` }]}>{place.address}</Text> : null}
-          </View>
-        </Animated.View>
-        <View style={[styles.placeTagsRow, { backgroundColor: `rgba(${rgb},0.08)` }]}>
-          <Text style={[styles.placeMeta, { flex: 1, color: `rgba(${rgb},0.55)` }]}>
-            {categoryLabel(cat)}{place.hours ? ` · ${place.hours}` : ''}
+        ) : null}
+        <LinearGradient
+          colors={fav.image
+            ? ['transparent', `rgba(${fav.rgb},0.25)`, dark.bg] as any
+            : [`rgba(${fav.rgb},0.15)`, `rgba(${fav.rgb},0.05)`, dark.bg] as any
+          }
+          start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Category pill */}
+        <View style={[hero.catPill, { backgroundColor: `${catColor}22`, borderColor: `${catColor}44` }]}>
+          <Text style={[hero.catPillText, { color: catColor }]}>
+            {fav.category.toUpperCase()}
           </Text>
-          {place.lat ? (
-            <TouchableOpacity onPress={e => { e.stopPropagation(); openMaps(`${place.name}, ${place.address}`); }} activeOpacity={0.6} style={styles.parkNavBtn}>
-              <Ionicons name="navigate-outline" size={12} color={`rgba(${rgb},0.55)`} />
-            </TouchableOpacity>
-          ) : null}
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={`rgba(${rgb},0.45)`} style={styles.parkChevron} />
         </View>
-      </TouchableOpacity>
-      {expanded && (
-        <View style={[styles.placeExpanded, { backgroundColor: `rgba(${rgb},0.03)`, borderTopColor: `rgba(${rgb},0.08)` }]}>
-          {place.description ? <Text style={[styles.placeDesc, { color: `rgba(${rgb},0.6)` }]}>{place.description}</Text> : null}
-          {place.website ? (
-            <TouchableOpacity onPress={() => openLink(place.website)} activeOpacity={0.7}>
-              <Text style={[styles.placeLink, { color: theme.acc }]}>Visit website →</Text>
-            </TouchableOpacity>
-          ) : null}
+        {/* Editor's Pick pill */}
+        <View style={hero.editorPill}>
+          <Ionicons name="star" size={8} color={theme.acc} />
+          <Text style={[hero.editorPillText, { color: theme.acc }]}>Editor's Pick</Text>
         </View>
-      )}
-    </View>
-  );
-}
+        {fav.visited && (
+          <View style={hero.beenThereBadge}>
+            <View style={[hero.beenThereDot, { backgroundColor: dark.category.recycling }]} />
+            <Text style={[hero.beenThereText, { color: dark.category.recycling }]}>Been there</Text>
+          </View>
+        )}
+      </View>
 
-function FavPanel({ fav }: { fav: LocalFav }) {
-  const { theme } = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const anim = useRef(new Animated.Value(80)).current;
-
-  function toggle() {
-    Animated.timing(anim, { toValue: expanded ? 80 : 120, duration: 220, useNativeDriver: false }).start();
-    setExpanded(e => !e);
-  }
-
-  return (
-    <View style={styles.placePanel}>
-      <TouchableOpacity activeOpacity={0.88} onPress={toggle}>
-        <Animated.View style={[styles.placePanelGrad, { height: anim }]}>
-          {fav.image ? (
-            <Image source={{ uri: fav.image }} style={[styles.favImage, fav.imageAnchor === 'top' && styles.favImageTop]} />
-          ) : null}
-          <LinearGradient
-            colors={fav.image
-              ? [theme.bg, theme.bg, `rgba(${fav.rgb},0.4)`, 'transparent'] as any
-              : [`rgba(${fav.rgb},0)`, `rgba(${fav.rgb},0.22)`, `rgba(${fav.rgb},0.12)`, `rgba(${fav.rgb},0.03)`] as any
-            }
-            start={fav.image ? { x: 0, y: 0.5 } : { x: 0, y: 0 }}
-            end={fav.image ? { x: 1, y: 0.5 } : { x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
+      {/* Card body */}
+      <TouchableOpacity activeOpacity={0.88} onPress={() => setExpanded(e => !e)} style={hero.body}>
+        <View style={hero.nameRow}>
+          <Text style={hero.name}>{fav.name}</Text>
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={14} color="rgba(255,255,255,0.3)"
           />
-          <View style={[styles.parkBadgeRow, { right: undefined, left: 12 }]}>
-            {fav.visited && (
-              <View style={[styles.parkVisitedBadge, { backgroundColor: `rgba(${theme.accRGB},0.08)`, borderColor: `rgba(${theme.accRGB},0.15)` }]}>
-                <View style={[styles.parkVisitedDot, { backgroundColor: theme.acc }]} />
-                <Text style={[styles.parkVisitedText, { color: `rgba(${theme.accRGB},0.7)` }]}>Visited</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.parkNameBlock}>
-            <Text style={styles.parkName}>{fav.name}</Text>
-          </View>
-        </Animated.View>
-        <View style={[styles.placeTagsRow, { backgroundColor: `rgba(${fav.rgb},0.08)` }]}>
-          <Text style={[styles.placeMeta, { flex: 1, color: `rgba(${fav.rgb},0.5)` }]}>{fav.detail}</Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={`rgba(${fav.rgb},0.45)`} style={styles.parkChevron} />
         </View>
+        <Text style={[hero.detail, { color: `rgba(${fav.rgb},0.6)` }]}>{fav.detail}</Text>
       </TouchableOpacity>
+
       {expanded && (
-        <View style={[styles.placeExpanded, { backgroundColor: `rgba(${fav.rgb},0.03)`, borderTopColor: `rgba(${fav.rgb},0.08)` }]}>
-          <Text style={[styles.placeDesc, { color: `rgba(${fav.rgb},0.6)`, fontStyle: 'italic' }]}>"{fav.quote}"</Text>
-          <View style={styles.favLinksRow}>
+        <View style={[hero.expanded, { borderTopColor: `rgba(${fav.rgb},0.1)` }]}>
+          <Text style={[hero.quote, { color: `rgba(${fav.rgb},0.6)` }]}>"{fav.quote}"</Text>
+          <View style={hero.linksRow}>
             {fav.website ? (
-              <TouchableOpacity onPress={() => openLink(fav.website)} activeOpacity={0.7}>
-                <Text style={[styles.placeLink, { color: theme.acc }]}>Visit website</Text>
+              <TouchableOpacity onPress={() => openLink(fav.website!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
+                <Ionicons name="globe-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
+                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Website</Text>
               </TouchableOpacity>
             ) : null}
             {fav.lat ? (
-              <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={styles.favMapBtn}>
-                <Ionicons name="navigate-outline" size={11} color={`rgba(${fav.rgb},0.7)`} />
-                <Text style={[styles.favMapLabel, { color: `rgba(${fav.rgb},0.7)` }]}>Map it</Text>
+              <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
+                <Ionicons name="navigate-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
+                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Directions</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -388,273 +318,402 @@ function FavPanel({ fav }: { fav: LocalFav }) {
   );
 }
 
-function AlsoPanel({ entry }: { entry: AlsoEntry }) {
-  const { theme } = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const anim = useRef(new Animated.Value(80)).current;
-  const rgb = theme.acc3RGB;
+const hero = StyleSheet.create({
+  card:    { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden', marginBottom: 10 },
+  imgWrap: { height: 130, position: 'relative' },
+  img:     { ...StyleSheet.absoluteFillObject, resizeMode: 'cover', opacity: 0.55 },
+  imgTop:  { resizeMode: 'cover', top: 0 },
+  catPill: { position: 'absolute', top: 10, left: 12, flexDirection: 'row', borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  catPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
+  editorPill: { position: 'absolute', top: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  editorPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
+  beenThereBadge: { position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  beenThereDot: { width: 5, height: 5, borderRadius: 3 },
+  beenThereText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
+  body:    { paddingHorizontal: 14, paddingVertical: 12 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
+  name:    { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: -0.2, flex: 1, marginRight: 8 },
+  detail:  { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.2 },
+  expanded:{ borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  quote:   { fontFamily: 'Outfit', fontSize: 11, lineHeight: 17, fontStyle: 'italic' },
+  linksRow:{ flexDirection: 'row', gap: 8 },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  linkBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+});
 
-  function toggle() {
-    Animated.timing(anim, { toValue: expanded ? 80 : 120, duration: 220, useNativeDriver: false }).start();
-    setExpanded(e => !e);
-  }
+// ─── Compact list card (Places + Also + Parks) ────────────────────
+function ListCard({
+  name, address, color, visited, children,
+}: {
+  name: string;
+  address?: string;
+  color: string;
+  visited?: boolean;
+  children?: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <View style={styles.placePanel}>
-      <TouchableOpacity activeOpacity={0.88} onPress={toggle}>
-        <Animated.View style={[styles.placePanelGrad, { height: anim }]}>
-          <LinearGradient
-            colors={[`rgba(${rgb},0)`, `rgba(${rgb},0.13)`, `rgba(${rgb},0.07)`, `rgba(${rgb},0.01)`] as any}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.parkNameBlock}>
-            <Text style={styles.parkName}>{entry.name}</Text>
-            <Text style={[styles.parkAddress, { color: `rgba(${rgb},0.45)` }]}>{entry.detail}</Text>
+    <View style={list.card}>
+      <View style={[list.stripe, { backgroundColor: color }]} />
+      <TouchableOpacity activeOpacity={0.85} onPress={() => setExpanded(e => !e)} style={list.row}>
+        <View style={{ flex: 1 }}>
+          <View style={list.nameRow}>
+            <Text style={list.name}>{name}</Text>
+            {visited && (
+              <View style={list.badge}>
+                <View style={[list.badgeDot, { backgroundColor: dark.category.recycling }]} />
+                <Text style={[list.badgeText, { color: dark.category.recycling }]}>Been there</Text>
+              </View>
+            )}
           </View>
-        </Animated.View>
-        <View style={[styles.placeTagsRow, { backgroundColor: `rgba(${rgb},0.07)` }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.parkTagsInner}>
-            {entry.caveats.map(c => (
-              <Text key={c} style={[styles.parkTag, { color: `rgba(${rgb},0.6)`, backgroundColor: `rgba(${rgb},0.08)` }]}>{c}</Text>
-            ))}
-          </ScrollView>
-          {entry.lat ? (
-            <TouchableOpacity onPress={e => { e.stopPropagation(); openMaps(`${entry.name}, Jamestown NY`); }} activeOpacity={0.6} style={styles.parkNavBtn}>
-              <Ionicons name="navigate-outline" size={12} color={`rgba(${rgb},0.55)`} />
-            </TouchableOpacity>
-          ) : null}
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={`rgba(${rgb},0.45)`} style={styles.parkChevron} />
+          {address ? <Text style={list.address}>{address}</Text> : null}
         </View>
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={13} color="rgba(255,255,255,0.25)"
+          style={{ marginLeft: 8 }}
+        />
       </TouchableOpacity>
-      {expanded && (
-        <View style={[styles.placeExpanded, { backgroundColor: `rgba(${rgb},0.03)`, borderTopColor: `rgba(${rgb},0.08)` }]}>
-          <Text style={[styles.placeDesc, { color: `rgba(${rgb},0.55)`, fontStyle: 'italic' }]}>"{entry.note}"</Text>
+      {expanded && children ? (
+        <View style={[list.body, { borderTopColor: `${color}1a` }]}>
+          {children}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
 
-function ParkCard({ park }: { park: ParkEntry }) {
+const list = StyleSheet.create({
+  card:    { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 12, overflow: 'hidden', marginBottom: 6, paddingLeft: 3 },
+  stripe:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+  row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  name:    { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
+  address: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  badge:   { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(52,211,153,0.08)', borderWidth: 1, borderColor: 'rgba(52,211,153,0.2)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeDot:{ width: 4, height: 4, borderRadius: 2 },
+  badgeText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.6 },
+  body:    { borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
+});
+
+function PlaceListCard({ place, color }: { place: Place; color: string }) {
   const { theme } = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const anim = useRef(new Animated.Value(80)).current;
-
-  const pa = PARK_ACCENT[park.id];
-  const rgb = pa.key === 'acc' ? theme.accRGB : pa.key === 'acc2' ? theme.acc2RGB : theme.acc3RGB;
-  const s = pa.strength;
-  const gradient = [
-    `rgba(${rgb},0)`,
-    `rgba(${rgb},${s})`,
-    `rgba(${rgb},${+(s * 0.6).toFixed(2)})`,
-    `rgba(${rgb},${+(s * 0.15).toFixed(2)})`,
-  ];
-  const a = theme.accRGB;
-
-  function toggle() {
-    Animated.timing(anim, {
-      toValue: expanded ? 80 : 120,
-      duration: 220,
-      useNativeDriver: false,
-    }).start();
-    setExpanded(e => !e);
-  }
-
   return (
-    <View style={styles.parkCard}>
-      <TouchableOpacity activeOpacity={0.88} onPress={toggle}>
-        <Animated.View style={[styles.parkPanel, { height: anim }]}>
-          <LinearGradient
-            colors={gradient as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.parkBadgeRow}>
-            {park.hasHistory && (
-              <View style={[styles.parkHistoryBadge, { backgroundColor: `rgba(${a},0.1)`, borderColor: `rgba(${a},0.2)` }]}>
-                <Ionicons name="time-outline" size={9} color={`rgba(${a},0.8)`} />
-                <Text style={[styles.parkHistoryText, { color: `rgba(${a},0.8)` }]}>History</Text>
-              </View>
-            )}
-            {park.visited && (
-              <View style={[styles.parkVisitedBadge, { backgroundColor: `rgba(${a},0.08)`, borderColor: `rgba(${a},0.15)` }]}>
-                <View style={[styles.parkVisitedDot, { backgroundColor: theme.acc }]} />
-                <Text style={[styles.parkVisitedText, { color: `rgba(${a},0.7)` }]}>Visited</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.parkNameBlock}>
-            <Text style={styles.parkName}>{park.name}</Text>
-            <Text style={[styles.parkAddress, { color: `rgba(${a},0.35)` }]}>{park.address}</Text>
-          </View>
-        </Animated.View>
-
-        <View style={[styles.parkTagsRow, { backgroundColor: `rgba(${rgb},0.1)` }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.parkTagsInner}>
-            {park.features.map(f => (
-              <Text key={f} style={[styles.parkTag, { color: `rgba(${rgb},0.7)`, backgroundColor: `rgba(${rgb},0.08)` }]}>{f}</Text>
-            ))}
-          </ScrollView>
-          <TouchableOpacity
-            onPress={e => { e.stopPropagation(); openMaps(`${park.name}, ${park.address}`); }}
-            activeOpacity={0.6}
-            style={styles.parkNavBtn}
-          >
-            <Ionicons name="navigate-outline" size={12} color={`rgba(${rgb},0.55)`} />
+    <ListCard
+      name={place.name}
+      address={place.address}
+      color={color}
+      visited={place.visited}
+    >
+      {place.description ? (
+        <Text style={[lc.desc, { color: `${color}99` }]}>{place.description}</Text>
+      ) : null}
+      {place.hours ? (
+        <Text style={lc.hours}>{place.hours}</Text>
+      ) : null}
+      <View style={lc.links}>
+        {place.website ? (
+          <TouchableOpacity onPress={() => openLink(place.website!)} activeOpacity={0.7}>
+            <Text style={[lc.link, { color: theme.acc }]}>Website →</Text>
           </TouchableOpacity>
-          <Ionicons
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={13}
-            color={`rgba(${rgb},0.45)`}
-            style={styles.parkChevron}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={[styles.parkExpandedBlock, { backgroundColor: `rgba(${a},0.03)`, borderTopColor: `rgba(${a},0.08)` }]}>
-          <Text style={[styles.parkQuote, { color: `rgba(${a},0.55)` }]}>"{park.quote}"</Text>
-          {park.hasHistory && park.historyNote ? (
-            <Text style={[styles.parkHistoryNote, { color: `rgba(${a},0.35)` }]}>{park.historyNote}</Text>
-          ) : null}
-          {park.hasDonate ? (
-            <TouchableOpacity
-              onPress={() => openLink('https://www.ywcajamestown.com/statuefund')}
-              style={[styles.parkDonate, { backgroundColor: `rgba(${a},0.07)`, borderColor: `rgba(${a},0.18)` }]}
-              activeOpacity={0.75}
-            >
-              <Ionicons name="heart-outline" size={12} color={theme.acc} />
-              <Text style={[styles.parkDonateText, { color: theme.acc }]}>Support the Lucille Ball Statue Fund →</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      )}
-    </View>
+        ) : null}
+        {place.lat ? (
+          <TouchableOpacity onPress={() => openMaps(`${place.name}, ${place.address}`)} activeOpacity={0.7} style={lc.mapBtn}>
+            <Ionicons name="navigate-outline" size={11} color="rgba(255,255,255,0.4)" />
+            <Text style={lc.mapText}>Map it</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    </ListCard>
   );
 }
 
+function AlsoListCard({ entry }: { entry: AlsoEntry }) {
+  const stayColor = CAT_COLOR.stay;
+  return (
+    <ListCard name={entry.name} address={entry.detail} color={stayColor}>
+      <Text style={[lc.desc, { color: `${stayColor}99` }]}>{entry.note}</Text>
+      <View style={lc.tagsRow}>
+        {entry.caveats.map(c => (
+          <View key={c} style={[lc.tag, { backgroundColor: `${stayColor}12`, borderColor: `${stayColor}28` }]}>
+            <Text style={[lc.tagText, { color: `${stayColor}bb` }]}>{c}</Text>
+          </View>
+        ))}
+      </View>
+      {entry.lat ? (
+        <TouchableOpacity onPress={() => openMaps(`${entry.name}, Jamestown NY`)} activeOpacity={0.7} style={lc.mapBtn}>
+          <Ionicons name="navigate-outline" size={11} color="rgba(255,255,255,0.4)" />
+          <Text style={lc.mapText}>Map it</Text>
+        </TouchableOpacity>
+      ) : null}
+    </ListCard>
+  );
+}
+
+function ParkListCard({ park }: { park: ParkEntry }) {
+  const { theme } = useTheme();
+  const rgb = PARK_COLOR[park.id];
+  const color = `rgb(${rgb})`;
+
+  return (
+    <ListCard name={park.name} address={park.address} color={color} visited={park.visited}>
+      <Text style={[lc.desc, { color: `rgba(${rgb},0.6)` }]}>"{park.quote}"</Text>
+      <View style={lc.tagsRow}>
+        {park.features.map(f => (
+          <View key={f} style={[lc.tag, { backgroundColor: `rgba(${rgb},0.1)`, borderColor: `rgba(${rgb},0.2)` }]}>
+            <Text style={[lc.tagText, { color: `rgba(${rgb},0.8)` }]}>{f}</Text>
+          </View>
+        ))}
+      </View>
+      {park.hasHistory && park.historyNote ? (
+        <Text style={[lc.histNote, { color: `rgba(${rgb},0.4)` }]}>{park.historyNote}</Text>
+      ) : null}
+      {park.hasDonate ? (
+        <TouchableOpacity
+          onPress={() => openLink('https://www.ywcajamestown.com/statuefund')}
+          style={[lc.donateBtn, { backgroundColor: `rgba(${rgb},0.07)`, borderColor: `rgba(${rgb},0.18)` }]}
+          activeOpacity={0.75}
+        >
+          <Ionicons name="heart-outline" size={12} color={theme.acc} />
+          <Text style={[lc.donateBtnText, { color: theme.acc }]}>Support the Lucille Ball Statue Fund →</Text>
+        </TouchableOpacity>
+      ) : null}
+      <TouchableOpacity onPress={() => openMaps(`${park.name}, ${park.address}`)} activeOpacity={0.7} style={lc.mapBtn}>
+        <Ionicons name="navigate-outline" size={11} color="rgba(255,255,255,0.4)" />
+        <Text style={lc.mapText}>Map it</Text>
+      </TouchableOpacity>
+    </ListCard>
+  );
+}
+
+const lc = StyleSheet.create({
+  desc:       { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, fontStyle: 'italic' },
+  hours:      { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)' },
+  links:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  link:       { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  mapBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  mapText:    { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '700' },
+  tagsRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag:        { borderWidth: 1, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 },
+  tagText:    { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.4 },
+  histNote:   { fontFamily: 'Outfit', fontSize: 10, lineHeight: 15 },
+  donateBtn:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 10 },
+  donateBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', flex: 1 },
+});
+
+// ─── Screen ────────────────────────────────────────────────────────
 export default function VisitScreen() {
   const { theme } = useTheme();
   const [active, setActive] = useState<FilterCat>('all');
+  const [search, setSearch] = useState('');
 
-  const filteredFavorites = active === 'all'
-    ? LOCAL_FAVORITES
-    : LOCAL_FAVORITES.filter(f => f.category === active);
+  const q = search.trim().toLowerCase();
 
-  const filteredApproved = PLACES
-    .filter(p => !EXCLUDE_FROM_APPROVED.has(p.id))
-    .map(p => ({ ...p, _cat: mapCategory(p) }))
-    .filter(p => active === 'all' || p._cat === active)
-    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  // Editor's Picks — filtered by category
+  const editorPicks = useMemo(() =>
+    LOCAL_FAVORITES.filter(f => active === 'all' || f.category === active),
+    [active]
+  );
 
-  const filteredAlso = active === 'all'
-    ? ALSO_IN_JAMESTOWN
-    : ALSO_IN_JAMESTOWN.filter(a => a.category === active);
+  // Places — filtered by category + search, exclude Editor's Picks IDs
+  const browsePlaces = useMemo(() => {
+    return PLACES
+      .filter(p => !EDITOR_PICKS_IDS.has(p.id))
+      .map(p => ({ ...p, _cat: mapCategory(p) }))
+      .filter(p => {
+        if (active !== 'all' && p._cat !== active) return false;
+        if (q) {
+          return (
+            p.name.toLowerCase().includes(q) ||
+            p.address?.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q)
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  }, [active, q]);
+
+  // Also in Jamestown — only for stay/all
+  const showAlso = active === 'all' || active === 'stay';
+  const filteredAlso = useMemo(() =>
+    !showAlso ? [] : q
+      ? ALSO_IN_JAMESTOWN.filter(e => e.name.toLowerCase().includes(q))
+      : ALSO_IN_JAMESTOWN,
+    [showAlso, q]
+  );
+
+  // Parks — only for do/all
+  const showParks = active === 'all' || active === 'do';
+  const filteredParks = useMemo(() =>
+    !showParks ? [] : q
+      ? PARKS.filter(p => p.name.toLowerCase().includes(q) || p.address.toLowerCase().includes(q))
+      : PARKS,
+    [showParks, q]
+  );
+
+  const hasBrowseContent = browsePlaces.length > 0 || filteredAlso.length > 0 || filteredParks.length > 0;
 
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        {/* Header */}
         <View style={styles.header}>
-          <View style={{ flex: 1, marginRight: 10 }}>
-            <Text style={[styles.title, { color: '#fff' }]}>Visit Jamestown</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Visit Jamestown</Text>
             <Text style={[styles.subtitle, { color: theme.acc }]}>Jamestown, NY</Text>
           </View>
-          {/* Approved lockup — icon only */}
-          <View style={[styles.approvedLockup, { borderColor: `rgba(${theme.accRGB},0.2)`, backgroundColor: `rgba(${theme.accRGB},0.08)` }]}>
-            <View style={[styles.approvedDot, { backgroundColor: theme.acc }]}>
-              <Ionicons name="checkmark" size={12} color="#000" />
-            </View>
-          </View>
+        </View>
+      </SafeAreaView>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* ── Search bar ──────────────────────────────────── */}
+        <View style={[styles.searchWrap, { borderColor: dark.border }]}>
+          <Ionicons name="search-outline" size={15} color="rgba(255,255,255,0.3)" />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search places…"
+            placeholderTextColor="rgba(255,255,255,0.25)"
+            style={styles.searchInput}
+            clearButtonMode="while-editing"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+              <Ionicons name="close-circle" size={15} color="rgba(255,255,255,0.3)" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Category filter pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
+        {/* ── Filter chips ────────────────────────────────── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+          style={{ marginBottom: 16 }}
+        >
           {FILTERS.map(f => {
             const isActive = active === f.key;
+            const catColor = f.key !== 'all' ? CAT_COLOR[f.key] : theme.acc;
             return (
               <TouchableOpacity
                 key={f.key}
                 onPress={() => setActive(f.key)}
                 activeOpacity={0.7}
-                style={[
-                  styles.catPill,
-                  isActive
-                    ? [styles.catActive, { backgroundColor: theme.acc }]
-                    : styles.catInactive,
-                ]}
+                style={[styles.chip, isActive && {
+                  backgroundColor: `${catColor}18`,
+                  borderColor: `${catColor}44`,
+                }]}
               >
-                <Text style={[
-                  styles.catText,
-                  isActive ? { color: theme.bg } : styles.catTextInactive,
-                ]}>
+                <Text style={[styles.chipText, isActive && { color: catColor }]}>
                   {f.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
-      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        {/* Featured Spot placeholder */}
-        <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured Spot</Text>
-        <View style={styles.partnerPlaceholder}>
-          <Ionicons name="checkmark-circle-outline" size={24} color="rgba(0,212,200,0.5)" />
-          <Text style={styles.partnerHeading}>Your business, right here</Text>
-          <Text style={styles.partnerSub}>
-            Featured spots are hand-picked and Chadakoin Approved. Prominent placement, seen by every visitor who opens the app.
-          </Text>
-          <Text style={[styles.partnerCta, { color: theme.acc, borderColor: `rgba(${theme.accRGB},0.25)` }]}>
-            Get in touch →
-          </Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* ── Local Favorites ─────────────────────────── */}
-        {filteredFavorites.length > 0 && (
+        {/* ── Editor's Picks ──────────────────────────────── */}
+        {editorPicks.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Local Favorites</Text>
-            {filteredFavorites.map(fav => <FavPanel key={fav.name} fav={fav} />)}
+            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Editor's Picks</Text>
+            {editorPicks.map(fav => <EditorPickCard key={fav.name} fav={fav} />)}
           </>
         )}
 
-        {filteredFavorites.length > 0 && filteredApproved.length > 0 && (
-          <View style={styles.divider} />
-        )}
-
-        {/* ── Chadakoin Approved ──────────────────────── */}
-        {filteredApproved.length > 0 && (
+        {/* ── Browse ──────────────────────────────────────── */}
+        {hasBrowseContent && (
           <>
-            <Text style={[styles.sectionLabel, { color: theme.acc }]}>chadakoindigital.com approved</Text>
-            {filteredApproved.map(place => <PlacePanel key={place.id} place={place} cat={place._cat} />)}
+            <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.45)` }]}>Browse</Text>
+
+            {browsePlaces.map(p => (
+              <PlaceListCard
+                key={p.id}
+                place={p}
+                color={CAT_COLOR[p._cat] ?? theme.acc}
+              />
+            ))}
+
+            {filteredAlso.length > 0 && (
+              <>
+                {browsePlaces.length > 0 && (
+                  <Text style={[styles.groupLabel, { color: 'rgba(255,255,255,0.2)' }]}>Where to stay</Text>
+                )}
+                {filteredAlso.map(e => <AlsoListCard key={e.name} entry={e} />)}
+              </>
+            )}
+
+            {filteredParks.length > 0 && (
+              <>
+                <Text style={[styles.groupLabel, { color: 'rgba(255,255,255,0.2)' }]}>Parks & history</Text>
+                {filteredParks.map(p => <ParkListCard key={p.id} park={p} />)}
+              </>
+            )}
           </>
         )}
 
-        {filteredAlso.length > 0 && (filteredFavorites.length > 0 || filteredApproved.length > 0) && (
-          <View style={styles.divider} />
+        {/* ── Cannabis / Shop rules ────────────────────────── */}
+        {active === 'shop' && (
+          <View style={[styles.cannabisBlock, { borderColor: `rgba(52,211,153,0.15)` }]}>
+            <View style={[styles.cannabisStripe, { backgroundColor: 'rgba(52,211,153,0.7)' }]} />
+            <View style={styles.cannabisInner}>
+              <Text style={[styles.cannabisHeading, { color: 'rgba(52,211,153,0.9)' }]}>
+                New York State · Adults 21+
+              </Text>
+              <View style={styles.cannabisCols}>
+                <View style={styles.cannabisCol}>
+                  <Text style={[styles.cannabisColLabel, { color: 'rgba(52,211,153,0.7)' }]}>You can</Text>
+                  {CANNABIS_RULES.can.map((item, i) => (
+                    <View key={i} style={styles.cannabisRow}>
+                      <Text style={[styles.cannabisBullet, { color: 'rgba(52,211,153,0.5)' }]}>·</Text>
+                      <Text style={styles.cannabisItem}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={[styles.cannabisDividerV, { backgroundColor: 'rgba(52,211,153,0.1)' }]} />
+                <View style={styles.cannabisCol}>
+                  <Text style={[styles.cannabisColLabel, { color: 'rgba(255,100,100,0.7)' }]}>You can't</Text>
+                  {CANNABIS_RULES.cannot.map((item, i) => (
+                    <View key={i} style={styles.cannabisRow}>
+                      <Text style={[styles.cannabisBullet, { color: 'rgba(255,100,100,0.5)' }]}>·</Text>
+                      <Text style={styles.cannabisItem}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <Text style={styles.cannabisFootnote}>{CANNABIS_RULES.note}</Text>
+            </View>
+          </View>
         )}
 
-        {/* ── Also in Jamestown ───────────────────────── */}
-        {filteredAlso.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.4)` }]}>Also in Jamestown</Text>
-            {filteredAlso.map(entry => <AlsoPanel key={entry.name} entry={entry} />)}
-          </>
+        {/* ── No results ──────────────────────────────────── */}
+        {!hasBrowseContent && editorPicks.length === 0 && (
+          <Text style={styles.emptyText}>No results for "{search}"</Text>
         )}
 
-        {/* ── Parks & History ──────────────────────────── */}
-        {active === 'all' && (
-          <>
-            <View style={styles.divider} />
-            <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.4)` }]}>Parks & History</Text>
-            {PARKS.map(park => <ParkCard key={park.id} park={park} />)}
-          </>
-        )}
+        {/* ── Footer CTA ──────────────────────────────────── */}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://chadakoindigital.com/featured')}
+          activeOpacity={0.75}
+          style={[styles.ctaCard, {
+            backgroundColor: `rgba(${theme.accRGB},0.05)`,
+            borderColor: `rgba(${theme.accRGB},0.15)`,
+          }]}
+        >
+          <View style={styles.ctaRow}>
+            <Ionicons name="storefront-outline" size={18} color={`rgba(${theme.accRGB},0.55)`} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ctaTitle, { color: `rgba(${theme.accRGB},0.7)` }]}>
+                Feature your business
+              </Text>
+              <Text style={[styles.ctaSub, { color: `rgba(${theme.accRGB},0.4)` }]}>
+                chadakoindigital.com/featured
+              </Text>
+            </View>
+            <Ionicons name="arrow-forward" size={14} color={`rgba(${theme.accRGB},0.3)`} />
+          </View>
+        </TouchableOpacity>
 
       </ScrollView>
     </ThemedBackground>
@@ -664,80 +723,57 @@ export default function VisitScreen() {
 const styles = StyleSheet.create({
   safeArea: { paddingHorizontal: 20 },
 
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 20, paddingBottom: 4 },
-  title:    { fontSize: 21, fontFamily: 'Syne', fontWeight: '700', letterSpacing: 0.1, color: '#fff' },
-  subtitle: { fontSize: 11, fontFamily: 'Outfit', letterSpacing: 1.2, marginTop: 3 },
+  header:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 20, paddingBottom: 8 },
+  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },
 
-  approvedLockup: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 20, width: 36, height: 36, flexShrink: 0 },
-  approvedDot:    { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-
-  catRow:          { flexDirection: 'row', marginBottom: 18, marginTop: 14, gap: 7 },
-  catPill:         { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20 },
-  catActive:       { borderWidth: 1, borderColor: 'transparent' },
-  catInactive:     { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  catText:         { fontSize: 12, fontFamily: 'Outfit', fontWeight: '700' },
-  catTextInactive: { color: 'rgba(255,255,255,0.45)' },
-
-  content: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 4 },
-
-  sectionLabel: { fontSize: 10, fontFamily: 'Outfit', fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10, marginTop: 4 },
-
-  partnerPlaceholder: {
-    borderWidth: 1.5, borderColor: 'rgba(0,212,200,0.2)', borderStyle: 'dashed',
-    borderRadius: 20, paddingVertical: 16, paddingHorizontal: 16,
-    alignItems: 'center', gap: 6, marginBottom: 14,
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: dark.surface, borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12,
   },
-  partnerHeading:   { fontSize: 13, fontFamily: 'Outfit', fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
-  partnerSub:       { fontSize: 11, fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', lineHeight: 16, textAlign: 'center' },
-  partnerCta:       { alignSelf: 'center', fontSize: 10, fontFamily: 'Outfit', fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', borderWidth: 1, borderRadius: 20, paddingVertical: 5, paddingHorizontal: 18, marginTop: 2 },
-
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 16 },
-
-  favImage:    { position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', resizeMode: 'cover', opacity: 0.55 },
-  favLinksRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  favMapBtn:   { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 4 },
-  favMapLabel: { fontSize: 11, fontFamily: 'Outfit', fontWeight: '700', letterSpacing: 0.4 },
-  favImageTop: { bottom: undefined, height: 160 },  // smaller height = less zoom, more of photo visible
-
-  // ── Shared panel (Local Favorites, Chadakoin Approved, Also in Jamestown) ──
-  placePanel:     { borderRadius: 16, overflow: 'hidden', marginBottom: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  placePanelGrad: { overflow: 'hidden', justifyContent: 'flex-end' },
-  placeTagsRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingLeft: 14, paddingRight: 8 },
-  placeMeta:      { fontSize: 9, fontFamily: 'Outfit', fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  placeExpanded:  { paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, gap: 10 },
-  placeDesc:      { fontSize: 11, fontFamily: 'Outfit', lineHeight: 17 },
-  placeLink:      { fontSize: 11, fontFamily: 'Outfit', fontWeight: '700' },
-
-  // ── Parks & History ──────────────────────────────
-  parkCard:   { marginHorizontal: -20, marginBottom: 2, overflow: 'hidden' },
-  parkPanel:  { overflow: 'hidden', justifyContent: 'flex-end' },
-  parkBadgeRow: { position: 'absolute', top: 10, right: 12, flexDirection: 'row', gap: 5 },
-  parkHistoryBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 5, paddingVertical: 2, paddingHorizontal: 7,
+  searchInput: {
+    flex: 1, fontFamily: 'Outfit', fontSize: 14, color: '#fff',
   },
-  parkHistoryText: { fontSize: 8, fontFamily: 'Outfit', fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.6, textTransform: 'uppercase' },
-  parkVisitedBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 5, paddingVertical: 2, paddingHorizontal: 7,
+
+  chipRow: { flexDirection: 'row', gap: 8 },
+  chip:    {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 20, borderWidth: 1,
+    backgroundColor: dark.surface, borderColor: dark.border,
   },
-  parkVisitedDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-  parkVisitedText: { fontSize: 8, fontFamily: 'Outfit', fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: 0.6, textTransform: 'uppercase' },
-  parkNameBlock:   { paddingHorizontal: 16, paddingBottom: 12 },
-  parkName:        { fontSize: 15, fontFamily: 'Syne', fontWeight: '700', color: '#fff', letterSpacing: -0.2 },
-  parkAddress:     { fontSize: 10, fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', marginTop: 2 },
-  parkTagsRow:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingLeft: 14, paddingRight: 8 },
-  parkTagsInner:   { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  parkTag:         { fontSize: 9, fontFamily: 'Outfit', fontWeight: '700', color: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, paddingVertical: 2, paddingHorizontal: 7, overflow: 'hidden', letterSpacing: 0.4 },
-  parkNavBtn:  { paddingVertical: 8, paddingHorizontal: 12 },
-  parkChevron: { paddingVertical: 8, paddingLeft: 4, paddingRight: 10 },
-  parkExpandedBlock: { paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, gap: 10 },
-  parkQuote:       { fontSize: 11, fontFamily: 'Outfit', color: 'rgba(255,255,255,0.45)', lineHeight: 17, fontStyle: 'italic' },
-  parkHistoryNote: { fontSize: 11, fontFamily: 'Outfit', color: 'rgba(255,255,255,0.3)', lineHeight: 17 },
-  parkDonate:      { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(100,120,255,0.08)', borderWidth: 1, borderColor: 'rgba(100,120,255,0.18)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10 },
-  parkDonateText:  { fontSize: 11, fontFamily: 'Outfit', fontWeight: '700', color: 'rgba(140,160,255,0.85)' },
+  chipText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+
+  content: { paddingHorizontal: 16, paddingBottom: 48, paddingTop: 4 },
+
+  sectionLabel: {
+    fontFamily: 'Outfit', fontSize: 10, fontWeight: '700',
+    letterSpacing: 1.2, textTransform: 'uppercase',
+    marginBottom: 10, marginTop: 4,
+  },
+  groupLabel: {
+    fontFamily: 'Outfit', fontSize: 10, fontWeight: '700',
+    letterSpacing: 1.2, textTransform: 'uppercase',
+    marginBottom: 8, marginTop: 12,
+  },
+
+  cannabisBlock: { borderTopWidth: 1, borderBottomWidth: 1, flexDirection: 'row', marginVertical: 8 },
+  cannabisStripe: { width: 3, flexShrink: 0 },
+  cannabisInner: { flex: 1, padding: 14, gap: 10 },
+  cannabisHeading: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  cannabisCols: { flexDirection: 'row', gap: 12 },
+  cannabisCol: { flex: 1, gap: 6 },
+  cannabisColLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 },
+  cannabisRow: { flexDirection: 'row', gap: 5 },
+  cannabisBullet: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, flexShrink: 0 },
+  cannabisItem: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 16, flex: 1 },
+  cannabisDividerV: { width: 1, alignSelf: 'stretch' },
+  cannabisFootnote: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.25)', lineHeight: 15 },
+
+  emptyText: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 32 },
+
+  ctaCard: { borderWidth: 1, borderRadius: 14, padding: 16, marginTop: 16 },
+  ctaRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  ctaTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  ctaSub:  { fontFamily: 'Outfit', fontSize: 11 },
 });

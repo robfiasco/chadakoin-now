@@ -1,0 +1,104 @@
+export interface ServiceDetail {
+  label: string;
+  value: string;
+}
+
+export type ServiceStatus = 'active' | 'coming-up' | 'year-round';
+
+export interface CityService {
+  id: string;
+  icon: string;        // Ionicons name
+  title: string;
+  badge: string;
+  badgeColor: string;  // hex — drives stripe + gradient
+  status: ServiceStatus;
+  summary: string;
+  details: ServiceDetail[];
+  tip?: string;
+}
+
+export const CITY_SERVICES: CityService[] = [
+  {
+    id: 'yardwaste',
+    icon: 'leaf-outline',
+    title: 'Yard Waste Site',
+    badge: 'OPEN NOW',
+    badgeColor: '#4DD9AC',
+    status: 'active',
+    summary: '1001 Monroe St · Sat from Apr 11 · Wed from May 13',
+    details: [
+      { label: 'Location',   value: '1001 Monroe St' },
+      { label: 'Saturdays',  value: 'Open now · 7am – 1pm' },
+      { label: 'Wednesdays', value: 'Starting May 13 · 7am – 1pm' },
+      { label: '2026 Sticker', value: '$20 · BPU Customer Service office' },
+      { label: 'Accepts',    value: 'Leaves, grass, brush, twigs, branches up to 8" diameter' },
+      { label: 'Note',       value: 'Residential BPU customers only. Sticker must be on rear driver-side window.' },
+    ],
+    tip: 'Yard waste bags with curbside pickup are $15 per 4 bags — no sticker needed.',
+  },
+  {
+    id: 'watermain',
+    icon: 'water-outline',
+    title: 'Water Main Flushing',
+    badge: 'SPRING 2026',
+    badgeColor: '#5B8DB8',
+    status: 'coming-up',
+    summary: 'Twice yearly · Spring & Fall · Check your zone',
+    details: [
+      { label: 'Schedule', value: 'Spring 2026 map posted at jamestownbpu.com' },
+      { label: 'Hotline',  value: '716-661-1613' },
+      { label: 'Notice',   value: 'BPU calls residents 2–5 days before flushing' },
+      { label: 'Coverage', value: 'Falconer, E. Ellicott, Jamestown, W. Ellicott, Celoron' },
+    ],
+    tip: 'Water may discolor briefly during flushing. Run cold water a few minutes until it clears. Hold off on laundry while flushing is active on your street.',
+  },
+  {
+    id: 'bulktrash',
+    icon: 'trash-outline',
+    title: 'Bulk Trash & Electronics',
+    badge: 'DATE TBD',
+    badgeColor: '#F5A623',
+    status: 'coming-up',
+    summary: 'Amnesty Day · City residents only · Free drop-off',
+    details: [
+      { label: '2026 Date',    value: 'Not yet announced — check back' },
+      { label: 'Last held at', value: 'Jackson-Taylor Park, Lafayette St lot' },
+      { label: 'Hours',        value: 'Typically 9am – 1pm' },
+      { label: 'Bring ID',     value: 'NYS ID, Yard Waste sticker, or BPU bill' },
+      { label: 'Not accepted', value: 'Tires, batteries, paint, chemicals, liquids' },
+    ],
+    tip: 'Old TVs, computers, and appliances are accepted. Good time to clear out the garage.',
+  },
+  {
+    id: 'leafcollection',
+    icon: 'cloudy-outline',
+    title: 'Leaf Collection',
+    badge: 'FALL 2026',
+    badgeColor: '#C9A84C',
+    status: 'coming-up',
+    summary: 'Curbside pickup · October – November · Two phases',
+    details: [
+      { label: '2026 Dates', value: 'Not yet announced — typically late October' },
+      { label: 'Phase 1',    value: 'Foote Ave, Martin Rd, Linwood Ave area' },
+      { label: 'Phase 2',    value: 'Foote Ave, Ivy St area moving west and north' },
+      { label: 'Rules',      value: 'Rake to terrace behind curb, not into street' },
+      { label: 'Not collected', value: 'Brush, hedge trimmings, garden debris, branches' },
+    ],
+    tip: 'Remove basketball hoops from the street before collection begins. No plastic bags or trash mixed in.',
+  },
+  {
+    id: 'syringes',
+    icon: 'medkit-outline',
+    title: 'Sharps / Syringe Disposal',
+    badge: 'YEAR ROUND',
+    badgeColor: '#FF6B8A',
+    status: 'year-round',
+    summary: 'UPMC Chautauqua · Emergency entrance · 24/7',
+    details: [
+      { label: 'Location',  value: 'UPMC Chautauqua Hospital — Security Desk, Emergency Entrance' },
+      { label: 'Hours',     value: '24 hours a day, 7 days a week' },
+      { label: 'Container', value: 'Must be in a sharps container or sealed puncture-proof plastic' },
+    ],
+    tip: 'Sealed milk jugs or soda bottles work as a sharps container — just label it clearly.',
+  },
+];

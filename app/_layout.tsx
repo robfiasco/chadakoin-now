@@ -53,7 +53,7 @@ function AppLayout() {
         onPageSelected={(e) => setActivePage(e.nativeEvent.position)}
         overdrag
       >
-        <View key="home"   style={{ flex: 1 }}><HomeScreen /></View>
+        <View key="home"   style={{ flex: 1 }}><HomeScreen onNavigateToTab={goToPage} /></View>
         <View key="sports" style={{ flex: 1 }}><SportsScreen /></View>
         <View key="news"   style={{ flex: 1 }}><NewsScreen /></View>
         <View key="events" style={{ flex: 1 }}><EventsScreen /></View>
