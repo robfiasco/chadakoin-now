@@ -688,11 +688,26 @@ export default function SportsScreen() {
               <SkeletonPulse width="50%" height={14} borderRadius={4} accRGB="96,165,250" />
             ) : data?.playoffSeries ? (() => {
               const ps = data.playoffSeries!;
-              const seriesStr = ps.bufWins === ps.oppWins
-                ? ps.bufWins === 0 ? 'Series not started' : `Tied ${ps.bufWins}–${ps.oppWins}`
-                : ps.bufWins > ps.oppWins
-                  ? `BUF leads ${ps.bufWins}–${ps.oppWins}`
-                  : `${ps.opponent} leads ${ps.oppWins}–${ps.bufWins}`;
+              // When series hasn't started, show Game 1 date/time from nextGame
+              const seriesNotStarted = ps.bufWins === 0 && ps.oppWins === 0;
+              let seriesStr: string;
+              if (seriesNotStarted && data.nextGame?.date) {
+                const g1 = new Date(data.nextGame.date);
+                const today = new Date(); today.setHours(0,0,0,0);
+                const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+                const gDay = new Date(g1); gDay.setHours(0,0,0,0);
+                const dayLabel = gDay.getTime() === today.getTime() ? 'Today'
+                  : gDay.getTime() === tomorrow.getTime() ? 'Tomorrow'
+                  : g1.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const timeLabel = g1.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                seriesStr = `Game 1 · ${dayLabel} ${timeLabel}`;
+              } else if (ps.bufWins === ps.oppWins) {
+                seriesStr = `Tied ${ps.bufWins}–${ps.oppWins}`;
+              } else if (ps.bufWins > ps.oppWins) {
+                seriesStr = `BUF leads ${ps.bufWins}–${ps.oppWins}`;
+              } else {
+                seriesStr = `${ps.opponent} leads ${ps.oppWins}–${ps.bufWins}`;
+              }
               return (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <View style={[styles.playoffsBadge, { borderColor: `${ACC.sabres}40`, backgroundColor: `${ACC.sabres}15` }]}>
