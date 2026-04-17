@@ -24,11 +24,17 @@ interface JCCResult { date: string; sport: string; opponent: string; isHome: boo
 interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
 interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; isHome: boolean; }
 interface MLBTeam     { id: number; name: string; abbr: string; record?: string; games: MLBGame[]; nextGame?: MLBNextGame | null; }
+interface PlayoffSeries {
+  round: number; roundLabel: string;
+  opponent: string; bufWins: number; oppWins: number; neededToWin: number;
+}
 interface SabresData {
   record: string; standing: string; points?: number;
   wins?: number; losses?: number; otLosses?: number;
   recentGame?: GameResult; nextGame?: GameResult;
-  topScorers?: Scorer[]; jcc?: JCCResult[]; mlb?: MLBTeam[]; news: any[];
+  topScorers?: Scorer[]; jcc?: JCCResult[]; mlb?: MLBTeam[];
+  playoffSeries?: PlayoffSeries | null;
+  news: any[];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -221,19 +227,48 @@ async function fetchJCCNative(): Promise<JCCResult[]> {
   } catch { return []; }
 }
 
+async function fetchPlayoffSeries(): Promise<PlayoffSeries | null> {
+  try {
+    const year = new Date().getFullYear();
+    const seasonId = `${year - 1}${year}`;
+    const res = await fetch(`https://api-web.nhle.com/v1/playoff-series/carousel/${seasonId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    for (const round of (data.rounds ?? [])) {
+      for (const series of (round.series ?? [])) {
+        const top = series.topSeed ?? {};
+        const bot = series.bottomSeed ?? {};
+        if (top.abbrev === 'BUF' || bot.abbrev === 'BUF') {
+          const bufWins = top.abbrev === 'BUF' ? top.wins : bot.wins;
+          const oppWins = top.abbrev === 'BUF' ? bot.wins : top.wins;
+          return {
+            round: round.roundNumber,
+            roundLabel: round.roundLabel ?? `Round ${round.roundNumber}`,
+            opponent: top.abbrev === 'BUF' ? bot.abbrev : top.abbrev,
+            bufWins, oppWins,
+            neededToWin: series.neededToWin ?? 4,
+          };
+        }
+      }
+    }
+    return null;
+  } catch { return null; }
+}
+
 async function fetchSabres(): Promise<SabresData> {
   if (Platform.OS === 'web') {
     const [sabresRes, mlbRes] = await Promise.all([fetch('/api/sabres'), fetchMLB()]);
     if (!sabresRes.ok) throw new Error('Sabres API failed');
     const json = await sabresRes.json();
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc: json.jcc ?? [], mlb: mlbRes, news: [] };
+    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc: json.jcc ?? [], mlb: mlbRes, playoffSeries: json.playoffSeries ?? null, news: [] };
   }
-  const [schedRes, standRes, statsRes, jcc, mlb] = await Promise.all([
+  const [schedRes, standRes, statsRes, jcc, mlb, playoffSeries] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
     fetch('https://api-web.nhle.com/v1/standings/now'),
     fetch('https://api-web.nhle.com/v1/club-stats/BUF/now'),
     fetchJCCNative(),
     fetchMLB(),
+    fetchPlayoffSeries(),
   ]);
   const schedJson = await schedRes.json();
   const standJson = standRes.ok ? await standRes.json() : null;
@@ -264,7 +299,7 @@ async function fetchSabres(): Promise<SabresData> {
       points: p.points ?? 0,
       headshot: p.headshot ?? '',
     }));
-  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, mlb, news: [] };
+  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, mlb, playoffSeries, news: [] };
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -645,13 +680,30 @@ export default function SportsScreen() {
             <Image source={{ uri: SABRES_LOGO }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
           name="Buffalo Sabres"
-          subtitle="NHL · Atlantic Division"
+          subtitle={data?.playoffSeries ? `NHL · ${data.playoffSeries.roundLabel.replace(/-/g, ' ')} · Playoffs` : 'NHL · Atlantic Division'}
           defaultOpen={false}
           glassWeb={glassWeb}
           glanceRow={
             loading ? (
               <SkeletonPulse width="50%" height={14} borderRadius={4} accRGB="96,165,250" />
-            ) : data?.record ? (
+            ) : data?.playoffSeries ? (() => {
+              const ps = data.playoffSeries!;
+              const seriesStr = ps.bufWins === ps.oppWins
+                ? ps.bufWins === 0 ? 'Series not started' : `Tied ${ps.bufWins}–${ps.oppWins}`
+                : ps.bufWins > ps.oppWins
+                  ? `BUF leads ${ps.bufWins}–${ps.oppWins}`
+                  : `${ps.opponent} leads ${ps.oppWins}–${ps.bufWins}`;
+              return (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <View style={[styles.playoffsBadge, { borderColor: `${ACC.sabres}40`, backgroundColor: `${ACC.sabres}15` }]}>
+                    <Text style={[styles.playoffsBadgeText, { color: ACC.sabres }]}>🏒 PLAYOFFS</Text>
+                  </View>
+                  <Text style={[styles.glanceText, { color: dark.text.muted }]}>vs {ps.opponent}</Text>
+                  <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
+                  <Text style={[styles.glanceText, { color: ACC.sabres, fontWeight: '700' }]}>{seriesStr}</Text>
+                </View>
+              );
+            })() : data?.record ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={[styles.glanceText, { color: ACC.sabres, fontWeight: '700' }]}>{data.record}</Text>
                 {data.points ? (
@@ -916,4 +968,7 @@ const styles = StyleSheet.create({
   mlbRecord:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
 
   source: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', color: 'rgba(255,255,255,0.18)' },
+
+  playoffsBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  playoffsBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
 });

@@ -68,18 +68,51 @@ async function fetchJCC(signal) {
   }
 }
 
+async function fetchPlayoffSeries(signal) {
+  try {
+    const now = new Date();
+    // Season ID: playoffs run Apr–Jun, season = prior year + current year
+    const year = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear();
+    const seasonId = `${year - 1}${year}`;
+    const res = await fetch(`https://api-web.nhle.com/v1/playoff-series/carousel/${seasonId}`, { signal });
+    if (!res.ok) return null;
+    const data = await res.json();
+    for (const round of (data.rounds ?? [])) {
+      for (const series of (round.series ?? [])) {
+        const top = series.topSeed ?? {};
+        const bot = series.bottomSeed ?? {};
+        if (top.abbrev === 'BUF' || bot.abbrev === 'BUF') {
+          const bufWins = top.abbrev === 'BUF' ? top.wins : bot.wins;
+          const oppWins = top.abbrev === 'BUF' ? bot.wins : top.wins;
+          const oppAbbrev = top.abbrev === 'BUF' ? bot.abbrev : top.abbrev;
+          return {
+            round: round.roundNumber,
+            roundLabel: round.roundLabel ?? `Round ${round.roundNumber}`,
+            opponent: oppAbbrev,
+            bufWins,
+            oppWins,
+            neededToWin: series.neededToWin ?? 4,
+          };
+        }
+      }
+    }
+    return null;
+  } catch { return null; }
+}
+
 export default async function handler(req, res) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    let schedRes, standRes, statsRes, jccResults;
+    let schedRes, standRes, statsRes, jccResults, playoffSeries;
     try {
-      [schedRes, standRes, statsRes, jccResults] = await Promise.all([
+      [schedRes, standRes, statsRes, jccResults, playoffSeries] = await Promise.all([
         fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now', { signal: controller.signal }),
         fetch('https://api-web.nhle.com/v1/standings/now', { signal: controller.signal }),
         fetch('https://api-web.nhle.com/v1/club-stats/BUF/now', { signal: controller.signal }),
         fetchJCC(controller.signal),
+        fetchPlayoffSeries(controller.signal),
       ]);
     } finally {
       clearTimeout(timeout);
@@ -163,10 +196,11 @@ export default async function handler(req, res) {
     const result = {
       record,
       standing,
-      recentGame: parseGame(past[0]),
-      nextGame:   parseGame(live[0] ?? upcoming[0]),
+      recentGame:    parseGame(past[0]),
+      nextGame:      parseGame(live[0] ?? upcoming[0]),
       topScorers,
-      jcc: jccResults,
+      jcc:           jccResults,
+      playoffSeries: playoffSeries ?? null,
       news: [],
     };
 
