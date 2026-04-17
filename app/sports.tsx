@@ -180,7 +180,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
             }
           }
         }
-        return { ...t, games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5), nextGame, record: standingsMap[t.id] ?? '' };
+        return { ...t, games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10), nextGame, record: standingsMap[t.id] ?? '' };
       } catch { return { ...t, games: [], nextGame: null, record: '' }; }
     }));
     return results;
@@ -980,22 +980,62 @@ export default function SportsScreen() {
                               <Text style={[styles.mlbExpandText, { color: dark.text.muted }]}>{nextStr.split('· ')[1] ?? ''}</Text>
                             </View>
                           )}
-                          {t.games.length > 0 && (
-                            <>
-                              <Text style={[styles.mlbExpandLabel, { color: dark.text.subtle, marginTop: ng ? 10 : 0, marginBottom: 6 }]}>Last {t.games.length} Games</Text>
-                              {t.games.map((g, gi) => {
-                                const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                return (
-                                  <View key={gi} style={styles.mlbGameRow}>
-                                    <Text style={[styles.mlbGameResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.won ? 'W' : 'L'}</Text>
-                                    <Text style={[styles.mlbExpandText, { color: dark.text.muted, width: 60 }]}>{g.isHome ? 'vs' : '@'} {g.opponent.split(' ').pop()}</Text>
-                                    <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '600' }]}>{g.ourScore}–{g.theirScore}</Text>
-                                    <Text style={[styles.mlbExpandText, { color: dark.text.subtle, marginLeft: 'auto' }]}>{dateStr}</Text>
+                          {t.games.length > 0 && (() => {
+                            // Compute stats from all fetched games
+                            const rs = t.games.reduce((s, g) => s + g.ourScore, 0);
+                            const ra = t.games.reduce((s, g) => s + g.theirScore, 0);
+                            const n  = t.games.length;
+                            const diff = rs - ra;
+                            // Streak: consecutive W or L from most recent
+                            const streakChar = t.games[0].won ? 'W' : 'L';
+                            let streakCount = 0;
+                            for (const g of t.games) {
+                              if (g.won === t.games[0].won) streakCount++; else break;
+                            }
+                            const streakLabel = `${streakChar}${streakCount}`;
+                            const streakColor = t.games[0].won ? ACC.jcc : '#fb7185';
+                            const diffColor   = diff > 0 ? ACC.jcc : diff < 0 ? '#fb7185' : dark.text.muted;
+                            const last3 = t.games.slice(0, 3);
+                            return (
+                              <>
+                                {/* Stats strip */}
+                                <View style={[styles.mlbStatsStrip, { marginTop: ng ? 10 : 0, borderColor: 'rgba(167,139,250,0.12)' }]}>
+                                  <View style={styles.mlbStatCell}>
+                                    <Text style={[styles.mlbStatVal, { color: streakColor }]}>{streakLabel}</Text>
+                                    <Text style={styles.mlbStatLbl}>Streak</Text>
                                   </View>
-                                );
-                              })}
-                            </>
-                          )}
+                                  <View style={styles.mlbStatDivider} />
+                                  <View style={styles.mlbStatCell}>
+                                    <Text style={[styles.mlbStatVal, { color: diffColor }]}>{diff > 0 ? '+' : ''}{diff}</Text>
+                                    <Text style={styles.mlbStatLbl}>Run Diff</Text>
+                                  </View>
+                                  <View style={styles.mlbStatDivider} />
+                                  <View style={styles.mlbStatCell}>
+                                    <Text style={styles.mlbStatVal}>{(rs / n).toFixed(1)}</Text>
+                                    <Text style={styles.mlbStatLbl}>RS/G</Text>
+                                  </View>
+                                  <View style={styles.mlbStatDivider} />
+                                  <View style={styles.mlbStatCell}>
+                                    <Text style={styles.mlbStatVal}>{(ra / n).toFixed(1)}</Text>
+                                    <Text style={styles.mlbStatLbl}>RA/G</Text>
+                                  </View>
+                                </View>
+                                {/* Last 3 games */}
+                                <Text style={[styles.mlbExpandLabel, { color: dark.text.subtle, marginTop: 12, marginBottom: 6 }]}>Last 3 Games</Text>
+                                {last3.map((g, gi) => {
+                                  const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                  return (
+                                    <View key={gi} style={styles.mlbGameRow}>
+                                      <Text style={[styles.mlbGameResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.won ? 'W' : 'L'}</Text>
+                                      <Text style={[styles.mlbExpandText, { color: dark.text.muted, width: 60 }]}>{g.isHome ? 'vs' : '@'} {g.opponent.split(' ').pop()}</Text>
+                                      <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '600' }]}>{g.ourScore}–{g.theirScore}</Text>
+                                      <Text style={[styles.mlbExpandText, { color: dark.text.subtle, marginLeft: 'auto' }]}>{dateStr}</Text>
+                                    </View>
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
                         </View>
                       )}
                       {i < (data?.mlb?.length ?? 0) - 1 && (
@@ -1126,6 +1166,16 @@ const styles = StyleSheet.create({
   mlbTeamName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
   mlbNext:     { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
   mlbRecord:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
+
+  // MLB stats strip
+  mlbStatsStrip: {
+    flexDirection: 'row', borderWidth: 1, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.02)', overflow: 'hidden',
+  },
+  mlbStatCell:    { flex: 1, alignItems: 'center', paddingVertical: 10 },
+  mlbStatVal:     { fontFamily: 'DMSans_700Bold', fontSize: 14, color: '#fff' },
+  mlbStatLbl:     { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8, marginTop: 2, textTransform: 'uppercase' },
+  mlbStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 8 },
 
   // MLB expanded detail
   mlbExpanded:     { paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: 1, backgroundColor: 'rgba(255,255,255,0.02)' },

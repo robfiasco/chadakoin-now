@@ -66,10 +66,7 @@ export default function FeedbackScreen({ onClose, initialType = 'general' }: { o
       <View style={s.container}>
         <SafeAreaView edges={['top']} style={s.header}>
           <View style={s.headerRow}>
-            <View>
-              <Text style={s.title}>Send feedback</Text>
-              <Text style={s.subtitle}>Goes straight to Rob</Text>
-            </View>
+            <Text style={s.title}>Send feedback</Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
             </TouchableOpacity>
@@ -215,7 +212,6 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 40, borderBottomWidth: 1, borderBottomColor: dark.border },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   title: { fontFamily: 'Syne', fontSize: 24, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
-  subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: ACC, letterSpacing: 1.8, textTransform: 'uppercase', marginTop: 4 },
   closeBtn: {
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.07)',
