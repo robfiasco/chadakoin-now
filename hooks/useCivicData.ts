@@ -90,8 +90,10 @@ const FEEDS = {
   eventsFallback: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Jamestown-Board-Meeting-Calendar-23',
   news: 'https://www.wrfalp.com/feed/',
   cityNews: 'https://www.jamestownny.gov/feed/',
+  postJournal: 'https://www.postjournal.com/feed/',
   wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
   wgrzWNY:    'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
+  spectrumWNY: 'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
   library: 'https://prendergastlibrary.org/feed/',
   lotd: 'https://rss.libsyn.com/shows/66268/destinations/266592.xml',
   regLenna: 'https://reglenna.com/events?format=json',
@@ -1069,12 +1071,14 @@ async function fetchNews(): Promise<NewsItem[]> {
   const cached = await getCached<NewsItem[]>('news', TTL.news);
   if (cached) return cached;
 
-  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes] = await Promise.allSettled([
+  const [wrfaRes, cityRes, jacksonRes, postJournalRes, wgrzSportsRes, wgrzWNYRes, spectrumRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
     fetch(proxyUrl(FEEDS.cityNews)),
     fetch(proxyUrl(FEEDS.jackson)),
+    fetch(proxyUrl(FEEDS.postJournal)),
     fetch(proxyUrl(FEEDS.wgrzSports)),
     fetch(proxyUrl(FEEDS.wgrzWNY)),
+    fetch(proxyUrl(FEEDS.spectrumWNY)),
   ]);
 
   function toNewsItems(raw: string, limit: number, source: string): NewsItem[] {
@@ -1125,6 +1129,10 @@ async function fetchNews(): Promise<NewsItem[]> {
       }));
   }
 
+  const postJournalItems = postJournalRes.status === 'fulfilled' && postJournalRes.value.ok
+    ? toNewsItems(await postJournalRes.value.text(), 5, 'Post-Journal')
+    : [];
+
   const wgrzSportsItems = wgrzSportsRes.status === 'fulfilled' && wgrzSportsRes.value.ok
     ? toWGRZItems(await wgrzSportsRes.value.text(), 'WGRZ')
     : [];
@@ -1133,16 +1141,21 @@ async function fetchNews(): Promise<NewsItem[]> {
     ? toWGRZItems(await wgrzWNYRes.value.text(), 'WGRZ')
     : [];
 
+  const spectrumItems = spectrumRes.status === 'fulfilled' && spectrumRes.value.ok
+    ? toWGRZItems(await spectrumRes.value.text(), 'Spectrum News')
+    : [];
+
   const seen = new Set(wrfaItems.map(n => n.title.toLowerCase()));
   const addUnique = (items: NewsItem[]) =>
     items.filter(n => !seen.has(n.title.toLowerCase()) && seen.add(n.title.toLowerCase()));
 
   const news: NewsItem[] = [
     ...wrfaItems,
+    ...addUnique(postJournalItems),
     ...addUnique(cityItems),
     ...addUnique(jacksonItems),
-    ...addUnique([...wgrzSportsItems, ...wgrzWNYItems]),
-  ].slice(0, 12);
+    ...addUnique([...wgrzSportsItems, ...wgrzWNYItems, ...spectrumItems]),
+  ].slice(0, 18);
 
   await setCache('news', news);
   return news;
