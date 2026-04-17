@@ -1,7 +1,8 @@
 // Regional MLB data via MLB Stats API (free, no key required)
-// Teams: Cleveland Guardians, Toronto Blue Jays, Pittsburgh Pirates, New York Yankees
+// Teams: New York Mets, Cleveland Guardians, Toronto Blue Jays, Pittsburgh Pirates, New York Yankees
 
 const TEAMS = [
+  { id: 121, name: 'Mets',      abbr: 'NYM' },
   { id: 114, name: 'Guardians', abbr: 'CLE' },
   { id: 141, name: 'Blue Jays', abbr: 'TOR' },
   { id: 134, name: 'Pirates',   abbr: 'PIT' },
