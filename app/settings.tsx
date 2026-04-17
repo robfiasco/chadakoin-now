@@ -15,7 +15,6 @@ const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
   { id: 'recycling', label: 'Recycling reminders',  sub: 'Day-before pickup alerts' },
   { id: 'news',      label: 'Breaking news',        sub: 'Jamestown & Chautauqua County' },
   { id: 'events',    label: 'Events & activities',  sub: 'New events added nearby' },
-  { id: 'lotd',      label: 'LOTD podcast drops',   sub: 'New episodes' },
 ];
 
 type IoniconName = keyof typeof Ionicons.glyphMap;

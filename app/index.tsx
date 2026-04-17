@@ -556,52 +556,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
 
         {/* LOTD */}
-        {(civic.loading || civic.latestEpisode) && (
-          civic.loading ? (
-            // @ts-ignore
-            <View style={[styles.mediaCard, glassWeb]}>
-              <SkeletonPulse width={52} height={52} borderRadius={12} accRGB={theme.accRGB} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB={theme.accRGB} />
-                <SkeletonPulse width="45%" height={11} borderRadius={4} accRGB={theme.accRGB} />
-              </View>
-            </View>
-          ) : civic.latestEpisode ? (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => WebBrowser.openBrowserAsync(civic.latestEpisode!.pageUrl).catch(() => {})}
-              accessibilityLabel={`Play episode: ${civic.latestEpisode.title}`}
-              // @ts-ignore
-              style={[styles.mediaCard, glassWeb]}
-            >
-              <View style={[styles.mediaArt, { backgroundColor: 'rgba(52,211,153,0.1)', borderColor: 'rgba(52,211,153,0.15)' }]}>
-                <Image
-                  source={{ uri: civic.latestEpisode.artworkUrl }}
-                  style={StyleSheet.absoluteFill as any}
-                  resizeMode="cover"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.mediaLabelRow}>
-                  <Text style={[styles.mediaLabel, { color: '#34d399' }]}>LOTD</Text>
-                  {civic.latestEpisode.episodeNumber ? (
-                    <Text style={styles.epNumber}>Ep. {civic.latestEpisode.episodeNumber}</Text>
-                  ) : null}
-                </View>
-                <Text style={styles.mediaTitle} numberOfLines={1}>{civic.latestEpisode.title}</Text>
-                {civic.latestEpisode.duration ? (
-                  <Text style={styles.mediaSub}>{civic.latestEpisode.duration} · Latest episode</Text>
-                ) : null}
-              </View>
-              <View style={[styles.playBtn, {
-                backgroundColor: 'rgba(52,211,153,0.1)',
-                borderWidth: 1, borderColor: 'rgba(52,211,153,0.3)',
-              }]}>
-                <Ionicons name="play" size={16} color="#34d399" />
-              </View>
-            </TouchableOpacity>
-          ) : null
-        )}
 
         {/* ── Did You Know? ──────────────────────────────── */}
         <View style={styles.sectionHeader}>
