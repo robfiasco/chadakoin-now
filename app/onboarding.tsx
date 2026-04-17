@@ -229,7 +229,8 @@ export default function OnboardingScreen({ onDone }: Props) {
             <View style={styles.pickerTop}>
               <View style={styles.lockup}>
                 <View style={styles.lockupIcon}>
-                  <Ionicons name="location" size={18} color={ACC} />
+                  <Text style={styles.lockupC}>C</Text>
+                  <Text style={styles.lockupN}>N</Text>
                 </View>
                 <Text style={styles.lockupText}>
                   Chadakoin <Text style={{ color: ACC }}>Now</Text>
@@ -297,9 +298,13 @@ const styles = StyleSheet.create({
   lockup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   lockupIcon: {
     width: 36, height: 36, borderRadius: 10,
-    backgroundColor: `${ACC}18`,
-    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#0f0b08',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 1,
   },
+  lockupC: { fontFamily: Platform.OS === 'web' ? 'Cormorant Garamond' : 'Georgia', fontSize: 18, fontWeight: '500', color: '#4a6fa5', lineHeight: 22 },
+  lockupN: { fontFamily: Platform.OS === 'web' ? 'Cormorant Garamond' : 'Georgia', fontSize: 18, fontWeight: '500', color: '#d1d5db', lineHeight: 22 },
   lockupText: { fontFamily: 'DMSans_600SemiBold', fontSize: 16, color: '#fff' },
   pickerMiddle: { flex: 1, justifyContent: 'center', paddingVertical: 16 },
   pickerHeadline: {
