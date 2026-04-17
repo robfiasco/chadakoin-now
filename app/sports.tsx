@@ -542,7 +542,9 @@ export default function SportsScreen() {
                       <View style={styles.nextUpLogoRow}>
                         {/* Our team */}
                         <View style={styles.nextUpLogoCol}>
-                          <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                          <View style={styles.nextUpLogoBg}>
+                            <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                          </View>
                           <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
                         </View>
                         {/* Divider + connector */}
@@ -555,13 +557,13 @@ export default function SportsScreen() {
                         </LinearGradient>
                         {/* Opponent — show logo if available, else dim abbr placeholder */}
                         <View style={styles.nextUpLogoCol}>
-                          {nextUp.oppLogoUrl ? (
-                            <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
-                          ) : (
-                            <View style={[styles.nextUpHeaderLogo, { alignItems: 'center', justifyContent: 'center' }]}>
+                          <View style={styles.nextUpLogoBg}>
+                            {nextUp.oppLogoUrl ? (
+                              <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                            ) : (
                               <Text style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: '800', color: 'rgba(255,255,255,0.25)' }}>{rightLabel}</Text>
-                            </View>
-                          )}
+                            )}
+                          </View>
                           <Text style={[styles.nextUpLogoLabel, { color: 'rgba(255,255,255,0.45)' }]}>{rightLabel}</Text>
                         </View>
                       </View>
@@ -1085,6 +1087,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24,
   },
   nextUpLogoCol: { alignItems: 'center', gap: 6 },
+  nextUpLogoBg: {
+    width: 76, height: 76, borderRadius: 38,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center', justifyContent: 'center',
+  },
   nextUpHeaderLogo: { width: 72, height: 72, flexShrink: 0 },
   nextUpLogoLabel: { fontFamily: 'Syne', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   nextUpVsDivider: { flex: 1, height: 1, alignItems: 'center', justifyContent: 'center' },
