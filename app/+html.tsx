@@ -15,14 +15,14 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <ScrollViewStyleReset />
         <meta name="description" content="Whether you're here for the weekend or the rest of your life — your guide to Jamestown, NY." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://now.chadakoindigital.com" />
+        <meta property="og:url" content="https://chadakoin-now.vercel.app" />
         <meta property="og:title" content="Chadakoin Now" />
         <meta property="og:description" content="Whether you're here for the weekend or the rest of your life — your guide to Jamestown, NY." />
-        <meta property="og:image" content="https://now.chadakoindigital.com/apple-touch-icon.png" />
+        <meta property="og:image" content="https://chadakoin-now.vercel.app/apple-touch-icon.png" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Chadakoin Now" />
         <meta name="twitter:description" content="Whether you're here for the weekend or the rest of your life — your guide to Jamestown, NY." />
-        <meta name="twitter:image" content="https://now.chadakoindigital.com/apple-touch-icon.png" />
+        <meta name="twitter:image" content="https://chadakoin-now.vercel.app/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Chadakoin Now" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
