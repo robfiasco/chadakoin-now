@@ -319,6 +319,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   <Text style={styles.weatherCondition}>{weather.condition}</Text>
                   <Text style={styles.weatherInline}>
                     H {weather.high} · L {weather.low} · Rain {weather.precip}
+                    {weather.precipAt ? ` · ~${weather.precipAt}` : ''}
                   </Text>
                 </View>
                 <Text style={styles.weatherIcon}>{weather.icon}</Text>

@@ -60,12 +60,28 @@ async function fetchFromOpenMeteo(): Promise<WeatherData> {
     `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${LAT}&longitude=${LON}` +
     `&current=temperature_2m,weathercode,windspeed_10m` +
+    `&hourly=precipitation_probability` +
     `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
-    `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York`;
+    `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York` +
+    `&forecast_days=2`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error('Open-Meteo fetch failed');
   const json = await res.json();
+
+  // Find the next hour with >= 40% precip probability
+  const nowIso = new Date().toISOString();
+  const hourlyTimes: string[] = json.hourly?.time ?? [];
+  const hourlyProbs: number[] = json.hourly?.precipitation_probability ?? [];
+  let precipAt: string | null = null;
+  for (let i = 0; i < hourlyTimes.length; i++) {
+    if (hourlyTimes[i] > nowIso && hourlyProbs[i] >= 40) {
+      const dt = new Date(hourlyTimes[i]);
+      const h = dt.getHours() % 12 || 12;
+      precipAt = `${h} ${dt.getHours() >= 12 ? 'PM' : 'AM'}`;
+      break;
+    }
+  }
 
   return {
     temp: `${Math.round(json.current.temperature_2m)}°`,
@@ -73,6 +89,7 @@ async function fetchFromOpenMeteo(): Promise<WeatherData> {
     high: `${Math.round(json.daily.temperature_2m_max[0])}°`,
     low: `${Math.round(json.daily.temperature_2m_min[0])}°`,
     precip: `${json.daily.precipitation_probability_max[0] ?? 0}%`,
+    precipAt,
     wind: `${Math.round(json.current.windspeed_10m)} mph`,
     icon: omCodeToIcon(json.current.weathercode),
   };
