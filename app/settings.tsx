@@ -20,7 +20,6 @@ const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
-  { id: 'news',     label: "What's new",     icon: 'sparkles-outline'      },
   { id: 'feedback', label: 'Send feedback',  icon: 'chatbubble-outline'    },
   { id: 'privacy',  label: 'Privacy policy', icon: 'shield-outline'        },
   { id: 'terms',    label: 'Terms of use',   icon: 'document-text-outline' },
