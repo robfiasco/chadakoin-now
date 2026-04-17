@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Modal,
+  View, Text, ScrollView, StyleSheet,
   TouchableOpacity, Linking, Switch, Animated, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,23 +35,22 @@ export default function SettingsScreen() {
 
   // Theme description sheet
   const [descTheme, setDescTheme] = useState<Theme | null>(null);
-  const slideAnim = useRef(new Animated.Value(400)).current;
+  const slideAnim   = useRef(new Animated.Value(400)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
 
   function openDesc(t: Theme) {
     setDescTheme(t);
-    Animated.timing(slideAnim, {
-      toValue: 0, duration: 320,
-      useNativeDriver: true,
-      easing: Easing.out(Easing.cubic),
-    }).start();
+    Animated.parallel([
+      Animated.timing(slideAnim,   { toValue: 0, duration: 320, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(backdropAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+    ]).start();
   }
 
   function closeDesc() {
-    Animated.timing(slideAnim, {
-      toValue: 400, duration: 240,
-      useNativeDriver: true,
-      easing: Easing.in(Easing.ease),
-    }).start(() => setDescTheme(null));
+    Animated.parallel([
+      Animated.timing(slideAnim,   { toValue: 400, duration: 240, useNativeDriver: true, easing: Easing.in(Easing.ease) }),
+      Animated.timing(backdropAnim, { toValue: 0,   duration: 200, useNativeDriver: true }),
+    ]).start(() => setDescTheme(null));
   }
 
   return (
@@ -178,34 +177,30 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* ── Theme description bottom sheet ─────────────── */}
-      <Modal visible={!!descTheme} transparent animationType="fade" onRequestClose={closeDesc}>
-        <View style={styles.sheetOverlay}>
+      {/* In-tree overlay so it renders inside the app container on web */}
+      {!!descTheme && (
+        <View style={styles.sheetContainer}>
+          {/* Animated backdrop */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.sheetBackdrop, { opacity: backdropAnim }]}
+            pointerEvents="none"
+          />
           {/* Tap outside to close */}
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeDesc} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeDesc} />
 
+          {/* Sheet — slides up from bottom */}
           <Animated.View style={[styles.sheetCard, { transform: [{ translateY: slideAnim }] }]}>
-            {/* Handle */}
             <View style={styles.sheetHandle} />
-
-            {/* Color swatch bar */}
-            {descTheme && (
-              <View style={[styles.sheetSwatch, { backgroundColor: descTheme.acc }]} />
-            )}
-
-            {/* Close button */}
+            <View style={[styles.sheetSwatch, { backgroundColor: descTheme.acc }]} />
             <TouchableOpacity onPress={closeDesc} style={styles.sheetClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="close" size={20} color="rgba(255,255,255,0.4)" />
             </TouchableOpacity>
-
-            {/* Content */}
-            <Text style={[styles.sheetName, { color: descTheme?.acc ?? '#fff' }]}>
-              {descTheme?.label}
-            </Text>
-            <Text style={styles.sheetSub}>{descTheme?.sub}</Text>
-            <Text style={styles.sheetBody}>{descTheme?.description}</Text>
+            <Text style={[styles.sheetName, { color: descTheme.acc }]}>{descTheme.label}</Text>
+            <Text style={styles.sheetSub}>{descTheme.sub}</Text>
+            <Text style={styles.sheetBody}>{descTheme.description}</Text>
           </Animated.View>
         </View>
-      </Modal>
+      )}
     </ThemedBackground>
   );
 }
@@ -247,11 +242,14 @@ const styles = StyleSheet.create({
 
   footer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
 
-  // Bottom sheet
-  sheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+  // Bottom sheet — in-tree absolute overlay (no Modal portal)
+  sheetContainer: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
+    zIndex: 200,
+  },
+  sheetBackdrop: {
+    backgroundColor: 'rgba(0,0,0,0.65)',
   },
   sheetCard: {
     backgroundColor: '#0f172a',   // slate-900
