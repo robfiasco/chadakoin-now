@@ -90,7 +90,6 @@ const FEEDS = {
   eventsFallback: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Jamestown-Board-Meeting-Calendar-23',
   news: 'https://www.wrfalp.com/feed/',
   cityNews: 'https://www.jamestownny.gov/feed/',
-  postJournal: 'https://www.postjournal.com/feed/',
   wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
   wgrzWNY:    'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
   spectrumWNY: 'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
@@ -1071,11 +1070,10 @@ async function fetchNews(): Promise<NewsItem[]> {
   const cached = await getCached<NewsItem[]>('news', TTL.news);
   if (cached) return cached;
 
-  const [wrfaRes, cityRes, jacksonRes, postJournalRes, wgrzSportsRes, wgrzWNYRes, spectrumRes] = await Promise.allSettled([
+  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, spectrumRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
     fetch(proxyUrl(FEEDS.cityNews)),
     fetch(proxyUrl(FEEDS.jackson)),
-    fetch(proxyUrl(FEEDS.postJournal)),
     fetch(proxyUrl(FEEDS.wgrzSports)),
     fetch(proxyUrl(FEEDS.wgrzWNY)),
     fetch(proxyUrl(FEEDS.spectrumWNY)),
@@ -1129,10 +1127,6 @@ async function fetchNews(): Promise<NewsItem[]> {
       }));
   }
 
-  const postJournalItems = postJournalRes.status === 'fulfilled' && postJournalRes.value.ok
-    ? toNewsItems(await postJournalRes.value.text(), 5, 'Post-Journal')
-    : [];
-
   const wgrzSportsItems = wgrzSportsRes.status === 'fulfilled' && wgrzSportsRes.value.ok
     ? toWGRZItems(await wgrzSportsRes.value.text(), 'WGRZ')
     : [];
@@ -1151,7 +1145,6 @@ async function fetchNews(): Promise<NewsItem[]> {
 
   const news: NewsItem[] = [
     ...wrfaItems,
-    ...addUnique(postJournalItems),
     ...addUnique(cityItems),
     ...addUnique(jacksonItems),
     ...addUnique([...wgrzSportsItems, ...wgrzWNYItems, ...spectrumItems]),
