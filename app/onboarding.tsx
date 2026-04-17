@@ -10,77 +10,87 @@ import { dark } from '../lib/colors';
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
+const GOLD    = '#fbbf24';
 
 type Role = 'local' | 'visitor';
 
+interface FeatureCard {
+  label: string;
+  desc: string;
+  wide?: boolean;
+}
+
 interface Slide {
+  role: Role;
   icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  gradStart: string;
-  gradEnd: string;
-  title: string;
+  roleLabel: string;
+  slideNum: string;
+  titlePrefix: string;
+  titleAccent: string;
   body: string;
-  bullets: string[];
+  cards: FeatureCard[];
 }
 
 const LOCAL_SLIDES: Slide[] = [
   {
+    role: 'local',
     icon: 'home-outline',
-    iconColor: ACC,
-    gradStart: `rgba(${ACC_RGB},0.15)`,
-    gradEnd: 'transparent',
-    title: 'Your city, always current',
-    body: "Everything you need to stay on top of life in Jamestown — in one place.",
-    bullets: [
-      'Snow emergency & weather alerts on Home',
-      'Your recycling schedule (never miss pickup)',
-      'Local news from Jamestown outlets',
-      'Sabres, JCC Jayhawks, and regional sports',
-      'Events and things happening this month',
+    roleLabel: 'FOR LOCALS',
+    slideNum: '01',
+    titlePrefix: 'Your city,\nalways\n',
+    titleAccent: 'current.',
+    body: 'Everything Jamestown — one place, always up to date.',
+    cards: [
+      { label: 'Weather',    desc: 'Forecast on your Home screen' },
+      { label: 'Recycling',  desc: 'Never miss pickup day' },
+      { label: 'News',       desc: 'Local outlets & feeds' },
+      { label: 'Sports',     desc: 'Sabres & Jayhawks' },
+      { label: 'Events',     desc: "What's happening this month", wide: true },
     ],
   },
   {
-    icon: 'notifications-outline',
-    iconColor: '#a78bfa',
-    gradStart: 'rgba(167,139,250,0.15)',
-    gradEnd: 'transparent',
-    title: 'Built for people who live here',
-    body: "I got tired of opening five apps just to know what was going on in my own city. So I built the one I wanted.\n\nIf something's wrong, missing, or could be better — the feedback button is in Settings. I read everything.",
-    bullets: [
-      'City services info in Settings',
-      'Feedback goes straight to me',
-      'Free, no account required',
+    role: 'local',
+    icon: 'build-outline',
+    roleLabel: 'FOR LOCALS',
+    slideNum: '02',
+    titlePrefix: 'Built by\nsomeone who\n',
+    titleAccent: 'lives here.',
+    body: "I got tired of opening five apps just to know what was going on. So I built the one I wanted.",
+    cards: [
+      { label: 'City services',    desc: 'Info & contacts in Settings' },
+      { label: 'Feedback',         desc: 'Goes straight to me' },
+      { label: 'Free',             desc: 'No account, no ads, no tracking', wide: true },
     ],
   },
 ];
 
 const VISITOR_SLIDES: Slide[] = [
   {
-    icon: 'map-outline',
-    iconColor: '#fb7185',
-    gradStart: 'rgba(251,113,133,0.15)',
-    gradEnd: 'transparent',
-    title: 'Explore Jamestown',
-    body: "The Visit tab is your guide to the city — places I've personally been and would send a friend.",
-    bullets: [
-      'Restaurants, bars, and coffee shops',
-      'National Comedy Center & Lucy-Desi Museum',
-      'Roger Tory Peterson Institute',
-      'Shops, attractions, and local gems',
-      'Filter by what you\'re looking for',
+    role: 'visitor',
+    icon: 'airplane-outline',
+    roleLabel: 'VISITING',
+    slideNum: '01',
+    titlePrefix: 'Welcome to\nJames-\n',
+    titleAccent: 'town.',
+    body: "The best of WNY's most underrated city, curated for your visit.",
+    cards: [
+      { label: 'Food & drink',  desc: 'Where locals actually eat' },
+      { label: 'Events',        desc: "What's on while you're here" },
+      { label: 'Attractions',   desc: 'Lucy, Reg Tory Peterson & more' },
+      { label: 'Weather',       desc: '5-day forecast on Home' },
     ],
   },
   {
-    icon: 'calendar-outline',
-    iconColor: '#fbbf24',
-    gradStart: 'rgba(251,191,36,0.15)',
-    gradEnd: 'transparent',
-    title: "What's happening while you're here",
-    body: "Check the Events tab for concerts, festivals, and things to do. The Home screen shows weather so you know what to expect.\n\nHope you love it here.",
-    bullets: [
-      'Weekend and monthly event filters',
-      'Live weather on the Home screen',
-      'Local news if you want to go deeper',
+    role: 'visitor',
+    icon: 'map-outline',
+    roleLabel: 'VISITING',
+    slideNum: '02',
+    titlePrefix: 'Curated,\nnot\n',
+    titleAccent: 'algorithmic.',
+    body: "The Visit tab is places I'd actually send a friend. Filtered by what you're looking for. Hope you love it here.",
+    cards: [
+      { label: 'Visit tab',        desc: 'Filtered by category' },
+      { label: 'No account needed', desc: 'Just open and explore', wide: true },
     ],
   },
 ];
@@ -95,10 +105,11 @@ export default function OnboardingScreen({ onDone }: Props) {
   const [dontShow, setDontShow] = useState(true);
   const [containerWidth, setContainerWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const roleAnim  = useRef(new Animated.Value(1)).current;  // fade out picker
+  const roleAnim  = useRef(new Animated.Value(1)).current;
 
   const slides = role === 'local' ? LOCAL_SLIDES : VISITOR_SLIDES;
   const isLast  = slide === slides.length - 1;
+  const accent  = role === 'visitor' ? GOLD : ACC;
 
   function onLayout(e: LayoutChangeEvent) {
     const w = e.nativeEvent.layout.width;
@@ -109,19 +120,15 @@ export default function OnboardingScreen({ onDone }: Props) {
   }
 
   function pickRole(r: Role) {
-    // Fade out the picker, then show slides
-    Animated.timing(roleAnim, {
-      toValue: 0,
-      duration: 220,
-      useNativeDriver: true,
-    }).start(() => setRole(r));
+    Animated.timing(roleAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+      .start(() => setRole(r));
   }
 
   function goNext() {
     if (!isLast) {
       Animated.timing(slideAnim, {
         toValue: -(slide + 1) * containerWidth,
-        duration: 280,
+        duration: 260,
         useNativeDriver: true,
       }).start(() => setSlide(slide + 1));
     } else {
@@ -133,18 +140,14 @@ export default function OnboardingScreen({ onDone }: Props) {
     if (slide > 0) {
       Animated.timing(slideAnim, {
         toValue: -(slide - 1) * containerWidth,
-        duration: 280,
+        duration: 260,
         useNativeDriver: true,
       }).start(() => setSlide(slide - 1));
     } else {
-      // Back to role picker
       setSlide(0);
       slideAnim.setValue(0);
-      Animated.timing(roleAnim, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }).start(() => setRole(null));
+      Animated.timing(roleAnim, { toValue: 1, duration: 200, useNativeDriver: true })
+        .start(() => setRole(null));
     }
   }
 
@@ -152,56 +155,50 @@ export default function OnboardingScreen({ onDone }: Props) {
   if (role === null) {
     return (
       <Animated.View style={[styles.container, { opacity: roleAnim }]} onLayout={onLayout}>
-        <SafeAreaView edges={['top', 'bottom']} style={styles.pickerOuter}>
+        <SafeAreaView edges={['top', 'bottom']} style={styles.pickerSafe}>
           <View style={styles.pickerContent}>
-            <View style={[styles.iconWrap, { backgroundColor: `${ACC}15`, borderColor: `${ACC}30` }]}>
-              <Ionicons name="location-outline" size={32} color={ACC} />
-            </View>
+            {/* Slide-number style — picker is "00" */}
+            <Text style={styles.bigNum}>00</Text>
 
-            <Text style={styles.pickerEyebrow}>Welcome to</Text>
-            <Text style={styles.pickerTitle}>Chadakoin Now</Text>
-            <Text style={styles.pickerSub}>Your guide to Jamestown, NY</Text>
+            <Text style={styles.pickerEyebrow}>Chadakoin Now</Text>
+            <Text style={styles.pickerTitle}>
+              {'Your guide to\nJames-\n'}
+              <Text style={{ color: ACC }}>town.</Text>
+            </Text>
+            <Text style={styles.pickerBody}>
+              Whether you've been here your whole life or just rolled in — tell us who you are.
+            </Text>
 
-            <Text style={styles.pickerPrompt}>Are you…</Text>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => pickRole('local')}
-              style={styles.roleCard}
-            >
+            <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('local')} style={styles.roleCard}>
               <LinearGradient
-                colors={[`rgba(${ACC_RGB},0.12)`, 'transparent']}
+                colors={[`rgba(${ACC_RGB},0.10)`, 'transparent']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={[styles.roleIconWrap, { backgroundColor: `${ACC}18`, borderColor: `${ACC}30` }]}>
-                <Ionicons name="home-outline" size={24} color={ACC} />
+              <View style={[styles.roleIconWrap, { backgroundColor: `${ACC}15`, borderColor: `${ACC}28` }]}>
+                <Ionicons name="home-outline" size={20} color={ACC} />
               </View>
-              <View style={styles.roleText}>
-                <Text style={[styles.roleTitle, { color: ACC }]}>A Jamestown local</Text>
-                <Text style={styles.roleDesc}>I live here — show me what matters day to day</Text>
+              <View style={styles.roleTextCol}>
+                <Text style={[styles.roleCardLabel, { color: ACC }]}>I live here</Text>
+                <Text style={styles.roleCardDesc}>Show me what matters day to day</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={`${ACC}70`} />
+              <Ionicons name="chevron-forward" size={16} color={`${ACC}60`} />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => pickRole('visitor')}
-              style={styles.roleCard}
-            >
+            <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('visitor')} style={styles.roleCard}>
               <LinearGradient
-                colors={['rgba(251,191,36,0.10)', 'transparent']}
+                colors={['rgba(251,191,36,0.09)', 'transparent']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(251,191,36,0.15)', borderColor: 'rgba(251,191,36,0.25)' }]}>
-                <Ionicons name="airplane-outline" size={24} color="#fbbf24" />
+              <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(251,191,36,0.13)', borderColor: 'rgba(251,191,36,0.22)' }]}>
+                <Ionicons name="airplane-outline" size={20} color={GOLD} />
               </View>
-              <View style={styles.roleText}>
-                <Text style={[styles.roleTitle, { color: '#fbbf24' }]}>Just visiting</Text>
-                <Text style={styles.roleDesc}>Show me what to do, see, and eat while I'm here</Text>
+              <View style={styles.roleTextCol}>
+                <Text style={[styles.roleCardLabel, { color: GOLD }]}>Just visiting</Text>
+                <Text style={styles.roleCardDesc}>Show me what to do, eat, and see</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(251,191,36,0.5)" />
+              <Ionicons name="chevron-forward" size={16} color="rgba(251,191,36,0.45)" />
             </TouchableOpacity>
           </View>
 
@@ -211,7 +208,7 @@ export default function OnboardingScreen({ onDone }: Props) {
     );
   }
 
-  // ── Tailored slides ──────────────────────────────────────────────────────
+  // ── Slides ───────────────────────────────────────────────────────────────
   const sl = slides[slide];
 
   return (
@@ -222,39 +219,37 @@ export default function OnboardingScreen({ onDone }: Props) {
       ]}>
         {slides.map((s, i) => (
           <View key={i} style={[styles.slide, { width: containerWidth }]}>
-            <LinearGradient
-              colors={[s.gradStart, s.gradEnd] as any}
-              start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
             <SafeAreaView edges={['top']} style={styles.slideInner}>
-              <View style={[styles.iconWrap, { backgroundColor: `${s.iconColor}15`, borderColor: `${s.iconColor}30` }]}>
-                <Ionicons name={s.icon} size={32} color={s.iconColor} />
+              {/* Top row: role label + slide number */}
+              <View style={styles.topRow}>
+                <View style={styles.roleLabelRow}>
+                  <Ionicons name={s.icon} size={13} color={accent} />
+                  <Text style={[styles.roleLabel, { color: accent }]}>{s.roleLabel}</Text>
+                </View>
+                <Text style={styles.bigNumSlide}>{s.slideNum}</Text>
               </View>
 
-              {/* Role badge */}
-              <View style={[styles.roleBadge, role === 'local'
-                ? { backgroundColor: `rgba(${ACC_RGB},0.12)`, borderColor: `rgba(${ACC_RGB},0.25)` }
-                : { backgroundColor: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.25)' }
-              ]}>
-                <Ionicons
-                  name={role === 'local' ? 'home-outline' : 'airplane-outline'}
-                  size={11}
-                  color={role === 'local' ? ACC : '#fbbf24'}
-                />
-                <Text style={[styles.roleBadgeText, { color: role === 'local' ? ACC : '#fbbf24' }]}>
-                  {role === 'local' ? 'For locals' : 'For visitors'} · {i + 1} of {slides.length}
-                </Text>
-              </View>
+              {/* Title */}
+              <Text style={styles.slideTitle}>
+                {s.titlePrefix}
+                <Text style={{ color: accent }}>{s.titleAccent}</Text>
+              </Text>
 
-              <Text style={styles.title}>{s.title}</Text>
-              <Text style={styles.body}>{s.body}</Text>
+              {/* Body */}
+              <Text style={styles.slideBody}>{s.body}</Text>
 
-              <View style={styles.bullets}>
-                {s.bullets.map((b, bi) => (
-                  <View key={bi} style={styles.bulletRow}>
-                    <Ionicons name="checkmark-circle" size={14} color={`${s.iconColor}90`} />
-                    <Text style={styles.bulletText}>{b}</Text>
+              {/* Feature cards grid */}
+              <View style={styles.cardsGrid}>
+                {s.cards.map((card, ci) => (
+                  <View
+                    key={ci}
+                    style={[
+                      styles.featureCard,
+                      card.wide && styles.featureCardWide,
+                    ]}
+                  >
+                    <Text style={[styles.cardLabel, { color: accent }]}>{card.label}</Text>
+                    <Text style={styles.cardDesc}>{card.desc}</Text>
                   </View>
                 ))}
               </View>
@@ -265,6 +260,7 @@ export default function OnboardingScreen({ onDone }: Props) {
 
       {/* Bottom bar */}
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
+        {/* Dots */}
         <View style={styles.dots}>
           {slides.map((_, i) => (
             <View
@@ -272,8 +268,8 @@ export default function OnboardingScreen({ onDone }: Props) {
               style={[
                 styles.dot,
                 i === slide
-                  ? { backgroundColor: sl.iconColor, width: 20 }
-                  : { backgroundColor: 'rgba(255,255,255,0.2)', width: 6 },
+                  ? { backgroundColor: accent, width: 22 }
+                  : { backgroundColor: 'rgba(255,255,255,0.18)', width: 6 },
               ]}
             />
           ))}
@@ -285,8 +281,8 @@ export default function OnboardingScreen({ onDone }: Props) {
             <Switch
               value={dontShow}
               onValueChange={setDontShow}
-              trackColor={{ false: 'rgba(255,255,255,0.08)', true: `rgba(${ACC_RGB},0.45)` }}
-              thumbColor={dontShow ? ACC : 'rgba(255,255,255,0.35)'}
+              trackColor={{ false: 'rgba(255,255,255,0.08)', true: `${accent}70` }}
+              thumbColor={dontShow ? accent : 'rgba(255,255,255,0.3)'}
             />
           </View>
         )}
@@ -296,13 +292,9 @@ export default function OnboardingScreen({ onDone }: Props) {
             <Ionicons name="arrow-back" size={18} color="rgba(255,255,255,0.5)" />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={goNext} activeOpacity={0.85} style={[styles.nextBtn, { backgroundColor: sl.iconColor }]}>
+          <TouchableOpacity onPress={goNext} activeOpacity={0.85} style={[styles.nextBtn, { backgroundColor: accent }]}>
             <Text style={styles.nextBtnText}>{isLast ? 'Got it' : 'Next'}</Text>
-            <Ionicons
-              name={isLast ? 'checkmark' : 'arrow-forward'}
-              size={16}
-              color={dark.bg}
-            />
+            <Ionicons name={isLast ? 'checkmark' : 'arrow-forward'} size={16} color={dark.bg} />
           </TouchableOpacity>
         </View>
 
@@ -319,8 +311,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // ── Role picker ──────────────────────────────────────────────
-  pickerOuter: {
+  // ── Role picker ──────────────────────────────────────────
+  pickerSafe: {
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'space-between',
@@ -328,125 +320,139 @@ const styles = StyleSheet.create({
   pickerContent: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 20,
+    paddingBottom: 12,
   },
   pickerEyebrow: {
-    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.4)',
-    letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4,
+    fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.3)',
+    letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10,
   },
   pickerTitle: {
-    fontFamily: 'Syne', fontSize: 32, fontWeight: '800',
-    color: '#fff', letterSpacing: -0.5, lineHeight: 36, marginBottom: 6,
+    fontFamily: 'Syne', fontSize: 38, fontWeight: '800',
+    color: '#fff', letterSpacing: -1, lineHeight: 44,
+    marginBottom: 14,
   },
-  pickerSub: {
-    fontFamily: 'Outfit', fontSize: 15, color: 'rgba(255,255,255,0.5)',
-    marginBottom: 40,
-  },
-  pickerPrompt: {
-    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.35)',
-    letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 14,
+  pickerBody: {
+    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.45)',
+    lineHeight: 21, marginBottom: 32,
   },
   roleCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
+    borderColor: 'rgba(255,255,255,0.09)',
+    borderRadius: 14,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 10,
     overflow: 'hidden',
   },
   roleIconWrap: {
-    width: 48, height: 48, borderRadius: 14,
+    width: 42, height: 42, borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
-  roleText: { flex: 1, gap: 3 },
-  roleTitle: {
-    fontFamily: 'Syne', fontSize: 16, fontWeight: '700',
+  roleTextCol: { flex: 1, gap: 2 },
+  roleCardLabel: {
+    fontFamily: 'Syne', fontSize: 15, fontWeight: '700',
   },
-  roleDesc: {
-    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)',
-    lineHeight: 18,
+  roleCardDesc: {
+    fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.4)',
   },
 
-  // ── Slides ───────────────────────────────────────────────────
-  strip: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  slide: {
-    flex: 1,
-    overflow: 'hidden',
-  },
+  // ── Slides ───────────────────────────────────────────────
+  strip: { flex: 1, flexDirection: 'row' },
+  slide: { flex: 1 },
   slideInner: {
     flex: 1,
-    paddingHorizontal: 28,
-    paddingTop: 40,
-    paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 12,
   },
 
-  iconWrap: {
-    width: 72, height: 72, borderRadius: 22,
-    borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 16,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
-
-  roleBadge: {
+  roleLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
+    gap: 6,
+    paddingTop: 6,
+  },
+  roleLabel: {
+    fontFamily: 'Outfit', fontSize: 11, fontWeight: '700',
+    letterSpacing: 1.5, textTransform: 'uppercase',
+  },
+  bigNum: {
+    fontFamily: 'Syne', fontSize: 72, fontWeight: '800',
+    color: 'rgba(255,255,255,0.07)', lineHeight: 72,
+    letterSpacing: -2,
+  },
+  bigNumSlide: {
+    fontFamily: 'Syne', fontSize: 72, fontWeight: '800',
+    color: 'rgba(255,255,255,0.07)', lineHeight: 72,
+    letterSpacing: -2,
+  },
+
+  slideTitle: {
+    fontFamily: 'Syne', fontSize: 34, fontWeight: '800',
+    color: '#fff', letterSpacing: -0.8, lineHeight: 40,
+    marginBottom: 12,
+  },
+  slideBody: {
+    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.5)',
+    lineHeight: 21, marginBottom: 22,
+  },
+
+  // Feature cards
+  cardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  featureCard: {
+    width: '47.5%',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 14,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
   },
-  roleBadgeText: {
-    fontFamily: 'Outfit', fontSize: 10, fontWeight: '700',
-    letterSpacing: 0.8, textTransform: 'uppercase',
+  featureCardWide: {
+    width: '100%',
   },
-
-  title: {
-    fontFamily: 'Syne', fontSize: 26, fontWeight: '800',
-    color: '#fff', letterSpacing: -0.5, lineHeight: 32,
-    marginBottom: 14,
+  cardLabel: {
+    fontFamily: 'Syne', fontSize: 13, fontWeight: '700',
   },
-  body: {
-    fontFamily: 'Outfit', fontSize: 15, color: 'rgba(255,255,255,0.65)',
-    lineHeight: 24,
+  cardDesc: {
+    fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.45)',
+    lineHeight: 17,
   },
 
-  bullets: { marginTop: 18, gap: 10 },
-  bulletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bulletText: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.7)', flex: 1 },
-
-  // ── Bottom bar ───────────────────────────────────────────────
+  // ── Bottom bar ───────────────────────────────────────────
   bottom: {
     paddingHorizontal: 24,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.06)',
     backgroundColor: dark.bg,
-    gap: 14,
+    gap: 12,
   },
-
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' },
   dot:  { height: 6, borderRadius: 3 },
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 2,
   },
   toggleLabel: {
-    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)',
   },
 
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn: {
     width: 44, height: 44, borderRadius: 22,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
@@ -463,6 +469,6 @@ const styles = StyleSheet.create({
 
   footer: {
     fontFamily: 'Outfit', fontSize: 10, textAlign: 'center',
-    color: 'rgba(255,255,255,0.15)', paddingBottom: 4,
+    color: 'rgba(255,255,255,0.12)', paddingBottom: 4,
   },
 });
