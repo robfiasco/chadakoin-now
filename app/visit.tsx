@@ -275,12 +275,6 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
           <Ionicons name="star" size={8} color={theme.acc} />
           <Text style={[hero.editorPillText, { color: theme.acc }]}>Editor's Pick</Text>
         </View>
-        {fav.visited && (
-          <View style={hero.beenThereBadge}>
-            <View style={[hero.beenThereDot, { backgroundColor: dark.category.recycling }]} />
-            <Text style={[hero.beenThereText, { color: dark.category.recycling }]}>Been there</Text>
-          </View>
-        )}
       </View>
 
       {/* Card body */}
@@ -360,12 +354,6 @@ function ListCard({
         <View style={{ flex: 1 }}>
           <View style={list.nameRow}>
             <Text style={list.name}>{name}</Text>
-            {visited && (
-              <View style={list.badge}>
-                <View style={[list.badgeDot, { backgroundColor: dark.category.recycling }]} />
-                <Text style={[list.badgeText, { color: dark.category.recycling }]}>Been there</Text>
-              </View>
-            )}
           </View>
           {address ? <Text style={list.address}>{address}</Text> : null}
         </View>
