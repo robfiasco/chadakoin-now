@@ -9,6 +9,7 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
 import PrivacyPolicyScreen from './privacy';
 import TermsOfUseScreen from './terms';
+import FeedbackScreen from './feedback';
 import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 
@@ -30,6 +31,7 @@ export default function SettingsScreen() {
   const { theme, themeId, setThemeId } = useTheme();
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
     Object.fromEntries(NOTIFICATIONS.map(n => [n.id, false]))
   );
@@ -152,8 +154,9 @@ export default function SettingsScreen() {
                 activeOpacity={0.7}
                 style={styles.aboutRow}
                 onPress={
-                  row.id === 'privacy' ? () => setPrivacyOpen(true) :
-                  row.id === 'terms'   ? () => setTermsOpen(true)   : () => {}
+                  row.id === 'privacy'   ? () => setPrivacyOpen(true)  :
+                  row.id === 'terms'     ? () => setTermsOpen(true)    :
+                  row.id === 'feedback'  ? () => setFeedbackOpen(true) : () => {}
                 }
               >
                 <Ionicons name={row.icon} size={16} color={`rgba(${theme.accRGB},0.5)`} />
@@ -190,6 +193,11 @@ export default function SettingsScreen() {
         <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
       </ScrollView>
 
+      {feedbackOpen && (
+        <View style={styles.fullOverlay}>
+          <FeedbackScreen onClose={() => setFeedbackOpen(false)} />
+        </View>
+      )}
       {privacyOpen && (
         <View style={styles.fullOverlay}>
           <PrivacyPolicyScreen onClose={() => setPrivacyOpen(false)} />
