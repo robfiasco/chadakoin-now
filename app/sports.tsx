@@ -489,7 +489,7 @@ export default function SportsScreen() {
     const timeStr = ng.gameTime
       ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : '';
-    return { abbr: best.team.abbr, opp: ng.opponent.split(' ').pop(), isHome: ng.isHome, dateLabel, timeStr };
+    return { abbr: best.team.abbr, opp: ng.opponent.split(' ').pop(), oppAbbr: ng.opponentAbbr ?? '', isHome: ng.isHome, dateLabel, timeStr };
   }, [data]);
 
   const innerCard = {
@@ -852,13 +852,42 @@ export default function SportsScreen() {
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : mlbNextUp ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <PulsingDot color="#fb7185" size={6} />
-                <Text style={[styles.glanceText, { color: dark.text.muted }]}>{mlbNextUp.dateLabel}:</Text>
-                <Text style={[styles.glanceText, { color: ACC.mlb, fontWeight: '600' }]}>
-                  {mlbNextUp.abbr} {mlbNextUp.isHome ? 'vs' : '@'} {mlbNextUp.opp}
-                  {mlbNextUp.timeStr ? ` · ${mlbNextUp.timeStr}` : ''}
-                </Text>
+              <View style={styles.mlbMatchup}>
+                {/* Left logo + gradient */}
+                <Image
+                  source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${mlbNextUp.abbr.toLowerCase()}.png` }}
+                  style={styles.mlbMatchupLogo}
+                  resizeMode="contain"
+                />
+                <LinearGradient
+                  colors={['rgba(167,139,250,0.18)', 'transparent']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={styles.mlbMatchupGradL}
+                  pointerEvents="none"
+                />
+                {/* Center info */}
+                <View style={styles.mlbMatchupCenter}>
+                  <Text style={styles.mlbMatchupGame}>
+                    {mlbNextUp.abbr} {mlbNextUp.isHome ? 'vs' : '@'} {mlbNextUp.opp}
+                  </Text>
+                  <Text style={[styles.mlbMatchupMeta, { color: dark.text.subtle }]}>
+                    {mlbNextUp.dateLabel}{mlbNextUp.timeStr ? ` · ${mlbNextUp.timeStr}` : ''}
+                  </Text>
+                </View>
+                {/* Right gradient + logo */}
+                <LinearGradient
+                  colors={['transparent', 'rgba(167,139,250,0.18)']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={styles.mlbMatchupGradR}
+                  pointerEvents="none"
+                />
+                {mlbNextUp.oppAbbr ? (
+                  <Image
+                    source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${mlbNextUp.oppAbbr.toLowerCase()}.png` }}
+                    style={styles.mlbMatchupLogo}
+                    resizeMode="contain"
+                  />
+                ) : null}
               </View>
             ) : (
               <Text style={[styles.glanceText, { color: dark.text.subtle }]}>No upcoming games found</Text>
@@ -1025,6 +1054,20 @@ const styles = StyleSheet.create({
   teamCardSub:   { fontFamily: 'Outfit', fontSize: 10, marginTop: 2, letterSpacing: 0.5, textTransform: 'uppercase' },
   glanceRow:     { paddingHorizontal: 14, paddingBottom: 14, marginTop: -6 },
   glanceText:    { fontFamily: 'Outfit', fontSize: 12 },
+
+  mlbMatchup: {
+    flexDirection: 'row', alignItems: 'center',
+    overflow: 'hidden', borderRadius: 10,
+    backgroundColor: 'rgba(167,139,250,0.06)',
+    borderWidth: 1, borderColor: 'rgba(167,139,250,0.12)',
+    height: 56,
+  },
+  mlbMatchupLogo:    { width: 44, height: 44, flexShrink: 0, marginHorizontal: 4 },
+  mlbMatchupGradL:   { position: 'absolute', left: 52, top: 0, bottom: 0, width: 40 },
+  mlbMatchupGradR:   { position: 'absolute', right: 52, top: 0, bottom: 0, width: 40 },
+  mlbMatchupCenter:  { flex: 1, alignItems: 'center' },
+  mlbMatchupGame:    { fontFamily: 'DMSans_700Bold', fontSize: 13, color: '#fff', letterSpacing: -0.2 },
+  mlbMatchupMeta:    { fontFamily: 'Outfit', fontSize: 10, marginTop: 2 },
   teamCardExpanded: { borderTopWidth: 1, padding: 12, gap: 10 },
 
   innerLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase', paddingLeft: 2 },
