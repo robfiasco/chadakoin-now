@@ -166,9 +166,10 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const us   = weAreHome ? g.teams.home : g.teams.away;
               const them = weAreHome ? g.teams.away : g.teams.home;
               games.push({ date: dateObj.date, opponent: them?.team?.name ?? '???', ourScore: us?.score ?? 0, theirScore: them?.score ?? 0, isHome: weAreHome, won: us?.isWinner === true });
-            } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game')) {
+            } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game' || state === 'Warmup')) {
               const weAreHome = g.teams?.home?.team?.id === t.id;
               const them = weAreHome ? g.teams?.away : g.teams?.home;
+              // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
               nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', isHome: weAreHome };
             }
           }
@@ -376,7 +377,7 @@ export default function SportsScreen() {
     for (const team of (data.mlb ?? [])) {
       if (team.nextGame) {
         const ng = team.nextGame;
-        const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T19:00:00');
+        const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
         if (d > now) {
           candidates.push({
             ts: d.getTime(),
@@ -434,7 +435,7 @@ export default function SportsScreen() {
     for (const t of data.mlb) {
       if (!t.nextGame) continue;
       const ng = t.nextGame;
-      const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T19:00:00');
+      const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
       if (d > now && (!best || d < best.date)) best = { team: t, date: d };
     }
     if (!best) return null;
@@ -788,7 +789,7 @@ export default function SportsScreen() {
                   const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
                   let nextStr = '';
                   if (ng) {
-                    const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T19:00:00');
+                    const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
                     const dDay = new Date(d); dDay.setHours(0,0,0,0);
                     const dayLabel = dDay.getTime() === today.getTime() ? 'Today'
                       : dDay.getTime() === tomorrow.getTime() ? 'Tmrw'
