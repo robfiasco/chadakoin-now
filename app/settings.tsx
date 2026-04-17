@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking, Switch,
+  View, Text, ScrollView, StyleSheet, Modal,
+  TouchableOpacity, Linking, Switch, Animated, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
-import { THEMES, ThemeId } from '../lib/themes';
+import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 
 const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
@@ -32,6 +32,27 @@ export default function SettingsScreen() {
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
     Object.fromEntries(NOTIFICATIONS.map(n => [n.id, false]))
   );
+
+  // Theme description sheet
+  const [descTheme, setDescTheme] = useState<Theme | null>(null);
+  const slideAnim = useRef(new Animated.Value(400)).current;
+
+  function openDesc(t: Theme) {
+    setDescTheme(t);
+    Animated.timing(slideAnim, {
+      toValue: 0, duration: 320,
+      useNativeDriver: true,
+      easing: Easing.out(Easing.cubic),
+    }).start();
+  }
+
+  function closeDesc() {
+    Animated.timing(slideAnim, {
+      toValue: 400, duration: 240,
+      useNativeDriver: true,
+      easing: Easing.in(Easing.ease),
+    }).start(() => setDescTheme(null));
+  }
 
   return (
     <ThemedBackground>
@@ -88,9 +109,24 @@ export default function SettingsScreen() {
                       <View key={i} style={[styles.themeDot, { backgroundColor: c }]} />
                     ))}
                   </View>
-                  <Text style={[styles.themeTileLabel, { color: isActive ? t.acc : 'rgba(255,255,255,0.55)' }]}>
-                    {t.label}
-                  </Text>
+
+                  {/* Tapping the label opens the description sheet */}
+                  <TouchableOpacity
+                    onPress={() => openDesc(t)}
+                    hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                    activeOpacity={0.6}
+                    style={styles.themeLabelRow}
+                  >
+                    <Text style={[styles.themeTileLabel, { color: isActive ? t.acc : 'rgba(255,255,255,0.55)' }]}>
+                      {t.label}
+                    </Text>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={12}
+                      color={isActive ? `rgba(${t.accRGB},0.5)` : 'rgba(255,255,255,0.2)'}
+                    />
+                  </TouchableOpacity>
+
                   {isActive && (
                     <View style={[styles.themeActiveDot, { backgroundColor: t.acc }]} />
                   )}
@@ -106,11 +142,7 @@ export default function SettingsScreen() {
           {ABOUT_ROWS.map((row, i) => (
             <View key={row.id}>
               {i > 0 && <View style={[styles.rowDivider, { backgroundColor: dark.border }]} />}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={styles.aboutRow}
-                onPress={() => {}}
-              >
+              <TouchableOpacity activeOpacity={0.7} style={styles.aboutRow} onPress={() => {}}>
                 <Ionicons name={row.icon} size={16} color={`rgba(${theme.accRGB},0.5)`} />
                 <Text style={styles.aboutLabel}>{row.label}</Text>
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />
@@ -142,11 +174,38 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>
-          v0.1.0 · Built by Chadakoin Digital in Jamestown, NY
-        </Text>
-
+        <Text style={styles.footer}>v0.1.0 · Built by Chadakoin Digital in Jamestown, NY</Text>
       </ScrollView>
+
+      {/* ── Theme description bottom sheet ─────────────── */}
+      <Modal visible={!!descTheme} transparent animationType="fade" onRequestClose={closeDesc}>
+        <View style={styles.sheetOverlay}>
+          {/* Tap outside to close */}
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeDesc} />
+
+          <Animated.View style={[styles.sheetCard, { transform: [{ translateY: slideAnim }] }]}>
+            {/* Handle */}
+            <View style={styles.sheetHandle} />
+
+            {/* Color swatch bar */}
+            {descTheme && (
+              <View style={[styles.sheetSwatch, { backgroundColor: descTheme.acc }]} />
+            )}
+
+            {/* Close button */}
+            <TouchableOpacity onPress={closeDesc} style={styles.sheetClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={20} color="rgba(255,255,255,0.4)" />
+            </TouchableOpacity>
+
+            {/* Content */}
+            <Text style={[styles.sheetName, { color: descTheme?.acc ?? '#fff' }]}>
+              {descTheme?.label}
+            </Text>
+            <Text style={styles.sheetSub}>{descTheme?.sub}</Text>
+            <Text style={styles.sheetBody}>{descTheme?.description}</Text>
+          </Animated.View>
+        </View>
+      </Modal>
     </ThemedBackground>
   );
 }
@@ -163,37 +222,71 @@ const styles = StyleSheet.create({
     marginTop: 4, marginBottom: 2, marginLeft: 4,
   },
 
-  card: {
-    borderWidth: 1, borderRadius: 16, overflow: 'hidden',
-    backgroundColor: dark.surface,
-  },
-
+  card: { borderWidth: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: dark.surface },
   rowDivider: { height: 1, marginHorizontal: 16 },
 
-  toggleRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 13,
-  },
-  toggleLabel: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
-  toggleSub:   { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  toggleRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  toggleLabel:{ fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
+  toggleSub:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
 
   themeGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   themeTile:      { width: '47.5%', borderWidth: 1, borderRadius: 12, padding: 12, gap: 8, position: 'relative' },
   themeDotsRow:   { flexDirection: 'row', gap: 5 },
   themeDot:       { width: 10, height: 10, borderRadius: 5 },
+  themeLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 5 },
   themeTileLabel: { fontFamily: 'Syne', fontSize: 12, fontWeight: '700' },
   themeActiveDot: { position: 'absolute', top: 10, right: 10, width: 6, height: 6, borderRadius: 3 },
 
-  aboutRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  aboutRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   aboutLabel: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.8)', flex: 1 },
 
-  ctaCard:  { padding: 18, borderRadius: 16, borderWidth: 1, marginTop: 4 },
-  ctaRow:   { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  ctaTitle: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  ctaSub:   { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
+  ctaCard: { padding: 18, borderRadius: 16, borderWidth: 1, marginTop: 4 },
+  ctaRow:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  ctaTitle:{ fontFamily: 'Syne', fontSize: 15, fontWeight: '700', marginBottom: 3 },
+  ctaSub:  { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
 
-  footer: {
-    fontFamily: 'Outfit', fontSize: 11, textAlign: 'center',
-    marginTop: 8, color: 'rgba(255,255,255,0.15)',
+  footer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
+
+  // Bottom sheet
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  sheetCard: {
+    backgroundColor: '#0f172a',   // slate-900
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(30,41,59,0.8)',
+    padding: 24,
+    paddingBottom: 40,
+  },
+  sheetHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'center', marginBottom: 20,
+  },
+  sheetSwatch: {
+    height: 3, borderRadius: 2, marginBottom: 20, opacity: 0.6,
+  },
+  sheetClose: {
+    position: 'absolute', top: 20, right: 20,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  sheetName: {
+    fontFamily: 'Syne', fontSize: 22, fontWeight: '800',
+    letterSpacing: -0.5, marginBottom: 4,
+  },
+  sheetSub: {
+    fontFamily: 'Outfit', fontSize: 12, fontWeight: '600',
+    letterSpacing: 1.2, textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.35)', marginBottom: 16,
+  },
+  sheetBody: {
+    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.65)',
+    lineHeight: 22,
   },
 });
