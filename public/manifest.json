@@ -1,0 +1,21 @@
+{
+  "name": "Chadakoin Now",
+  "short_name": "Chadakoin Now",
+  "description": "Whether you're here for the weekend or the rest of your life — your guide to Jamestown, NY.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#00050f",
+  "theme_color": "#00050f",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}

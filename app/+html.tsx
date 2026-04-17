@@ -29,6 +29,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <link rel="icon" type="image/png" href="/favicon.png" sizes="any" />
         <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
