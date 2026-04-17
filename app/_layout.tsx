@@ -7,6 +7,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
+import { onboardingResetRef } from '../lib/onboardingReset';
 import { LinearGradient } from 'expo-linear-gradient';
 import OnboardingScreen from './onboarding';
 
@@ -62,8 +63,8 @@ function AppLayout() {
     pagerRef.current?.setPage(index);
   };
 
-  // Expose reset function via a module-level ref so Settings can call it
-  (AppLayout as any)._resetOnboarding = () => {
+  // Wire the shared ref so Settings can trigger onboarding immediately
+  onboardingResetRef.reset = () => {
     AsyncStorage.removeItem(ONBOARDING_KEY).catch(() => {});
     setShowOnboarding(true);
   };
