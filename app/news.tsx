@@ -151,7 +151,6 @@ function HeroCard({ item }: { item: NewsItem }) {
       activeOpacity={0.75}
       style={[hero.card, { borderTopColor: banner.bar, borderTopWidth: 3 }]}
     >
-      {/* Gradient header */}
       <View style={hero.header}>
         <LinearGradient
           colors={banner.grad as any}
@@ -159,22 +158,18 @@ function HeroCard({ item }: { item: NewsItem }) {
           end={banner.gEnd}
           style={StyleSheet.absoluteFill}
         />
-        {/* Large bg icon — distinct per category */}
         <Ionicons name={banner.icon} size={96} color={`${banner.bar}18`} style={hero.bgIcon} />
 
-        {/* Top Story badge */}
         <View style={[hero.topBadge, { backgroundColor: `${banner.bar}cc` }]}>
           <PulsingDot color="#fff" size={5} />
           <Text style={hero.topBadgeText}>Top Story</Text>
         </View>
 
-        {/* Category pill — bottom left */}
         <View style={[hero.catPill, { backgroundColor: `${banner.bar}22`, borderColor: `${banner.bar}50` }]}>
           <Text style={[hero.catText, { color: banner.bar }]}>{category.toUpperCase()}</Text>
         </View>
       </View>
 
-      {/* Body */}
       <View style={hero.body}>
         <Text style={hero.title} numberOfLines={3}>{item.title}</Text>
         {item.excerpt ? (

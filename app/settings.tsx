@@ -11,12 +11,11 @@ import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 
 const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
-  { id: 'parking',   label: 'Parking reminders',   sub: 'Alternate-side alerts' },
+  { id: 'parking',   label: 'Parking reminders',   sub: 'Alternate-side · Nov–Mar only' },
   { id: 'recycling', label: 'Recycling reminders',  sub: 'Day-before pickup alerts' },
   { id: 'news',      label: 'Breaking news',        sub: 'Jamestown & Chautauqua County' },
   { id: 'events',    label: 'Events & activities',  sub: 'New events added nearby' },
   { id: 'lotd',      label: 'LOTD podcast drops',   sub: 'New episodes' },
-  { id: 'cdir',      label: 'Chadakoin In Review',  sub: 'Weekly community digest' },
 ];
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -82,6 +81,12 @@ export default function SettingsScreen() {
               </View>
             </View>
           ))}
+        </View>
+
+        {/* Coming soon pill — notifications require Android app */}
+        <View style={styles.comingSoonRow}>
+          <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.25)" />
+          <Text style={styles.comingSoonText}>Notifications coming with the Android app</Text>
         </View>
 
         {/* ── Appearance ─────────────────────────────────── */}
@@ -173,22 +178,19 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>v0.1.0 · Built by Chadakoin Digital in Jamestown, NY</Text>
+        <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
       </ScrollView>
 
       {/* ── Theme description bottom sheet ─────────────── */}
       {/* In-tree overlay so it renders inside the app container on web */}
       {!!descTheme && (
         <View style={styles.sheetContainer}>
-          {/* Animated backdrop */}
           <Animated.View
             style={[StyleSheet.absoluteFill, styles.sheetBackdrop, { opacity: backdropAnim }]}
             pointerEvents="none"
           />
-          {/* Tap outside to close */}
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeDesc} />
 
-          {/* Sheet — slides up from bottom */}
           <Animated.View style={[styles.sheetCard, { transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.sheetHandle} />
             <View style={[styles.sheetSwatch, { backgroundColor: descTheme.acc }]} />
@@ -241,6 +243,19 @@ const styles = StyleSheet.create({
   ctaSub:  { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
 
   footer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
+
+  comingSoonRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    alignSelf: 'center', marginTop: -4, marginBottom: 4,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 20, borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  comingSoonText: {
+    fontFamily: 'Outfit', fontSize: 11,
+    color: 'rgba(255,255,255,0.25)', letterSpacing: 0.3,
+  },
 
   // Bottom sheet — in-tree absolute overlay (no Modal portal)
   sheetContainer: {

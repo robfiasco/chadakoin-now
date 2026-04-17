@@ -491,9 +491,7 @@ export default function SportsScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={styles.nextUpHeader}
                 >
-                  {/* Background emoji */}
                   <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
-                  {/* Sport label pill */}
                   <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
                     <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
                   </View>
