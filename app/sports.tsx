@@ -571,12 +571,14 @@ export default function SportsScreen() {
                   })() : (
                     <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
                   )}
-                  <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
-                    <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
-                  </View>
                 </LinearGradient>
                 <View style={styles.nextUpBody}>
                   <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
+                        <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
+                      </View>
+                    </View>
                     <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                       <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary }}>{nextUp.dateLabel}</Text>
