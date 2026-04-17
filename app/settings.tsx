@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking, Switch, Animated, Easing,
+  TouchableOpacity, Linking, Switch, Animated, Easing, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
 import PrivacyPolicyScreen from './privacy';
@@ -23,6 +24,7 @@ const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
 type IoniconName = keyof typeof Ionicons.glyphMap;
 const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
   { id: 'feedback', label: 'Send feedback',  icon: 'chatbubble-outline'    },
+  { id: 'intro',    label: 'Show intro again', icon: 'play-circle-outline' },
   { id: 'privacy',  label: 'Privacy policy', icon: 'shield-outline'        },
   { id: 'terms',    label: 'Terms of use',   icon: 'document-text-outline' },
 ];
@@ -156,7 +158,12 @@ export default function SettingsScreen() {
                 onPress={
                   row.id === 'privacy'   ? () => setPrivacyOpen(true)  :
                   row.id === 'terms'     ? () => setTermsOpen(true)    :
-                  row.id === 'feedback'  ? () => setFeedbackOpen(true) : () => {}
+                  row.id === 'feedback'  ? () => setFeedbackOpen(true) :
+                  row.id === 'intro'     ? () => {
+                    AsyncStorage.removeItem('onboarding_seen_v1').then(() => {
+                      Alert.alert('Intro reset', 'The intro will show next time you open the app.');
+                    }).catch(() => {});
+                  } : () => {}
                 }
               >
                 <Ionicons name={row.icon} size={16} color={`rgba(${theme.accRGB},0.5)`} />

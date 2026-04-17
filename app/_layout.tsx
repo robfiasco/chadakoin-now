@@ -5,8 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import OnboardingScreen from './onboarding';
+
+const ONBOARDING_KEY = 'onboarding_seen_v1';
 
 import {
   DMSans_400Regular,
@@ -39,9 +43,29 @@ function AppLayout() {
   const { theme } = useTheme();
   const [activePage, setActivePage] = useState(0);
   const pagerRef = useRef<PagerViewHandle>(null);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY).then(val => {
+      setShowOnboarding(val !== 'true');
+    }).catch(() => setShowOnboarding(false));
+  }, []);
+
+  function handleOnboardingDone(dontShowAgain: boolean) {
+    if (dontShowAgain) {
+      AsyncStorage.setItem(ONBOARDING_KEY, 'true').catch(() => {});
+    }
+    setShowOnboarding(false);
+  }
 
   const goToPage = (index: number) => {
     pagerRef.current?.setPage(index);
+  };
+
+  // Expose reset function via a module-level ref so Settings can call it
+  (AppLayout as any)._resetOnboarding = () => {
+    AsyncStorage.removeItem(ONBOARDING_KEY).catch(() => {});
+    setShowOnboarding(true);
   };
 
   return (
@@ -114,6 +138,13 @@ function AppLayout() {
           </View>
         </SafeAreaView>
       </View>
+
+      {/* Onboarding overlay — null while checking storage (avoids flash) */}
+      {showOnboarding === true && (
+        <View style={[StyleSheet.absoluteFillObject, { zIndex: 1000 }]}>
+          <OnboardingScreen onDone={handleOnboardingDone} />
+        </View>
+      )}
     </View>
   );
 }
