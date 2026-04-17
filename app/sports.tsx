@@ -127,6 +127,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
       return (json.teams ?? []) as MLBTeam[];
     }
     const MLB_TEAMS = [
+      { id: 121, name: 'Mets',      abbr: 'NYM' },
       { id: 114, name: 'Guardians', abbr: 'CLE' },
       { id: 141, name: 'Blue Jays', abbr: 'TOR' },
       { id: 134, name: 'Pirates',   abbr: 'PIT' },
@@ -756,7 +757,7 @@ export default function SportsScreen() {
             <Text style={{ fontFamily: 'Syne', fontSize: 11, fontWeight: '800', color: ACC.mlb, letterSpacing: -0.5 }}>MLB</Text>
           }
           name="Regional MLB"
-          subtitle="CLE · TOR · PIT · NYY"
+          subtitle="NYM · CLE · TOR · PIT · NYY"
           defaultOpen={false}
           glassWeb={glassWeb}
           glanceRow={
