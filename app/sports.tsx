@@ -158,7 +158,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
 
     const results = await Promise.all(MLB_TEAMS.map(async t => {
       try {
-        const url  = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,status,detailedState,gameDate,teams,away,home,team,id,name,abbreviation,score,isWinner`;
+        const url  = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team`;
         const res  = await fetch(url);
         if (!res.ok) return { ...t, games: [], nextGame: null, record: standingsMap[t.id] ?? '' };
         const json = await res.json();
@@ -532,22 +532,41 @@ export default function SportsScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={styles.nextUpHeader}
                 >
-                  {/* Logo matchup fills the header when both logos are available */}
-                  {(nextUp.ourLogoUrl && nextUp.oppLogoUrl) ? (
-                    <View style={styles.nextUpLogoRow}>
-                      <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
-                      <LinearGradient
-                        colors={[nextUp.gradEnd, nextUp.gradStart, nextUp.gradEnd] as any}
-                        start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                        style={styles.nextUpVsDivider}
-                      >
-                        <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>
-                          {nextUp.matchup.includes('@') ? '@' : 'vs'}
-                        </Text>
-                      </LinearGradient>
-                      <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
-                    </View>
-                  ) : (
+                  {/* Logo matchup — show both logos when available, our logo alone if not */}
+                  {nextUp.ourLogoUrl ? (() => {
+                    const parts = nextUp.matchup.split(/\s+(vs|@)\s+/);
+                    const leftLabel  = parts[0] ?? '';
+                    const connector  = nextUp.matchup.includes('@') ? '@' : 'vs';
+                    const rightLabel = parts[2] ?? '';
+                    return (
+                      <View style={styles.nextUpLogoRow}>
+                        {/* Our team */}
+                        <View style={styles.nextUpLogoCol}>
+                          <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                          <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
+                        </View>
+                        {/* Divider + connector */}
+                        <LinearGradient
+                          colors={[nextUp.gradEnd, nextUp.gradStart, nextUp.gradEnd] as any}
+                          start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                          style={styles.nextUpVsDivider}
+                        >
+                          <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>{connector}</Text>
+                        </LinearGradient>
+                        {/* Opponent — show logo if available, else dim abbr placeholder */}
+                        <View style={styles.nextUpLogoCol}>
+                          {nextUp.oppLogoUrl ? (
+                            <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                          ) : (
+                            <View style={[styles.nextUpHeaderLogo, { alignItems: 'center', justifyContent: 'center' }]}>
+                              <Text style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: '800', color: 'rgba(255,255,255,0.25)' }}>{rightLabel}</Text>
+                            </View>
+                          )}
+                          <Text style={[styles.nextUpLogoLabel, { color: 'rgba(255,255,255,0.45)' }]}>{rightLabel}</Text>
+                        </View>
+                      </View>
+                    );
+                  })() : (
                     <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
                   )}
                   <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
@@ -1019,13 +1038,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,23,42,0.4)',
     overflow: 'hidden',
   },
-  nextUpHeader: { height: 110, overflow: 'hidden', justifyContent: 'flex-end', padding: 12 },
+  nextUpHeader: { height: 130, overflow: 'hidden', justifyContent: 'flex-end', padding: 12 },
   nextUpBgEmoji: { position: 'absolute', right: -8, bottom: -16, fontSize: 90, opacity: 0.08 },
   nextUpLogoRow: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24,
   },
-  nextUpHeaderLogo: { width: 64, height: 64, flexShrink: 0 },
+  nextUpLogoCol: { alignItems: 'center', gap: 6 },
+  nextUpHeaderLogo: { width: 72, height: 72, flexShrink: 0 },
+  nextUpLogoLabel: { fontFamily: 'Syne', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   nextUpVsDivider: { flex: 1, height: 1, alignItems: 'center', justifyContent: 'center' },
   nextUpVsText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '800', letterSpacing: 1, backgroundColor: 'transparent', paddingHorizontal: 8 },
   nextUpPill: {

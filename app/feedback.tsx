@@ -29,8 +29,8 @@ const PLACEHOLDERS: Record<string, string> = {
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
-export default function FeedbackScreen({ onClose }: { onClose: () => void }) {
-  const [formType, setFormType] = useState('general');
+export default function FeedbackScreen({ onClose, initialType = 'general' }: { onClose: () => void; initialType?: string }) {
+  const [formType, setFormType] = useState(initialType);
   const [message, setMessage]   = useState('');
   const [replyTo, setReplyTo]   = useState('');
   const [status, setStatus]     = useState<Status>('idle');

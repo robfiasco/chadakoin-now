@@ -31,7 +31,7 @@ async function fetchTeamGames(teamId) {
   const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
   const fmt   = d => d.toISOString().split('T')[0];
-  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&fields=dates,date,games,gamePk,status,detailedState,gameDate,teams,away,home,team,id,name,abbreviation,score,isWinner`;
+  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team`;
 
   const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) return { games: [], nextGame: null };

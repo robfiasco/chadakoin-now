@@ -12,6 +12,7 @@ import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
+import FeedbackScreen from './feedback';
 
 function openMaps(query: string) {
   openLink(`https://maps.google.com/?q=${encodeURIComponent(query)}`);
@@ -496,6 +497,7 @@ export default function VisitScreen() {
   const { theme } = useTheme();
   const [active, setActive] = useState<FilterCat>('all');
   const [search, setSearch] = useState('');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const q = search.trim().toLowerCase();
 
@@ -682,14 +684,21 @@ export default function VisitScreen() {
         )}
 
         {/* ── Footer CTA ──────────────────────────────────── */}
-        <FeatureYourBusiness />
+        <FeatureYourBusiness onContact={() => setFeedbackOpen(true)} />
 
       </ScrollView>
+
+      {feedbackOpen && (
+        <View style={styles.fullOverlay}>
+          <FeedbackScreen onClose={() => setFeedbackOpen(false)} initialType="business" />
+        </View>
+      )}
     </ThemedBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 600, flex: 1 },
   safeArea: { paddingHorizontal: 20 },
 
   header:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 20, paddingBottom: 8 },

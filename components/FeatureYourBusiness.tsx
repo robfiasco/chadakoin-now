@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/ThemeContext';
 import { dark } from '../lib/colors';
@@ -11,7 +11,7 @@ const INCLUDES = [
   { icon: 'refresh-outline' as const,             text: 'One-time setup, no subscription' },
 ];
 
-export function FeatureYourBusiness() {
+export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
   const { theme } = useTheme();
   const acc = theme.acc;
   const accRGB = theme.accRGB;
@@ -90,7 +90,7 @@ export function FeatureYourBusiness() {
 
       {/* ── CTA button ── */}
       <TouchableOpacity
-        onPress={() => Linking.openURL('https://chadakoindigital.com/featured')}
+        onPress={onContact}
         activeOpacity={0.85}
         style={[s.ctaBtn, { backgroundColor: acc }]}
       >

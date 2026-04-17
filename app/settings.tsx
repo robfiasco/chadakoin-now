@@ -35,6 +35,7 @@ export default function SettingsScreen() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState('general');
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
     Object.fromEntries(NOTIFICATIONS.map(n => [n.id, false]))
   );
@@ -173,7 +174,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── Feature CTA ────────────────────────────────── */}
-        <FeatureYourBusiness />
+        <FeatureYourBusiness onContact={() => { setFeedbackType('business'); setFeedbackOpen(true); }} />
 
         <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
         <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via NWS</Text>
@@ -181,7 +182,7 @@ export default function SettingsScreen() {
 
       {feedbackOpen && (
         <View style={styles.fullOverlay}>
-          <FeedbackScreen onClose={() => setFeedbackOpen(false)} />
+          <FeedbackScreen onClose={() => { setFeedbackOpen(false); setFeedbackType('general'); }} initialType={feedbackType} />
         </View>
       )}
       {privacyOpen && (
