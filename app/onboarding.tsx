@@ -104,16 +104,22 @@ export default function OnboardingScreen({ onDone }: Props) {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const pickerAnim = useRef(new Animated.Value(1)).current;
 
-  // Background crossfade: [0]=picker, [1]=slide0, [2]=slide1
-  const [bgFrom, setBgFrom] = useState(0);
-  const [bgTo,   setBgTo]   = useState(0);
-  const bgAnim = useRef(new Animated.Value(1)).current;
+  // 3 always-rendered bg layers, one per screen — ref-based to avoid batching issues
+  const activeBgRef = useRef(0);
+  const bgFades = useRef([
+    new Animated.Value(1), // picker — starts visible
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
 
   function crossfadeTo(index: number) {
-    setBgFrom(bgTo);
-    setBgTo(index);
-    bgAnim.setValue(0);
-    Animated.timing(bgAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    const prev = activeBgRef.current;
+    if (prev === index) return;
+    activeBgRef.current = index;
+    Animated.parallel([
+      Animated.timing(bgFades[prev],  { toValue: 0, duration: 500, useNativeDriver: true }),
+      Animated.timing(bgFades[index], { toValue: 1, duration: 500, useNativeDriver: true }),
+    ]).start();
   }
 
   const slides = role === 'local' ? LOCAL_SLIDES : VISITOR_SLIDES;
@@ -171,11 +177,12 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      {/* ── Crossfading background — one image per screen ── */}
-      <ImageBackground source={BG_IMAGES[bgFrom]} resizeMode="cover" style={StyleSheet.absoluteFill} />
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgAnim }]} pointerEvents="none">
-        <ImageBackground source={BG_IMAGES[bgTo]} resizeMode="cover" style={StyleSheet.absoluteFill} />
-      </Animated.View>
+      {/* ── 3 bg layers, one per screen, crossfaded via refs ── */}
+      {BG_IMAGES.map((src, i) => (
+        <Animated.View key={i} style={[StyleSheet.absoluteFill, { opacity: bgFades[i] }]} pointerEvents="none">
+          <ImageBackground source={src} resizeMode="cover" style={StyleSheet.absoluteFill} />
+        </Animated.View>
+      ))}
       <LinearGradient
         colors={['rgba(0,5,15,0.40)', 'rgba(0,5,15,0.80)', 'rgba(0,5,15,0.97)']}
         locations={[0, 0.5, 1]}

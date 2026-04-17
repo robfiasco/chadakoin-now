@@ -18,6 +18,7 @@ import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
 import { AddToHomeScreen } from '../components/AddToHomeScreen';
+import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
 
 interface NowPlaying {
@@ -246,20 +247,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <View style={styles.appNameWrap}>
-              <Text style={styles.appName} numberOfLines={1}>Chadakoin Now</Text>
-              {/* Shimmer sweep — translates from left to right every 15 s */}
-              <Animated.View
-                style={[styles.shimmer, { transform: [{ translateX: shimmerAnim }] }]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  colors={['transparent', 'rgba(255,255,255,0.3)', 'transparent'] as any}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={{ width: 80, flex: 1 }}
-                />
-              </Animated.View>
-            </View>
+            <WaterTitle />
             <Text style={styles.appCity}>Jamestown, NY</Text>
           </View>
           <View style={styles.headerRight}>

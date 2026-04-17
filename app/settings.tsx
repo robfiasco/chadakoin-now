@@ -242,7 +242,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   header:  { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40 },
-  title:   { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  title:   { fontFamily: 'DMSans_700Bold', fontSize: 28, color: '#fff', letterSpacing: -0.5, lineHeight: 36 },
   subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4, letterSpacing: 1 },
   content: { padding: 16, paddingTop: 4, paddingBottom: 48, gap: 12 },
 
