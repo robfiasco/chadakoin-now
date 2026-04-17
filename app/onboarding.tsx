@@ -24,7 +24,6 @@ interface Slide {
   role: Role;
   icon: keyof typeof Ionicons.glyphMap;
   roleLabel: string;
-  slideNum: string;
   titlePrefix: string;
   titleAccent: string;
   body: string;
@@ -36,30 +35,28 @@ const LOCAL_SLIDES: Slide[] = [
     role: 'local',
     icon: 'home-outline',
     roleLabel: 'FOR LOCALS',
-    slideNum: '01',
     titlePrefix: 'Your city,\nalways\n',
     titleAccent: 'current.',
     body: 'Everything Jamestown — one place, always up to date.',
     cards: [
       { label: 'Weather',    desc: 'Forecast on your Home screen' },
-      { label: 'Recycling',  desc: 'Never miss pickup day' },
+      { label: 'Recycling',  desc: "See what's getting picked up this week" },
       { label: 'News',       desc: 'Local outlets & feeds' },
-      { label: 'Sports',     desc: 'Sabres & Jayhawks' },
-      { label: 'Events',     desc: "What's happening this month", wide: true },
+      { label: 'Sports',     desc: 'Sabres, Jayhawks, MLB & more' },
+      { label: 'Events',     desc: "What's happening now", wide: true },
     ],
   },
   {
     role: 'local',
     icon: 'build-outline',
     roleLabel: 'FOR LOCALS',
-    slideNum: '02',
     titlePrefix: 'Built by\nsomeone who\n',
     titleAccent: 'lives here.',
     body: "I got tired of opening five apps just to know what was going on. So I built the one I wanted.",
     cards: [
-      { label: 'City services',    desc: 'Info & contacts in Settings' },
-      { label: 'Feedback',         desc: 'Goes straight to me' },
-      { label: 'Free',             desc: 'No account, no ads, no tracking', wide: true },
+      { label: 'City services',     desc: 'Info & contacts in Settings' },
+      { label: 'Feedback',          desc: 'Goes straight to me' },
+      { label: 'Free',              desc: 'No account, no ads, no tracking', wide: true },
     ],
   },
 ];
@@ -69,14 +66,13 @@ const VISITOR_SLIDES: Slide[] = [
     role: 'visitor',
     icon: 'airplane-outline',
     roleLabel: 'VISITING',
-    slideNum: '01',
-    titlePrefix: 'Welcome to\nJames-\n',
-    titleAccent: 'town.',
+    titlePrefix: 'Welcome to\n',
+    titleAccent: 'Jamestown.',
     body: "The best of WNY's most underrated city, curated for your visit.",
     cards: [
       { label: 'Food & drink',  desc: 'Where locals actually eat' },
       { label: 'Events',        desc: "What's on while you're here" },
-      { label: 'Attractions',   desc: 'Lucy, Reg Tory Peterson & more' },
+      { label: 'Attractions',   desc: 'Lucy, Roger Tory Peterson & more' },
       { label: 'Weather',       desc: '5-day forecast on Home' },
     ],
   },
@@ -84,13 +80,12 @@ const VISITOR_SLIDES: Slide[] = [
     role: 'visitor',
     icon: 'map-outline',
     roleLabel: 'VISITING',
-    slideNum: '02',
     titlePrefix: 'Curated,\nnot\n',
     titleAccent: 'algorithmic.',
     body: "The Visit tab is places I'd actually send a friend. Filtered by what you're looking for. Hope you love it here.",
     cards: [
-      { label: 'Visit tab',        desc: 'Filtered by category' },
-      { label: 'No account needed', desc: 'Just open and explore', wide: true },
+      { label: 'Visit tab',          desc: 'Filtered by category' },
+      { label: 'No account needed',  desc: 'Just open and explore', wide: true },
     ],
   },
 ];
@@ -222,13 +217,10 @@ export default function OnboardingScreen({ onDone }: Props) {
         {slides.map((s, i) => (
           <View key={i} style={[styles.slide, { width: containerWidth }]}>
             <SafeAreaView edges={['top']} style={styles.slideInner}>
-              {/* Top row: role label + slide number */}
-              <View style={styles.topRow}>
-                <View style={styles.roleLabelRow}>
-                  <Ionicons name={s.icon} size={13} color={accent} />
-                  <Text style={[styles.roleLabel, { color: accent }]}>{s.roleLabel}</Text>
-                </View>
-                <Text style={styles.bigNumSlide}>{s.slideNum}</Text>
+              {/* Role label */}
+              <View style={styles.roleLabelRow}>
+                <Ionicons name={s.icon} size={12} color={accent} />
+                <Text style={[styles.roleLabel, { color: accent }]}>{s.roleLabel}</Text>
               </View>
 
               {/* Title */}
@@ -403,36 +395,24 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
 
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
   roleLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingTop: 6,
+    marginBottom: 18,
   },
   roleLabel: {
     fontFamily: 'Outfit', fontSize: 11, fontWeight: '700',
     letterSpacing: 1.5, textTransform: 'uppercase',
   },
-  bigNumSlide: {
-    fontFamily: 'Syne', fontSize: 72, fontWeight: '800',
-    color: 'rgba(255,255,255,0.07)', lineHeight: 72,
-    letterSpacing: -2,
-  },
-
   slideTitle: {
-    fontFamily: 'Syne', fontSize: 34, fontWeight: '800',
-    color: '#fff', letterSpacing: -0.8, lineHeight: 40,
-    marginBottom: 12,
+    fontFamily: 'Syne', fontSize: 22, fontWeight: '700',
+    color: '#fff', letterSpacing: -0.3, lineHeight: 30,
+    marginBottom: 10,
   },
   slideBody: {
-    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.5)',
-    lineHeight: 21, marginBottom: 22,
+    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)',
+    lineHeight: 20, marginBottom: 20,
   },
 
   // Feature cards
