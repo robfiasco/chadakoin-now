@@ -55,14 +55,50 @@ const CATEGORY_COLORS: Record<NewsCategory, string> = {
 };
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
-const CATEGORY_ICONS: Record<NewsCategory, IoniconName> = {
-  Music:     'musical-notes-outline',
-  City:      'business-outline',
-  State:     'flag-outline',
-  JCC:       'school-outline',
-  Education: 'school-outline',
-  Community: 'people-outline',
-  Breaking:  'alert-circle-outline',
+
+// Per-category banner: gradient stops, bg icon, accent bar color
+const CATEGORY_BANNERS: Record<NewsCategory, {
+  grad: [string, string, string];
+  gStart: { x: number; y: number };
+  gEnd:   { x: number; y: number };
+  icon:   IoniconName;
+  bar:    string;   // top border color
+}> = {
+  Breaking:  {
+    grad: ['rgba(239,68,68,0.55)', 'rgba(239,68,68,0.18)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'flame-outline', bar: '#ef4444',
+  },
+  Music:  {
+    grad: ['rgba(251,113,133,0.50)', 'rgba(244,63,94,0.14)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'musical-notes-outline', bar: '#fb7185',
+  },
+  City:  {
+    grad: ['rgba(34,211,238,0.42)', 'rgba(6,182,212,0.12)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'business-outline', bar: '#22d3ee',
+  },
+  State:  {
+    grad: ['rgba(251,191,36,0.48)', 'rgba(245,158,11,0.14)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 1 }, gEnd: { x: 1, y: 0 },
+    icon: 'flag-outline', bar: '#fbbf24',
+  },
+  JCC:  {
+    grad: ['rgba(167,139,250,0.48)', 'rgba(139,92,246,0.14)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'trophy-outline', bar: '#a78bfa',
+  },
+  Education:  {
+    grad: ['rgba(96,165,250,0.45)', 'rgba(59,130,246,0.14)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'school-outline', bar: '#60a5fa',
+  },
+  Community:  {
+    grad: ['rgba(52,211,153,0.40)', 'rgba(16,185,129,0.12)', 'rgba(6,14,24,0.2)'],
+    gStart: { x: 0, y: 0 }, gEnd: { x: 1, y: 1 },
+    icon: 'people-outline', bar: '#34d399',
+  },
 };
 
 // ── Time helpers ──────────────────────────────────────────────────
@@ -97,35 +133,36 @@ function bucketItems(items: NewsItem[]): Bucket[] {
 
 // ── Hero card ─────────────────────────────────────────────────────
 function HeroCard({ item }: { item: NewsItem }) {
-  const { theme } = useTheme();
   const category = deriveCategory(item.title, item.source ?? '');
-  const color = CATEGORY_COLORS[category] ?? theme.acc;
-  const icon = CATEGORY_ICONS[category] ?? 'newspaper-outline';
+  const color  = CATEGORY_COLORS[category] ?? '#94a3b8';
+  const banner = CATEGORY_BANNERS[category];
 
   return (
     <TouchableOpacity
       onPress={() => openLink(item.link)}
       activeOpacity={0.75}
-      style={hero.card}
+      style={[hero.card, { borderTopColor: banner.bar, borderTopWidth: 3 }]}
     >
       {/* Gradient header */}
       <View style={hero.header}>
         <LinearGradient
-          colors={[`${color}44`, `${color}18`, 'transparent'] as any}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          colors={banner.grad as any}
+          start={banner.gStart}
+          end={banner.gEnd}
           style={StyleSheet.absoluteFill}
         />
-        <Ionicons name={icon} size={88} color={`${color}14`} style={hero.bgIcon} />
+        {/* Large bg icon — distinct per category */}
+        <Ionicons name={banner.icon} size={96} color={`${banner.bar}18`} style={hero.bgIcon} />
 
         {/* Top Story badge */}
-        <View style={hero.topBadge}>
+        <View style={[hero.topBadge, { backgroundColor: `${banner.bar}cc` }]}>
           <PulsingDot color="#fff" size={5} />
           <Text style={hero.topBadgeText}>Top Story</Text>
         </View>
 
         {/* Category pill — bottom left */}
-        <View style={[hero.catPill, { backgroundColor: `${color}22`, borderColor: `${color}44` }]}>
-          <Text style={[hero.catText, { color }]}>{category.toUpperCase()}</Text>
+        <View style={[hero.catPill, { backgroundColor: `${banner.bar}22`, borderColor: `${banner.bar}50` }]}>
+          <Text style={[hero.catText, { color: banner.bar }]}>{category.toUpperCase()}</Text>
         </View>
       </View>
 
@@ -151,11 +188,10 @@ const hero = StyleSheet.create({
     borderRadius: 18, overflow: 'hidden', marginBottom: 12,
   },
   header: { height: 148, position: 'relative', justifyContent: 'space-between', padding: 14 },
-  bgIcon: { position: 'absolute', right: -12, bottom: -12 },
+  bgIcon: { position: 'absolute', right: -16, bottom: -16 },
   topBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-    backgroundColor: '#EF4444', paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 7,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7,
   },
   topBadgeText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.8 },
   catPill: {
