@@ -157,61 +157,54 @@ export default function OnboardingScreen({ onDone }: Props) {
       <Animated.View style={[styles.container, { opacity: roleAnim }]} onLayout={onLayout}>
         <SafeAreaView edges={['top', 'bottom']} style={styles.pickerSafe}>
 
-          {/* Top: wordmark */}
+          {/* Logo lockup */}
           <View style={styles.pickerTop}>
-            <View style={styles.wordmarkRow}>
-              <View style={styles.wordmarkDot} />
-              <Text style={styles.wordmark}>Chadakoin Now</Text>
+            <View style={styles.lockup}>
+              <View style={styles.lockupIcon}>
+                <Ionicons name="location" size={18} color={ACC} />
+              </View>
+              <Text style={styles.lockupText}>
+                Chadakoin <Text style={{ color: ACC }}>Now</Text>
+              </Text>
             </View>
           </View>
 
-          {/* Middle: headline + cards */}
+          {/* Headline + rows */}
           <View style={styles.pickerMiddle}>
-            <Text style={styles.pickerHeadline}>
-              {'Who are you\nhere '}
-              <Text style={{ color: ACC }}>for?</Text>
-            </Text>
-            <Text style={styles.pickerBody}>
-              We'll show you what matters most.
-            </Text>
+            <Text style={styles.pickerHeadline}>Welcome to{'\n'}Jamestown.</Text>
+            <Text style={styles.pickerBody}>Let's tailor your view of the city.</Text>
 
-            <View style={styles.pickerCards}>
-              <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('local')} style={[styles.roleCard, styles.roleCardLocal]}>
-                <LinearGradient
-                  colors={[`rgba(${ACC_RGB},0.12)`, `rgba(${ACC_RGB},0.04)`]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={[styles.roleIconWrap, { backgroundColor: `${ACC}18`, borderColor: `${ACC}35` }]}>
-                  <Ionicons name="home-outline" size={22} color={ACC} />
+            <View style={styles.pickerRows}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => pickRole('local')} style={styles.roleRow}>
+                <View style={[styles.roleRowIcon, { backgroundColor: `${ACC}18` }]}>
+                  <Ionicons name="home-outline" size={18} color={ACC} />
                 </View>
-                <Text style={[styles.roleCardLabel, { color: ACC }]}>I live here</Text>
-                <Text style={styles.roleCardDesc}>Recycling, alerts, news,{'\n'}sports & events</Text>
-                <View style={[styles.roleChevron, { borderColor: `${ACC}30` }]}>
-                  <Ionicons name="arrow-forward" size={14} color={ACC} />
+                <View style={styles.roleRowText}>
+                  <Text style={styles.roleRowLabel}>I live in Jamestown</Text>
+                  <Text style={styles.roleRowSub}>Daily local feed</Text>
                 </View>
+                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
               </TouchableOpacity>
 
-              <TouchableOpacity activeOpacity={0.85} onPress={() => pickRole('visitor')} style={[styles.roleCard, styles.roleCardVisitor]}>
-                <LinearGradient
-                  colors={['rgba(251,191,36,0.12)', 'rgba(251,191,36,0.04)']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(251,191,36,0.15)', borderColor: 'rgba(251,191,36,0.30)' }]}>
-                  <Ionicons name="airplane-outline" size={22} color={GOLD} />
+              <View style={styles.roleRowDivider} />
+
+              <TouchableOpacity activeOpacity={0.8} onPress={() => pickRole('visitor')} style={styles.roleRow}>
+                <View style={[styles.roleRowIcon, { backgroundColor: 'rgba(251,191,36,0.15)' }]}>
+                  <Ionicons name="airplane-outline" size={18} color={GOLD} />
                 </View>
-                <Text style={[styles.roleCardLabel, { color: GOLD }]}>Just visiting</Text>
-                <Text style={styles.roleCardDesc}>Food, events, attractions{'\n'}& what to do</Text>
-                <View style={[styles.roleChevron, { borderColor: 'rgba(251,191,36,0.28)' }]}>
-                  <Ionicons name="arrow-forward" size={14} color={GOLD} />
+                <View style={styles.roleRowText}>
+                  <Text style={styles.roleRowLabel}>I'm just visiting</Text>
+                  <Text style={styles.roleRowSub}>Must-do highlights</Text>
                 </View>
+                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Bottom: footer */}
-          <Text style={styles.footer}>Chadakoin Now · Built in Jamestown, NY</Text>
+          {/* Skip */}
+          <TouchableOpacity onPress={() => onDone(false)} activeOpacity={0.6} style={styles.skipBtn}>
+            <Text style={styles.skipText}>Skip setup</Text>
+          </TouchableOpacity>
         </SafeAreaView>
       </Animated.View>
     );
@@ -325,23 +318,24 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'space-between',
-    paddingBottom: 16,
+    paddingBottom: 24,
   },
   pickerTop: {
-    paddingTop: 20,
+    paddingTop: 16,
   },
-  wordmarkRow: {
+  lockup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  wordmarkDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: ACC,
+  lockupIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: `${ACC}18`,
+    alignItems: 'center', justifyContent: 'center',
   },
-  wordmark: {
-    fontFamily: 'Syne', fontSize: 13, fontWeight: '700',
-    color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5,
+  lockupText: {
+    fontFamily: 'DMSans_600SemiBold', fontSize: 16,
+    color: '#fff',
   },
   pickerMiddle: {
     flex: 1,
@@ -349,49 +343,54 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   pickerHeadline: {
-    fontFamily: 'Syne', fontSize: 30, fontWeight: '800',
-    color: '#fff', letterSpacing: -0.5, lineHeight: 36,
+    fontFamily: 'DMSans_600SemiBold', fontSize: 28,
+    color: '#fff', lineHeight: 36,
     marginBottom: 10,
   },
   pickerBody: {
-    fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.4)',
-    marginBottom: 28,
+    fontFamily: 'DMSans_400Regular', fontSize: 15,
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: 32,
   },
-  pickerCards: {
-    gap: 12,
-  },
-  roleCard: {
+  pickerRows: {
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,
-    padding: 20,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     overflow: 'hidden',
-    gap: 8,
   },
-  roleCardLocal: {
-    borderColor: `rgba(${ACC_RGB},0.2)`,
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  roleCardVisitor: {
-    borderColor: 'rgba(251,191,36,0.18)',
+  roleRowDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginHorizontal: 16,
   },
-  roleIconWrap: {
-    width: 44, height: 44, borderRadius: 13,
-    borderWidth: 1,
+  roleRowIcon: {
+    width: 38, height: 38, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: 4,
   },
-  roleCardLabel: {
-    fontFamily: 'Syne', fontSize: 18, fontWeight: '800',
+  roleRowText: { flex: 1 },
+  roleRowLabel: {
+    fontFamily: 'DMSans_600SemiBold', fontSize: 15, color: '#fff',
+    marginBottom: 2,
   },
-  roleCardDesc: {
-    fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)',
-    lineHeight: 19,
+  roleRowSub: {
+    fontFamily: 'DMSans_400Regular', fontSize: 12,
+    color: 'rgba(255,255,255,0.4)',
   },
-  roleChevron: {
-    position: 'absolute',
-    top: 20, right: 20,
-    width: 30, height: 30, borderRadius: 15,
-    borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center',
+  skipBtn: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+  },
+  skipText: {
+    fontFamily: 'DMSans_400Regular', fontSize: 13,
+    color: 'rgba(255,255,255,0.3)',
   },
 
   // ── Slides ───────────────────────────────────────────────
