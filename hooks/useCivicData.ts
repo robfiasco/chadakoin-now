@@ -49,6 +49,7 @@ export interface EventItem {
   category: string;
   tags: string[];
   link?: string;
+  imageUrl?: string;
 }
 
 export interface NewsItem {
@@ -648,6 +649,16 @@ const CURATED_EVENTS: EventItem[] = [
     link: 'https://rtpi.org/programs/',
   },
   {
+    title: 'The Folsom Prison Experience',
+    startDate: '2026-04-19T19:30:00',
+    endDate:   '2026-04-19T22:00:00',
+    location: 'Reg Lenna Center, Jamestown',
+    category: 'Music',
+    tags: ['Reg Lenna', 'Concert', 'Johnny Cash'],
+    link: 'https://reglenna.com',
+    imageUrl: 'https://images.squarespace-cdn.com/content/v1/5d8668f1f6d3ed5360d8f8f2/6d5fc67e-f58e-42d8-af1d-0ced94d02e2a/Folsom+Event+New+Web.jpg?format=2500w',
+  },
+  {
     title: '50th Annual Banff Centre Mountain Film Festival',
     startDate: '2026-04-24T19:00:00',
     endDate:   '2026-04-25T22:00:00',
@@ -785,15 +796,22 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
     const events = items
       .filter(item => new Date(item.startDate) >= today)
       .slice(0, 15)
-      .map(item => ({
-        title: stripHtml(item.title ?? ''),
-        startDate: new Date(item.startDate).toISOString(),
-        endDate: item.endDate ? new Date(item.endDate).toISOString() : new Date(item.startDate).toISOString(),
-        location: item.location?.addressTitle ?? item.location?.addressLine1 ?? 'Reg Lenna Center, Jamestown',
-        category: 'Arts & Entertainment',
-        tags: ['Reg Lenna'],
-        link: item.fullUrl ? `https://reglenna.com${item.fullUrl}` : undefined,
-      }));
+      .map(item => {
+        // Squarespace event JSON may include assetUrl or thumbnailUrl
+        const imageUrl: string | undefined =
+          item.assetUrl ?? item.thumbnailUrl ?? item.imageUrl ?? undefined;
+
+        return {
+          title: stripHtml(item.title ?? ''),
+          startDate: new Date(item.startDate).toISOString(),
+          endDate: item.endDate ? new Date(item.endDate).toISOString() : new Date(item.startDate).toISOString(),
+          location: item.location?.addressTitle ?? item.location?.addressLine1 ?? 'Reg Lenna Center, Jamestown',
+          category: 'Arts & Entertainment',
+          tags: ['Reg Lenna'],
+          link: item.fullUrl ? `https://reglenna.com${item.fullUrl}` : undefined,
+          ...(imageUrl ? { imageUrl } : {}),
+        };
+      });
 
     await setCache('reglenna', events);
     return events;

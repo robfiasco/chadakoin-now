@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -143,12 +143,31 @@ function FeaturedCard({ event }: { event: EventItem }) {
     >
       {/* Gradient header */}
       <View style={feat.header}>
-        <LinearGradient
-          colors={[`${color}44`, `${color}18`, 'transparent'] as any}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <Ionicons name={icon} size={100} color={`${color}10`} style={feat.bgIcon} />
+        {event.imageUrl ? (
+          <>
+            <Image source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {/* Dark gradient overlay so pills remain readable over photos */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.15)', 'transparent'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </>
+        ) : (
+          <>
+            <LinearGradient
+              colors={[`${color}44`, `${color}18`, 'transparent'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons name={icon} size={100} color={`${color}10`} style={feat.bgIcon} />
+          </>
+        )}
 
         {/* Date + time pills */}
         <View style={feat.topRow}>

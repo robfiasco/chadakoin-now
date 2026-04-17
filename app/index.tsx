@@ -177,6 +177,24 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   const dateBadge = getDateBadge();
 
+  // Shimmer sweep on the app title — fires every 15 seconds
+  const shimmerAnim = useRef(new Animated.Value(-100)).current;
+  useEffect(() => {
+    function runShimmer() {
+      shimmerAnim.setValue(-100);
+      Animated.timing(shimmerAnim, {
+        toValue: 320,
+        duration: 750,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    }
+    // First shimmer fires after 3 s so it's noticeable on load
+    const first = setTimeout(runShimmer, 3000);
+    const id = setInterval(runShimmer, 15000);
+    return () => { clearTimeout(first); clearInterval(id); };
+  }, []);
+
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
@@ -228,7 +246,20 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.appName}>Chadakoin Now</Text>
+            <View style={styles.appNameWrap}>
+              <Text style={styles.appName} numberOfLines={1}>Chadakoin Now</Text>
+              {/* Shimmer sweep — translates from left to right every 15 s */}
+              <Animated.View
+                style={[styles.shimmer, { transform: [{ translateX: shimmerAnim }] }]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={['transparent', 'rgba(255,255,255,0.3)', 'transparent'] as any}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={{ width: 80, flex: 1 }}
+                />
+              </Animated.View>
+            </View>
             <Text style={styles.appCity}>Jamestown, NY</Text>
           </View>
           <View style={styles.headerRight}>
@@ -525,7 +556,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <View style={styles.mediaLabelRow}>
-              <Text style={[styles.mediaLabel, { color: dark.category.city }]}>CDIR</Text>
+              <Text style={[styles.mediaLabel, { color: dark.category.city }]}>Chadakoin Digital Internet Radio</Text>
               <View style={styles.liveChip}>
                 <LiveDot color="#fb7185" />
                 <Text style={styles.liveLabel}>LIVE</Text>
@@ -614,7 +645,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 40, zIndex: 10 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  appName: { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  appNameWrap: { overflow: 'hidden' },
+  appName: { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  shimmer: { position: 'absolute', top: 0, bottom: 0, width: 80 },
   appCity: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: dark.category.city, letterSpacing: 1.8, textTransform: 'uppercase', marginTop: 4 },
   dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.3)' },
   dateBadgeText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: dark.category.city, textTransform: 'uppercase' },
