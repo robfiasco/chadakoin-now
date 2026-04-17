@@ -120,6 +120,21 @@ function relativeTime(dateStr: string): string {
   return days === 1 ? 'Yesterday' : `${days}d ago`;
 }
 
+// Derive a color from a news story's title + source — mirrors news.tsx logic
+function storyColor(title: string, source: string): string {
+  const t = title.toLowerCase();
+  const s = source.toLowerCase();
+  if (/\b(jcc|jamestown community college)\b/i.test(t) || s.includes('jcc')) return '#a78bfa';
+  if (/breaking|urgent|alert|emergency/i.test(t)) return '#ef4444';
+  if (/dies|died|killed|fatal|crash|accident|shooting|arrested|injured|missing/i.test(t)) return '#fb923c';
+  if (/music|concert|band|jazz|blues|rock|festival/i.test(t)) return '#fb7185';
+  if (/school board|city council|mayor|budget|vote|election|municipal/i.test(t)) return '#22d3ee';
+  if (/governor|legislature|assembly|senate|nys|albany/i.test(t)) return '#fbbf24';
+  if (s.includes('city') || s.includes('jamestown') || s.includes('bpu')) return '#22d3ee';
+  if (s.includes('nys') || s.includes('dec') || s.includes('dot')) return '#fbbf24';
+  return '#34d399'; // community
+}
+
 function eventCategoryColor(category: string): string {
   const c = category.toLowerCase();
   if (c.includes('music') || c.includes('concert')) return dark.category.music;
@@ -402,32 +417,36 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 <SkeletonPulse width="90%" height={18} borderRadius={4} accRGB={theme.accRGB} />
                 <SkeletonPulse width="50%" height={12} borderRadius={4} accRGB={theme.accRGB} />
               </View>
-            ) : topStory ? (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => topStory.link ? openLink(topStory.link) : null}
-                // @ts-ignore
-                style={[styles.heroCard, glassWeb]}
-              >
-                <LinearGradient
-                  colors={['rgba(6,182,212,0.25)', 'rgba(37,99,235,0.15)', 'rgba(15,23,42,0.0)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.heroGradient}
+            ) : topStory ? (() => {
+              const sColor = storyColor(topStory.title, topStory.source ?? '');
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => topStory.link ? openLink(topStory.link) : null}
+                  // @ts-ignore
+                  style={[styles.heroCard, glassWeb, { borderTopColor: sColor, borderTopWidth: 3 }]}
                 >
-                  <Ionicons name="newspaper-outline" size={72} color="rgba(255,255,255,0.04)" style={styles.heroWatermark} />
-                  <View style={styles.heroBadge}>
-                    <LiveDot color={dark.category.city} />
-                    <Text style={styles.heroBadgeText}>
-                      {topStory.source ?? 'News'} · {relativeTime(topStory.pubDate)}
-                    </Text>
+                  <LinearGradient
+                    colors={[`${sColor}40`, `${sColor}14`, 'rgba(15,23,42,0.0)'] as any}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.heroGradient}
+                  >
+                    <Ionicons name="newspaper-outline" size={72} color={`${sColor}10`} style={styles.heroWatermark} />
+                    <View style={[styles.heroBadge, { borderColor: `${sColor}30` }]}>
+                      <LiveDot color={sColor} />
+                      <Text style={[styles.heroBadgeText, { color: sColor }]}>
+                        {topStory.source ?? 'News'} · {relativeTime(topStory.pubDate)}
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                  <View style={styles.heroBody}>
+                    <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
+                    <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'}</Text>
                   </View>
-                </LinearGradient>
-                <View style={styles.heroBody}>
-                  <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
-                  <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'}</Text>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })()
             ) : null}
           </>
         )}
