@@ -58,6 +58,18 @@ export const PLACES: Place[] = [
     lat: 42.11482, lng: -79.24780,
   },
   {
+    id: 'full-moon-rising-bakery',
+    name: 'Full Moon Rising Bakery',
+    categories: ['food'],
+    icon: 'storefront-outline',
+    description: 'Custom cakes, cupcakes, decorated sugar cookies, and milkshakes made to order. Sweet treats that will send you to the moon.',
+    address: '122 E 3rd St, Jamestown',
+    website: 'https://www.fullmoonrisingbakeryjtny.com',
+    hours: 'Wed–Fri 11am–6pm · Sat 11am–4pm',
+    featured: false,
+    lat: 42.09694, lng: -79.23996,
+  },
+  {
     id: 'davidsons',
     name: "Davidson's Restaurant",
     categories: ['food'],
