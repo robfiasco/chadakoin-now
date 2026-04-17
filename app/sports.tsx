@@ -532,16 +532,30 @@ export default function SportsScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={styles.nextUpHeader}
                 >
-                  <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
+                  {/* Logo matchup fills the header when both logos are available */}
+                  {(nextUp.ourLogoUrl && nextUp.oppLogoUrl) ? (
+                    <View style={styles.nextUpLogoRow}>
+                      <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                      <LinearGradient
+                        colors={[nextUp.gradEnd, nextUp.gradStart, nextUp.gradEnd] as any}
+                        start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                        style={styles.nextUpVsDivider}
+                      >
+                        <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>
+                          {nextUp.matchup.includes('@') ? '@' : 'vs'}
+                        </Text>
+                      </LinearGradient>
+                      <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                    </View>
+                  ) : (
+                    <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
+                  )}
                   <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
                     <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
                   </View>
                 </LinearGradient>
                 <View style={styles.nextUpBody}>
-                  {nextUp.ourLogoUrl ? (
-                    <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpLogo} resizeMode="contain" />
-                  ) : null}
-                  <View style={{ flex: 1, marginHorizontal: nextUp.ourLogoUrl ? 12 : 0 }}>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                       <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary }}>{nextUp.dateLabel}</Text>
@@ -553,9 +567,6 @@ export default function SportsScreen() {
                       )}
                     </View>
                   </View>
-                  {nextUp.oppLogoUrl ? (
-                    <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpLogo} resizeMode="contain" />
-                  ) : null}
                 </View>
               </View>
             ) : null}
@@ -979,20 +990,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,23,42,0.4)',
     overflow: 'hidden',
   },
-  nextUpHeader: { height: 72, overflow: 'hidden', justifyContent: 'flex-end', padding: 12 },
+  nextUpHeader: { height: 110, overflow: 'hidden', justifyContent: 'flex-end', padding: 12 },
   nextUpBgEmoji: { position: 'absolute', right: -8, bottom: -16, fontSize: 90, opacity: 0.08 },
+  nextUpLogoRow: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20,
+  },
+  nextUpHeaderLogo: { width: 64, height: 64, flexShrink: 0 },
+  nextUpVsDivider: { flex: 1, height: 1, alignItems: 'center', justifyContent: 'center' },
+  nextUpVsText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '800', letterSpacing: 1, backgroundColor: 'transparent', paddingHorizontal: 8 },
   nextUpPill: {
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   nextUpPillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   nextUpBody: { padding: 14, flexDirection: 'row', alignItems: 'center' },
   nextUpMatchup: { fontFamily: 'Syne', fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
-  nextUpLogo: { width: 44, height: 44, flexShrink: 0 },
 
   // Team cards
   teamCard: {

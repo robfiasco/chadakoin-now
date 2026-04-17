@@ -336,23 +336,37 @@ export default function EventsScreen() {
   ];
 
   const filtered = useMemo(() => {
-    let result: EventItem[];
-    if (activeFilter === 'weekend') {
-      const [fri, sun] = getWeekendRange();
-      result = upcoming.filter(e => {
-        const d = new Date(e.startDate);
-        return d >= fri && d <= sun;
-      });
-    } else if (activeFilter === 'week') {
-      const [start, end] = getWeekRange();
-      result = upcoming.filter(e => {
-        const d = new Date(e.startDate);
-        return d >= start && d <= end;
-      });
-    } else {
-      result = upcoming.filter(e => getEventMonth(e.startDate) === activeFilter);
+    function getForFilter(key: FilterKey): EventItem[] {
+      let result: EventItem[];
+      if (key === 'weekend') {
+        const [fri, sun] = getWeekendRange();
+        result = upcoming.filter(e => { const d = new Date(e.startDate); return d >= fri && d <= sun; });
+      } else if (key === 'week') {
+        const [start, end] = getWeekRange();
+        result = upcoming.filter(e => { const d = new Date(e.startDate); return d >= start && d <= end; });
+      } else {
+        result = upcoming.filter(e => getEventMonth(e.startDate) === key);
+      }
+      return result.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     }
-    return result.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+    const primary = getForFilter(activeFilter);
+
+    // If only 1 event on this filter, automatically widen to avoid featured-only view:
+    // weekend → this week → current month → next month
+    if (primary.length <= 1 && activeFilter === 'weekend') {
+      const week = getForFilter('week');
+      if (week.length > 1) return week;
+      const month = MONTH_NAMES[new Date().getMonth()];
+      const mo = getForFilter(month);
+      if (mo.length > 1) return mo;
+    } else if (primary.length <= 1 && activeFilter === 'week') {
+      const month = MONTH_NAMES[new Date().getMonth()];
+      const mo = getForFilter(month);
+      if (mo.length > 1) return mo;
+    }
+
+    return primary;
   }, [upcoming, activeFilter]);
 
   const featuredEvent = filtered[0] ?? null;

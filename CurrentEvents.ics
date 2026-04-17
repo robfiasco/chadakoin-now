@@ -1,0 +1,825 @@
+BEGIN:VCALENDAR
+PRODID:-//github.com/rianjs/ical.net//NONSGML ical.net 4.0//EN
+VERSION:2.0
+X-WR-TIMEZONE:America/New_York
+BEGIN:VTIMEZONE
+TZID:America/New_York
+X-LIC-LOCATION:America/New_York
+BEGIN:STANDARD
+DTSTART:20241103T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:20250309T020000
+RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1049
+DTEND;TZID=America/New_York:20270102T235900
+DTSTAMP;TZID=America/New_York:20251030T101754
+DTSTART;TZID=America/New_York:20261228T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101754
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1049
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:​There is no garbage or recycling collection on Christmas Day\
+ , Friday\, 12/25/2026. Friday routes will be collected on Saturday. https
+ ://www.jamestownnybpu.gov/calendar.aspx?EID=975
+DTEND;TZID=America/New_York:20261225T235900
+DTSTAMP;TZID=America/New_York:20251030T101742
+DTSTART;TZID=America/New_York:20261225T130000
+LAST-MODIFIED;TZID=America/New_York:20251030T101742
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:CHRISTMAS DAY = NO GARBAGE OR RECYCLING ON FRIDAY\, 12/25/2026.
+UID:975
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1068
+DTEND;TZID=America/New_York:20261226T235900
+DTSTAMP;TZID=America/New_York:20251030T101657
+DTSTART;TZID=America/New_York:20261221T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101657
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1068
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1032
+DTEND;TZID=America/New_York:20261218T235900
+DTSTAMP;TZID=America/New_York:20251030T101643
+DTSTART;TZID=America/New_York:20261214T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101643
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1032
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1067
+DTEND;TZID=America/New_York:20261211T235900
+DTSTAMP;TZID=America/New_York:20251030T101629
+DTSTART;TZID=America/New_York:20261207T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101629
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1067
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1048
+DTEND;TZID=America/New_York:20261204T235900
+DTSTAMP;TZID=America/New_York:20251030T101613
+DTSTART;TZID=America/New_York:20261130T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101613
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1048
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:​There is no garbage or recycling collection on Thanksgiving D
+ ay\, Thursday 11/26/2026. Thursday routes will be collected on Friday. Fr
+ iday routes will be collected on Saturday. https://www.jamestownnybpu.gov
+ /calendar.aspx?EID=1073
+DTEND;TZID=America/New_York:20261126T235900
+DTSTAMP;TZID=America/New_York:20251030T082452
+DTSTART;TZID=America/New_York:20261126T130000
+LAST-MODIFIED;TZID=America/New_York:20251030T082452
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:THANKSGIVING DAY - NO GARBAGE OR RECYCLING ON THURSDAY\, NOVEMBER 
+ 26TH
+UID:1073
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1031
+DTEND;TZID=America/New_York:20261128T235900
+DTSTAMP;TZID=America/New_York:20251030T101557
+DTSTART;TZID=America/New_York:20261123T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101557
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1031
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1047
+DTEND;TZID=America/New_York:20261120T235900
+DTSTAMP;TZID=America/New_York:20251030T101543
+DTSTART;TZID=America/New_York:20261116T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101543
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1047
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Users of this facility must have a current BPU Yard Waste Stic
+ ker affixed to the vehicle being used to deliver waste. Stickers are avai
+ lable at customer service for $20.00. Customers are permitted one sticker
+  per account\, per year. https://www.jamestownnybpu.gov/calendar.aspx?EID
+ =1082
+DTEND;TZID=America/New_York:20261114T235900
+DTSTAMP;TZID=America/New_York:20251030T124300
+DTSTART;TZID=America/New_York:20261114T130000
+LAST-MODIFIED;TZID=America/New_York:20251030T124300
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:BPU YARD WASTE SITE SEASON ENDS\; LAST SATURDAY FOR 2026\, NOVEMBE
+ R 14TH.
+UID:1082
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Metal Recyclables include tin\, aluminum food & beverage conta
+ iners. Heavy or Scrap metals should be taken to a scrap metal recycling c
+ enter. https://www.jamestownnybpu.gov/calendar.aspx?EID=1055
+DTEND;TZID=America/New_York:20261113T235900
+DTSTAMP;TZID=America/New_York:20251030T101531
+DTSTART;TZID=America/New_York:20261109T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101531
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Metal Recycling: Aluminum & Tin - Food and Beverage Containers ONL
+ Y.
+UID:1055
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1066
+DTEND;TZID=America/New_York:20261106T235900
+DTSTAMP;TZID=America/New_York:20251030T101518
+DTSTART;TZID=America/New_York:20261102T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101518
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1066
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1030
+DTEND;TZID=America/New_York:20261030T235900
+DTSTAMP;TZID=America/New_York:20251030T101504
+DTSTART;TZID=America/New_York:20261026T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101504
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1030
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1046
+DTEND;TZID=America/New_York:20261023T235900
+DTSTAMP;TZID=America/New_York:20251030T101451
+DTSTART;TZID=America/New_York:20261019T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101451
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1046
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1065
+DTEND;TZID=America/New_York:20261016T235900
+DTSTAMP;TZID=America/New_York:20251030T101438
+DTSTART;TZID=America/New_York:20261012T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101438
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1065
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1029
+DTEND;TZID=America/New_York:20261009T235900
+DTSTAMP;TZID=America/New_York:20251030T101426
+DTSTART;TZID=America/New_York:20261005T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101426
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1029
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Users of this facility must have a current BPU Yard Waste Stic
+ ker affixed to the vehicle being used to deliver waste. Stickers are avai
+ lable at customer service for $20.00. Customers are permitted one sticker
+  per account\, per year. https://www.jamestownnybpu.gov/calendar.aspx?EID
+ =1081
+DTEND;TZID=America/New_York:20260930T235900
+DTSTAMP;TZID=America/New_York:20251030T104311
+DTSTART;TZID=America/New_York:20260930T130000
+LAST-MODIFIED;TZID=America/New_York:20251030T104311
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:BPU YARD WASTE SITE SEASON ENDS\; LAST WEDNESDAY FOR 2026\, SEPTEM
+ BER 30TH.
+UID:1081
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1045
+DTEND;TZID=America/New_York:20261002T235900
+DTSTAMP;TZID=America/New_York:20251030T101401
+DTSTART;TZID=America/New_York:20260928T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101401
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1045
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1064
+DTEND;TZID=America/New_York:20260925T235900
+DTSTAMP;TZID=America/New_York:20251030T101346
+DTSTART;TZID=America/New_York:20260921T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101346
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1064
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1044
+DTEND;TZID=America/New_York:20260918T235900
+DTSTAMP;TZID=America/New_York:20251030T101335
+DTSTART;TZID=America/New_York:20260914T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101335
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1044
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Metal Recyclables include tin\, aluminum food & beverage conta
+ iners. Heavy or Scrap metals should be taken to a scrap metal recycling c
+ enter. https://www.jamestownnybpu.gov/calendar.aspx?EID=1054
+DTEND;TZID=America/New_York:20260912T235900
+DTSTAMP;TZID=America/New_York:20251030T101258
+DTSTART;TZID=America/New_York:20260908T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101258
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Metal Recycling: Aluminum & Tin - Food and Beverage Containers ONL
+ Y.
+UID:1054
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:​There is no garbage or recycling collection on Monday\, 9/7/2
+ 026.  All garbage collection days will move forward one day this week.  h
+ ttps://www.jamestownnybpu.gov/calendar.aspx?EID=1072
+DTEND;TZID=America/New_York:20260907T235900
+DTSTAMP;TZID=America/New_York:20251030T101233
+DTSTART;TZID=America/New_York:20260907T130000
+LAST-MODIFIED;TZID=America/New_York:20251030T101233
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:LABOR DAY - NO GARBAGE OR RECYCLING ON MONDAY\, 9/7/2026.
+UID:1072
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1028
+DTEND;TZID=America/New_York:20260904T235900
+DTSTAMP;TZID=America/New_York:20251030T101212
+DTSTART;TZID=America/New_York:20260831T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101212
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1028
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1063
+DTEND;TZID=America/New_York:20260828T235900
+DTSTAMP;TZID=America/New_York:20251030T101137
+DTSTART;TZID=America/New_York:20260824T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101137
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1063
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1043
+DTEND;TZID=America/New_York:20260821T235900
+DTSTAMP;TZID=America/New_York:20251030T101121
+DTSTART;TZID=America/New_York:20260817T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T101121
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1043
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1027
+DTEND;TZID=America/New_York:20260814T235900
+DTSTAMP;TZID=America/New_York:20251030T100949
+DTSTART;TZID=America/New_York:20260810T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100949
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1027
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1062
+DTEND;TZID=America/New_York:20260807T235900
+DTSTAMP;TZID=America/New_York:20251030T100937
+DTSTART;TZID=America/New_York:20260803T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100937
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1062
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1042
+DTEND;TZID=America/New_York:20260731T235900
+DTSTAMP;TZID=America/New_York:20251030T100920
+DTSTART;TZID=America/New_York:20260727T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100920
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1042
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1026
+DTEND;TZID=America/New_York:20260724T235900
+DTSTAMP;TZID=America/New_York:20251030T100908
+DTSTART;TZID=America/New_York:20260720T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100908
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1026
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Metal Recyclables include tin\, aluminum food & beverage conta
+ iners. Heavy or Scrap metals should be taken to a scrap metal recycling c
+ enter. https://www.jamestownnybpu.gov/calendar.aspx?EID=1053
+DTEND;TZID=America/New_York:20260717T235900
+DTSTAMP;TZID=America/New_York:20251030T100854
+DTSTART;TZID=America/New_York:20260713T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100854
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Metal Recycling: Aluminum & Tin - Food and Beverage Containers ONL
+ Y.
+UID:1053
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1061
+DTEND;TZID=America/New_York:20260710T235900
+DTSTAMP;TZID=America/New_York:20251030T100839
+DTSTART;TZID=America/New_York:20260706T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100839
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1061
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Users of this facility must have a current BPU Yard Waste Stic
+ ker affixed to the vehicle being used to deliver waste. Stickers are avai
+ lable at customer service for $20.00. Customers are permitted one sticker
+  per account\, per year. https://www.jamestownnybpu.gov/calendar.aspx?EID
+ =1080
+DTEND;TZID=America/New_York;VALUE=DATE:20260705
+DTSTAMP;TZID=America/New_York:20251030T103757
+DTSTART;TZID=America/New_York;VALUE=DATE:20260704
+LAST-MODIFIED;TZID=America/New_York:20251030T103757
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:BPU YARD WASTE SITE\; CLOSED JULY 4TH\, IN OBSERVANCE OF INDEPENDE
+ NCE DAY.
+UID:1080
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1041
+DTEND;TZID=America/New_York:20260703T235900
+DTSTAMP;TZID=America/New_York:20251030T100721
+DTSTART;TZID=America/New_York:20260629T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100721
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1041
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1060
+DTEND;TZID=America/New_York:20260626T235900
+DTSTAMP;TZID=America/New_York:20251030T100706
+DTSTART;TZID=America/New_York:20260622T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100706
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1060
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1025
+DTEND;TZID=America/New_York:20260619T235900
+DTSTAMP;TZID=America/New_York:20251030T100646
+DTSTART;TZID=America/New_York:20260615T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100646
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1025
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1040
+DTEND;TZID=America/New_York:20260612T235900
+DTSTAMP;TZID=America/New_York:20251030T100627
+DTSTART;TZID=America/New_York:20260608T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100627
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1040
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1059
+DTEND;TZID=America/New_York:20260605T235900
+DTSTAMP;TZID=America/New_York:20251030T100609
+DTSTART;TZID=America/New_York:20260601T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100609
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1059
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Users of this facility must have a current BPU Yard Waste Stic
+ ker affixed to the vehicle being used to deliver waste. Stickers are avai
+ lable at customer service for $20.00. Customers are permitted one sticker
+  per account\, per year. https://www.jamestownnybpu.gov/calendar.aspx?EID
+ =1079
+DTEND;TZID=America/New_York;VALUE=DATE:20260531
+DTSTAMP;TZID=America/New_York:20251030T103654
+DTSTART;TZID=America/New_York;VALUE=DATE:20260530
+LAST-MODIFIED;TZID=America/New_York:20251030T103654
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:BPU YARD WASTE SITE\; CLOSED MAY 30TH IN OBSERVANCE OF MEMORIAL DA
+ Y.
+UID:1079
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1039
+DTEND;TZID=America/New_York:20260530T235900
+DTSTAMP;TZID=America/New_York:20251030T100544
+DTSTART;TZID=America/New_York:20260526T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100544
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1039
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:​There is no garbage or recycling collection on Monday\, 5/25/
+ 2026.  All garbage collection days will move forward one day this week.  
+ https://www.jamestownnybpu.gov/calendar.aspx?EID=1070
+DTEND;TZID=America/New_York:20260525T235900
+DTSTAMP;TZID=America/New_York:20251031T090043
+DTSTART;TZID=America/New_York:20260525T130000
+LAST-MODIFIED;TZID=America/New_York:20251031T090043
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:MEMORIAL DAY - NO GARBAGE OR RECYCLING ON MONDAY\, 5/25/2026.
+UID:1070
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1024
+DTEND;TZID=America/New_York:20260522T235900
+DTSTAMP;TZID=America/New_York:20251030T100527
+DTSTART;TZID=America/New_York:20260518T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100527
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1024
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Users of this facility must have a current BPU Yard Waste Stic
+ ker affixed to the vehicle being used to deliver waste. Stickers are avai
+ lable at customer service for $20.00. Customers are permitted one sticker
+  per account\, per year. https://www.jamestownnybpu.gov/calendar.aspx?EID
+ =1078
+DTEND;TZID=America/New_York;VALUE=DATE:20260514
+DTSTAMP;TZID=America/New_York:20251030T103448
+DTSTART;TZID=America/New_York;VALUE=DATE:20260513
+LAST-MODIFIED;TZID=America/New_York:20251030T103448
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:BPU YARD WASTE SITE\; OPEN WEDNESDAYS BEGINNING MAY 13TH - 4:00 PM
+  TO 7:00 PM
+UID:1078
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1038
+DTEND;TZID=America/New_York:20260515T235900
+DTSTAMP;TZID=America/New_York:20251030T100515
+DTSTART;TZID=America/New_York:20260511T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100515
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1038
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Metal Recyclables include tin\, aluminum food & beverage conta
+ iners. Heavy or Scrap metals should be taken to a scrap metal recycling c
+ enter. https://www.jamestownnybpu.gov/calendar.aspx?EID=1052
+DTEND;TZID=America/New_York:20260508T235900
+DTSTAMP;TZID=America/New_York:20251030T100501
+DTSTART;TZID=America/New_York:20260504T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100501
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Metal Recycling: Aluminum & Tin - Food and Beverage Containers ONL
+ Y.
+UID:1052
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1023
+DTEND;TZID=America/New_York:20260501T235900
+DTSTAMP;TZID=America/New_York:20251030T100434
+DTSTART;TZID=America/New_York:20260427T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100434
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1023
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1037
+DTEND;TZID=America/New_York:20260424T235900
+DTSTAMP;TZID=America/New_York:20251030T100414
+DTSTART;TZID=America/New_York:20260420T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100414
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1037
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1058
+DTEND;TZID=America/New_York:20260417T235900
+DTSTAMP;TZID=America/New_York:20251030T100400
+DTSTART;TZID=America/New_York:20260413T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100400
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1058
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Users of this facility must have a current BPU Yard Waste Stic
+ ker affixed to the vehicle being used to deliver waste. Stickers are avai
+ lable at customer service for $20.00. Customers are permitted one sticker
+  per account\, per year. https://www.jamestownnybpu.gov/calendar.aspx?EID
+ =1077
+DTEND;TZID=America/New_York;VALUE=DATE:20260412
+DTSTAMP;TZID=America/New_York:20251030T103327
+DTSTART;TZID=America/New_York;VALUE=DATE:20260411
+LAST-MODIFIED;TZID=America/New_York:20251030T103327
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:BPU YARD WASTE SITE\; OPEN SATURDAYS BEGINNING APRIL 11TH - 7:00 A
+ M TO 1:00 PM
+UID:1077
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1022
+DTEND;TZID=America/New_York:20260410T235900
+DTSTAMP;TZID=America/New_York:20251030T100346
+DTSTART;TZID=America/New_York:20260406T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100346
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1022
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1036
+DTEND;TZID=America/New_York:20260403T235900
+DTSTAMP;TZID=America/New_York:20251030T100305
+DTSTART;TZID=America/New_York:20260330T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100305
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1036
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Paper recyclables may include newspapers\, office paper\, flie
+ rs\, junk mail\, envelopes\, paper bags\, post cards\, or soft-covered bo
+ oks.  Shredded paper no longer accepted by our recycling vendor. Please p
+ lace it in the regular trash. https://www.jamestownnybpu.gov/calendar.asp
+ x?EID=1057
+DTEND;TZID=America/New_York:20260327T235900
+DTSTAMP;TZID=America/New_York:20251030T100252
+DTSTART;TZID=America/New_York:20260323T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100252
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Paper Recycling Week: No gift wrap\, tissues/napkins\, boxes or sh
+ redded paper\,
+UID:1057
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Rinsed\, clean beverage\, condiment\, detergent\, milk\, mouth
+ wash\, shampoo containers ONLY. https://www.jamestownnybpu.gov/calendar.a
+ spx?EID=1021
+DTEND;TZID=America/New_York:20260320T235900
+DTSTAMP;TZID=America/New_York:20251030T100239
+DTSTART;TZID=America/New_York:20260316T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T100239
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Plastic Recycling- no plastic bags\, no cat litter buckets\,
+UID:1021
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:*  Flatten all boxes and place in your recycling container and
+ /or a similar sized container. \n*  No pizza boxes. https://www.jamestown
+ nybpu.gov/calendar.aspx?EID=1035
+DTEND;TZID=America/New_York:20260313T235900
+DTSTAMP;TZID=America/New_York:20251030T072840
+DTSTART;TZID=America/New_York:20260309T120000
+LAST-MODIFIED;TZID=America/New_York:20251030T072840
+LOCATION: -   Jamestown NY 14701
+SEQUENCE:0
+SUMMARY:Corrugated Cardboard & Box Board Only
+UID:1035
+URL:/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24
+END:VEVENT
+END:VCALENDAR

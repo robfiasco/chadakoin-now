@@ -16,24 +16,24 @@ function openMaps(query: string) {
   openLink(`https://maps.google.com/?q=${encodeURIComponent(query)}`);
 }
 
-type FilterCat = 'all' | 'eat' | 'stay' | 'do' | 'see' | 'shop';
+type FilterCat = 'all' | 'eat' | 'stay' | 'do' | 'see' | 'cannabis';
 
 const FILTERS: { key: FilterCat; label: string }[] = [
-  { key: 'all',  label: 'All'  },
-  { key: 'eat',  label: 'Eat'  },
-  { key: 'stay', label: 'Stay' },
-  { key: 'do',   label: 'Do'   },
-  { key: 'see',  label: 'See'  },
-  { key: 'shop', label: 'Shop' },
+  { key: 'all',      label: 'All'      },
+  { key: 'eat',      label: 'Eat'      },
+  { key: 'stay',     label: 'Stay'     },
+  { key: 'do',       label: 'Do'       },
+  { key: 'see',      label: 'See'      },
+  { key: 'cannabis', label: '🌿 21+'   },
 ];
 
 // Per-category accent colors — consistent across all themes
 const CAT_COLOR: Record<string, string> = {
-  eat:  '#fbbf24',  // amber
-  stay: '#60a5fa',  // blue
-  do:   '#2dd4bf',  // teal
-  see:  '#a78bfa',  // purple
-  shop: '#34d399',  // green
+  eat:      '#fbbf24',  // amber
+  stay:     '#60a5fa',  // blue
+  do:       '#2dd4bf',  // teal
+  see:      '#a78bfa',  // purple
+  cannabis: '#34d399',  // green
 };
 
 function mapCategory(place: Place): FilterCat {
@@ -41,7 +41,7 @@ function mapCategory(place: Place): FilterCat {
   if (cats.includes('stay'))     return 'stay';
   if (cats.includes('arts'))     return 'see';
   if (cats.includes('activity')) return 'do';
-  if (cats.includes('cannabis')) return 'shop';
+  if (cats.includes('cannabis')) return 'cannabis';
   return 'eat'; // coffee, food, drinks
 }
 
@@ -642,7 +642,7 @@ export default function VisitScreen() {
         )}
 
         {/* ── Cannabis / Shop rules ────────────────────────── */}
-        {active === 'shop' && (
+        {active === 'cannabis' && (
           <View style={[styles.cannabisBlock, { borderColor: `rgba(52,211,153,0.15)` }]}>
             <View style={[styles.cannabisStripe, { backgroundColor: 'rgba(52,211,153,0.7)' }]} />
             <View style={styles.cannabisInner}>
