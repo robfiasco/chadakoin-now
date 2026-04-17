@@ -8,11 +8,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { dark } from '../lib/colors';
 
-const BG_IMAGES = Platform.OS === 'web'
-  ? [{ uri: '/jamestown.jpg' }, { uri: '/alley.jpg' }]
-  : [require('../public/jamestown.jpg'), require('../public/alley.jpg')];
+const BG_POOL = Platform.OS === 'web'
+  ? [{ uri: '/jamestown.jpg' }, { uri: '/alley.jpg' }, { uri: '/lake.png' }]
+  : [require('../public/jamestown.jpg'), require('../public/alley.jpg'), require('../public/lake.png')];
 
-const BG_SRC = BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)];
+// Shuffle once per session: [0] = picker, [1] = slide 0, [2] = slide 1
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const BG_IMAGES = shuffled(BG_POOL);
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
@@ -95,6 +104,18 @@ export default function OnboardingScreen({ onDone }: Props) {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const pickerAnim = useRef(new Animated.Value(1)).current;
 
+  // Background crossfade: [0]=picker, [1]=slide0, [2]=slide1
+  const [bgFrom, setBgFrom] = useState(0);
+  const [bgTo,   setBgTo]   = useState(0);
+  const bgAnim = useRef(new Animated.Value(1)).current;
+
+  function crossfadeTo(index: number) {
+    setBgFrom(bgTo);
+    setBgTo(index);
+    bgAnim.setValue(0);
+    Animated.timing(bgAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  }
+
   const slides = role === 'local' ? LOCAL_SLIDES : VISITOR_SLIDES;
   const isLast = slide === slides.length - 1;
   const accent = role === 'visitor' ? GOLD : ACC;
@@ -108,7 +129,8 @@ export default function OnboardingScreen({ onDone }: Props) {
   }
 
   function pickRole(r: Role) {
-    setRole(r); // mount slides immediately — no gap
+    setRole(r);
+    crossfadeTo(1);
     Animated.timing(pickerAnim, { toValue: 0, duration: 220, useNativeDriver: true })
       .start(() => setPickerVisible(false));
   }
@@ -118,12 +140,14 @@ export default function OnboardingScreen({ onDone }: Props) {
     setSlide(0);
     slideAnim.setValue(0);
     pickerAnim.setValue(0);
+    crossfadeTo(0);
     Animated.timing(pickerAnim, { toValue: 1, duration: 220, useNativeDriver: true })
       .start(() => setRole(null));
   }
 
   function goNext() {
     if (!isLast) {
+      crossfadeTo(slide + 2); // slide+1 maps to BG index slide+2
       Animated.timing(slideAnim, {
         toValue: -(slide + 1) * containerWidth,
         duration: 260, useNativeDriver: true,
@@ -135,6 +159,7 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   function goBack() {
     if (slide > 0) {
+      crossfadeTo(slide); // going back: slide-1 maps to BG index slide
       Animated.timing(slideAnim, {
         toValue: -(slide - 1) * containerWidth,
         duration: 260, useNativeDriver: true,
@@ -146,8 +171,11 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      {/* ── Persistent background — always visible, never flashes ── */}
-      <ImageBackground source={BG_SRC} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      {/* ── Crossfading background — one image per screen ── */}
+      <ImageBackground source={BG_IMAGES[bgFrom]} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgAnim }]} pointerEvents="none">
+        <ImageBackground source={BG_IMAGES[bgTo]} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      </Animated.View>
       <LinearGradient
         colors={['rgba(0,5,15,0.40)', 'rgba(0,5,15,0.80)', 'rgba(0,5,15,0.97)']}
         locations={[0, 0.5, 1]}

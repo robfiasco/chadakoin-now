@@ -81,14 +81,17 @@ export default function Root({ children }: { children: React.ReactNode }) {
             body {
               padding: 0;
               align-items: flex-start;
+              min-height: 100svh;
+              height: 100svh;
             }
             #root {
               width: 100%;
+              height: 100svh;
               max-height: none;
               border-radius: 0;
               border: none;
               box-shadow: none;
-              overflow: visible;
+              overflow: hidden;
             }
           }
         `}</style>
