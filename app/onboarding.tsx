@@ -1,14 +1,12 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch,
-  Animated, Dimensions, Image,
+  Animated, LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { dark } from '../lib/colors';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
@@ -65,15 +63,24 @@ interface Props {
 export default function OnboardingScreen({ onDone }: Props) {
   const [slide, setSlide] = useState(0);
   const [dontShow, setDontShow] = useState(true);
+  const [containerWidth, setContainerWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const isLast = slide === SLIDES.length - 1;
-  const s = SLIDES[slide];
+
+  function onLayout(e: LayoutChangeEvent) {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && w !== containerWidth) {
+      setContainerWidth(w);
+      // Re-sync animation position to new width
+      slideAnim.setValue(-slide * w);
+    }
+  }
 
   function goNext() {
     if (!isLast) {
       Animated.timing(slideAnim, {
-        toValue: -(slide + 1) * SCREEN_WIDTH,
+        toValue: -(slide + 1) * containerWidth,
         duration: 280,
         useNativeDriver: true,
       }).start(() => setSlide(slide + 1));
@@ -85,7 +92,7 @@ export default function OnboardingScreen({ onDone }: Props) {
   function goBack() {
     if (slide > 0) {
       Animated.timing(slideAnim, {
-        toValue: -(slide - 1) * SCREEN_WIDTH,
+        toValue: -(slide - 1) * containerWidth,
         duration: 280,
         useNativeDriver: true,
       }).start(() => setSlide(slide - 1));
@@ -93,11 +100,14 @@ export default function OnboardingScreen({ onDone }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={onLayout}>
       {/* Slides — rendered as a horizontal strip, animated by translateX */}
-      <Animated.View style={[styles.strip, { transform: [{ translateX: slideAnim }] }]}>
+      <Animated.View style={[
+        styles.strip,
+        { width: containerWidth * SLIDES.length, transform: [{ translateX: slideAnim }] },
+      ]}>
         {SLIDES.map((sl, i) => (
-          <View key={i} style={styles.slide}>
+          <View key={i} style={[styles.slide, { width: containerWidth }]}>
             <LinearGradient
               colors={[sl.gradStart, sl.gradEnd] as any}
               start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
@@ -201,10 +211,8 @@ const styles = StyleSheet.create({
   strip: {
     flex: 1,
     flexDirection: 'row',
-    width: SCREEN_WIDTH * SLIDES.length,
   },
   slide: {
-    width: SCREEN_WIDTH,
     flex: 1,
     overflow: 'hidden',
   },
