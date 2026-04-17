@@ -21,7 +21,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/files/favicon-chadakoin.png"
+      "favicon": "./assets/files/icon-chadakoin.png"
     },
     "plugins": [
       "expo-router",
