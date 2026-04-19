@@ -91,9 +91,10 @@ const FEEDS = {
   news: 'https://www.wrfalp.com/feed/',
   cityNews: 'https://www.jamestownny.gov/feed/',
   wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
-  wgrzWNY:    'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
-  spectrumWNY: 'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
-  wnyNewsNow:  'https://wnynewsnow.com/category/jamestown/feed/',
+  wgrzWNY:         'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
+  wgrzSouthernTier: 'https://www.wgrz.com/feeds/syndication/rss/news/local/southern-tier',
+  spectrumWNY:     'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
+  wnyNewsNow:      'https://wnynewsnow.com/category/jamestown/feed/',
   library: 'https://prendergastlibrary.org/feed/',
   lotd: 'https://rss.libsyn.com/shows/66268/destinations/266592.xml',
   regLenna: 'https://reglenna.com/events?format=json',
@@ -191,7 +192,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v17_';
+const CACHE_PREFIX = 'civic_v18_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -1071,12 +1072,13 @@ async function fetchNews(): Promise<NewsItem[]> {
   const cached = await getCached<NewsItem[]>('news', TTL.news);
   if (cached) return cached;
 
-  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, spectrumRes, wnyNewsNowRes] = await Promise.allSettled([
+  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, spectrumRes, wnyNewsNowRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
     fetch(proxyUrl(FEEDS.cityNews)),
     fetch(proxyUrl(FEEDS.jackson)),
     fetch(proxyUrl(FEEDS.wgrzSports)),
     fetch(proxyUrl(FEEDS.wgrzWNY)),
+    fetch(proxyUrl(FEEDS.wgrzSouthernTier)),
     fetch(proxyUrl(FEEDS.spectrumWNY)),
     fetch(proxyUrl(FEEDS.wnyNewsNow)),
   ]);
@@ -1137,6 +1139,11 @@ async function fetchNews(): Promise<NewsItem[]> {
     ? toWGRZItems(await wgrzWNYRes.value.text(), 'WGRZ')
     : [];
 
+  // Southern Tier feed is already Jamestown/Chautauqua-focused — no geo filter needed
+  const wgrzSTItems = wgrzSTRes.status === 'fulfilled' && wgrzSTRes.value.ok
+    ? toNewsItems(await wgrzSTRes.value.text(), 5, 'WGRZ')
+    : [];
+
   const spectrumItems = spectrumRes.status === 'fulfilled' && spectrumRes.value.ok
     ? toWGRZItems(await spectrumRes.value.text(), 'Spectrum News')
     : [];
@@ -1145,17 +1152,32 @@ async function fetchNews(): Promise<NewsItem[]> {
     ? toNewsItems(await wnyNewsNowRes.value.text(), 5, 'WNY News Now')
     : [];
 
-  const seen = new Set(wrfaItems.map(n => n.title.toLowerCase()));
+  const seen = new Set<string>();
   const addUnique = (items: NewsItem[]) =>
-    items.filter(n => !seen.has(n.title.toLowerCase()) && seen.add(n.title.toLowerCase()));
+    items.filter(n => {
+      const key = n.title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
-  const news: NewsItem[] = [
+  // Merge all sources then sort by date so newest always tops — no source gets permanent priority
+  const news: NewsItem[] = addUnique([
     ...wrfaItems,
-    ...addUnique(cityItems),
-    ...addUnique(jacksonItems),
-    ...addUnique(wnyNewsNowItems),
-    ...addUnique([...wgrzSportsItems, ...wgrzWNYItems, ...spectrumItems]),
-  ].slice(0, 20);
+    ...cityItems,
+    ...jacksonItems,
+    ...wnyNewsNowItems,
+    ...wgrzSTItems,
+    ...wgrzSportsItems,
+    ...wgrzWNYItems,
+    ...spectrumItems,
+  ])
+    .sort((a, b) => {
+      const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+      const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, 20);
 
   await setCache('news', news);
   return news;
