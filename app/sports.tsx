@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
   TouchableOpacity, Linking, Image, Animated, Easing, RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -372,6 +373,9 @@ export default function SportsScreen() {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMlbAbbr, setExpandedMlbAbbr] = useState<string | null>(null);
+  const [nextUpIdx, setNextUpIdx] = useState(0);
+  const { width: winWidth } = useWindowDimensions();
+  const cardWidth = winWidth - 32; // 16px padding each side
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -387,28 +391,24 @@ export default function SportsScreen() {
     setRefreshing(false);
   }
 
-  // Compute nearest upcoming game for "Next Up" hero
-  const nextUp = useMemo(() => {
-    if (!data) return null;
+  // All upcoming games sorted by time — powers the Next Up carousel
+  const nextUpItems = useMemo(() => {
+    if (!data) return [];
     type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; };
     const candidates: C[] = [];
     const now = new Date();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
 
     if (data.nextGame) {
       const d = new Date(data.nextGame.date);
       if (d > now) {
         candidates.push({
-          ts: d.getTime(),
-          sport: 'Buffalo Sabres · NHL',
-          emoji: '🏒',
+          ts: d.getTime(), sport: 'Buffalo Sabres · NHL', emoji: '🏒',
           matchup: `BUF ${data.nextGame.isHome ? 'vs' : '@'} ${data.nextGame.opponentAbbr}`,
-          dateLabel: '',
-          time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-          accent: ACC.sabres,
-          gradStart: 'rgba(96,165,250,0.28)',
-          gradEnd: 'rgba(6,14,24,0.7)',
-          ourLogoUrl: SABRES_LOGO,
-          oppLogoUrl: data.nextGame.opponentLogo || undefined,
+          dateLabel: '', time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          accent: ACC.sabres, gradStart: 'rgba(96,165,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
+          ourLogoUrl: SABRES_LOGO, oppLogoUrl: data.nextGame.opponentLogo || undefined,
         });
       }
     }
@@ -418,32 +418,29 @@ export default function SportsScreen() {
         const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
         if (d > now) {
           candidates.push({
-            ts: d.getTime(),
-            sport: `${team.name} · MLB`,
-            emoji: '⚾',
+            ts: d.getTime(), sport: `${team.name} · MLB`, emoji: '⚾',
             matchup: `${team.abbr} ${ng.isHome ? 'vs' : '@'} ${ng.opponent.split(' ').pop()}`,
             dateLabel: '',
             time: ng.gameTime ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : undefined,
-            accent: ACC.mlb,
-            gradStart: 'rgba(167,139,250,0.28)',
-            gradEnd: 'rgba(6,14,24,0.7)',
+            accent: ACC.mlb, gradStart: 'rgba(167,139,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
             ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
             oppLogoUrl: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined,
           });
         }
       }
     }
-    if (candidates.length === 0) return null;
+    if (candidates.length === 0) return [];
     candidates.sort((a, b) => a.ts - b.ts);
-    const c = { ...candidates[0] };
-    const cd = new Date(c.ts);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-    const cDay = new Date(cd); cDay.setHours(0,0,0,0);
-    c.dateLabel = cDay.getTime() === today.getTime() ? 'Today'
-      : cDay.getTime() === tomorrow.getTime() ? 'Tomorrow'
-      : cd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    return c;
+    return candidates.map(c => {
+      const cd = new Date(c.ts);
+      const cDay = new Date(cd); cDay.setHours(0,0,0,0);
+      return {
+        ...c,
+        dateLabel: cDay.getTime() === today.getTime() ? 'Today'
+          : cDay.getTime() === tomorrow.getTime() ? 'Tomorrow'
+          : cd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      };
+    });
   }, [data]);
 
   // Days until Tarp Skunks season opens
@@ -515,7 +512,7 @@ export default function SportsScreen() {
       >
 
         {/* ── Next Up hero ────────────────────────────────────── */}
-        {(loading || nextUp) && (
+        {(loading || nextUpItems.length > 0) && (
           <View style={styles.nextUpSection}>
             <View style={styles.sectionLabelRow}>
               <PulsingDot color="#fb7185" size={6} />
@@ -524,74 +521,94 @@ export default function SportsScreen() {
 
             {loading ? (
               <SkeletonPulse width="100%" height={112} borderRadius={18} accRGB="34,211,238" />
-            ) : nextUp ? (
-              // @ts-ignore
-              <View style={[styles.nextUpCard, glassWeb]}>
-                <LinearGradient
-                  colors={[nextUp.gradStart, nextUp.gradEnd] as [string, string]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={styles.nextUpHeader}
+            ) : nextUpItems.length > 0 ? (
+              <>
+                {/* Carousel — single card or swipeable when multiple games */}
+                <ScrollView
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={e => {
+                    setNextUpIdx(Math.round(e.nativeEvent.contentOffset.x / cardWidth));
+                  }}
+                  style={{ marginHorizontal: -16 }}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
                 >
-                  {/* Logo matchup — show both logos when available, our logo alone if not */}
-                  {nextUp.ourLogoUrl ? (() => {
-                    const parts = nextUp.matchup.split(/\s+(vs|@)\s+/);
-                    const leftLabel  = parts[0] ?? '';
-                    const connector  = nextUp.matchup.includes('@') ? '@' : 'vs';
-                    const rightLabel = parts[2] ?? '';
-                    return (
-                      <View style={styles.nextUpLogoRow}>
-                        {/* Our team */}
-                        <View style={styles.nextUpLogoCol}>
-                          <View style={styles.nextUpLogoBg}>
-                            <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                  {nextUpItems.map((nextUp, idx) => (
+                    // @ts-ignore
+                    <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
+                      <LinearGradient
+                        colors={[nextUp.gradStart, nextUp.gradEnd] as [string, string]}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        style={styles.nextUpHeader}
+                      >
+                        {nextUp.ourLogoUrl ? (() => {
+                          const parts = nextUp.matchup.split(/\s+(vs|@)\s+/);
+                          const leftLabel  = parts[0] ?? '';
+                          const connector  = nextUp.matchup.includes('@') ? '@' : 'vs';
+                          const rightLabel = parts[2] ?? '';
+                          return (
+                            <View style={styles.nextUpLogoRow}>
+                              <View style={styles.nextUpLogoCol}>
+                                <View style={styles.nextUpLogoBg}>
+                                  <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                                </View>
+                                <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
+                              </View>
+                              <LinearGradient
+                                colors={[nextUp.gradEnd, nextUp.gradStart, nextUp.gradEnd] as any}
+                                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                                style={styles.nextUpVsDivider}
+                              >
+                                <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>{connector}</Text>
+                              </LinearGradient>
+                              <View style={styles.nextUpLogoCol}>
+                                <View style={styles.nextUpLogoBg}>
+                                  {nextUp.oppLogoUrl ? (
+                                    <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                                  ) : (
+                                    <Text style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: '800', color: 'rgba(255,255,255,0.25)' }}>{rightLabel}</Text>
+                                  )}
+                                </View>
+                                <Text style={[styles.nextUpLogoLabel, { color: 'rgba(255,255,255,0.45)' }]}>{rightLabel}</Text>
+                              </View>
+                            </View>
+                          );
+                        })() : (
+                          <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
+                        )}
+                      </LinearGradient>
+                      <View style={styles.nextUpBody}>
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
+                              <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
+                            </View>
                           </View>
-                          <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
-                        </View>
-                        {/* Divider + connector */}
-                        <LinearGradient
-                          colors={[nextUp.gradEnd, nextUp.gradStart, nextUp.gradEnd] as any}
-                          start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                          style={styles.nextUpVsDivider}
-                        >
-                          <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>{connector}</Text>
-                        </LinearGradient>
-                        {/* Opponent — show logo if available, else dim abbr placeholder */}
-                        <View style={styles.nextUpLogoCol}>
-                          <View style={styles.nextUpLogoBg}>
-                            {nextUp.oppLogoUrl ? (
-                              <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
-                            ) : (
-                              <Text style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: '800', color: 'rgba(255,255,255,0.25)' }}>{rightLabel}</Text>
+                          <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary }}>{nextUp.dateLabel}</Text>
+                            {nextUp.time && (
+                              <>
+                                <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
+                                <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: dark.text.muted }}>{nextUp.time}</Text>
+                              </>
                             )}
                           </View>
-                          <Text style={[styles.nextUpLogoLabel, { color: 'rgba(255,255,255,0.45)' }]}>{rightLabel}</Text>
                         </View>
                       </View>
-                    );
-                  })() : (
-                    <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
-                  )}
-                </LinearGradient>
-                <View style={styles.nextUpBody}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
-                        <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
-                      </View>
                     </View>
-                    <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                      <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary }}>{nextUp.dateLabel}</Text>
-                      {nextUp.time && (
-                        <>
-                          <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                          <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: dark.text.muted }}>{nextUp.time}</Text>
-                        </>
-                      )}
-                    </View>
+                  ))}
+                </ScrollView>
+                {/* Dots — only shown when there are multiple cards */}
+                {nextUpItems.length > 1 && (
+                  <View style={styles.nextUpDots}>
+                    {nextUpItems.map((_, i) => (
+                      <View key={i} style={[styles.nextUpDot, i === nextUpIdx && styles.nextUpDotActive]} />
+                    ))}
                   </View>
-                </View>
-              </View>
+                )}
+              </>
             ) : null}
           </View>
         )}
@@ -948,11 +965,13 @@ export default function SportsScreen() {
                         activeOpacity={0.7}
                         style={styles.mlbTeamRow}
                       >
-                        <Image
-                          source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }}
-                          style={styles.mlbLogo}
-                          resizeMode="contain"
-                        />
+                        <View style={styles.mlbLogoWrap}>
+                          <Image
+                            source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }}
+                            style={styles.mlbLogo}
+                            resizeMode="contain"
+                          />
+                        </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.mlbTeamName}>{t.name}</Text>
                           {nextStr ? <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text> : null}
@@ -1108,6 +1127,9 @@ const styles = StyleSheet.create({
   },
   nextUpPillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   nextUpBody: { padding: 14, flexDirection: 'row', alignItems: 'center' },
+  nextUpDots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 8 },
+  nextUpDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
+  nextUpDotActive: { backgroundColor: 'rgba(255,255,255,0.7)', width: 14 },
   nextUpMatchup: { fontFamily: 'Syne', fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
 
   // Team cards
@@ -1171,6 +1193,7 @@ const styles = StyleSheet.create({
 
   // MLB team list
   mlbTeamRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
+  mlbLogoWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
   mlbLogo:     { width: 28, height: 28 },
   mlbTeamName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
   mlbNext:     { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },

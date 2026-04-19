@@ -96,7 +96,6 @@ export default function FeedbackScreen({ onClose, initialType = 'general' }: { o
         <View style={s.headerRow}>
           <View>
             <Text style={s.title}>Send feedback</Text>
-            <Text style={s.subtitle}>Goes straight to Rob</Text>
           </View>
           <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
