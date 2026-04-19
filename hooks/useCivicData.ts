@@ -93,6 +93,7 @@ const FEEDS = {
   wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
   wgrzWNY:    'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
   spectrumWNY: 'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
+  wnyNewsNow:  'https://wnynewsnow.com/category/jamestown/feed/',
   library: 'https://prendergastlibrary.org/feed/',
   lotd: 'https://rss.libsyn.com/shows/66268/destinations/266592.xml',
   regLenna: 'https://reglenna.com/events?format=json',
@@ -190,7 +191,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v16_';
+const CACHE_PREFIX = 'civic_v17_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -1070,13 +1071,14 @@ async function fetchNews(): Promise<NewsItem[]> {
   const cached = await getCached<NewsItem[]>('news', TTL.news);
   if (cached) return cached;
 
-  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, spectrumRes] = await Promise.allSettled([
+  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, spectrumRes, wnyNewsNowRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
     fetch(proxyUrl(FEEDS.cityNews)),
     fetch(proxyUrl(FEEDS.jackson)),
     fetch(proxyUrl(FEEDS.wgrzSports)),
     fetch(proxyUrl(FEEDS.wgrzWNY)),
     fetch(proxyUrl(FEEDS.spectrumWNY)),
+    fetch(proxyUrl(FEEDS.wnyNewsNow)),
   ]);
 
   function toNewsItems(raw: string, limit: number, source: string): NewsItem[] {
@@ -1139,6 +1141,10 @@ async function fetchNews(): Promise<NewsItem[]> {
     ? toWGRZItems(await spectrumRes.value.text(), 'Spectrum News')
     : [];
 
+  const wnyNewsNowItems = wnyNewsNowRes.status === 'fulfilled' && wnyNewsNowRes.value.ok
+    ? toNewsItems(await wnyNewsNowRes.value.text(), 5, 'WNY News Now')
+    : [];
+
   const seen = new Set(wrfaItems.map(n => n.title.toLowerCase()));
   const addUnique = (items: NewsItem[]) =>
     items.filter(n => !seen.has(n.title.toLowerCase()) && seen.add(n.title.toLowerCase()));
@@ -1147,8 +1153,9 @@ async function fetchNews(): Promise<NewsItem[]> {
     ...wrfaItems,
     ...addUnique(cityItems),
     ...addUnique(jacksonItems),
+    ...addUnique(wnyNewsNowItems),
     ...addUnique([...wgrzSportsItems, ...wgrzWNYItems, ...spectrumItems]),
-  ].slice(0, 18);
+  ].slice(0, 20);
 
   await setCache('news', news);
   return news;
