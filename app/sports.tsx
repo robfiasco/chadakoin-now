@@ -572,6 +572,7 @@ export default function SportsScreen() {
     if (!data) return [];
     type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; isLive?: boolean; bgKey?: 'hockey' | 'baseball'; };
     const candidates: C[] = [];
+    const seenGamePairs = new Set<string>(); // dedup games where both teams are tracked
     const now = new Date();
     const today = new Date(); today.setHours(0,0,0,0);
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
@@ -592,6 +593,9 @@ export default function SportsScreen() {
     for (const team of (data.mlb ?? [])) {
       if (team.liveGame) {
         const lg = team.liveGame;
+        const pairKey = [team.id, lg.opponentId ?? 0].sort((a, b) => a - b).join('-');
+        if (seenGamePairs.has(pairKey)) continue;
+        seenGamePairs.add(pairKey);
         const oppAbbr = (lg.opponentAbbr && lg.opponentAbbr.toLowerCase())
           || (lg.opponentId != null ? MLB_ID_ESPN[lg.opponentId] : undefined);
         candidates.push({
@@ -607,6 +611,9 @@ export default function SportsScreen() {
         });
       } else if (team.nextGame) {
         const ng = team.nextGame;
+        const pairKey = [team.id, ng.opponentId ?? 0].sort((a, b) => a - b).join('-');
+        if (seenGamePairs.has(pairKey)) continue;
+        seenGamePairs.add(pairKey);
         const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
         if (d > now) {
           const oppAbbrRaw = ng.opponentAbbr || (ng.opponentId != null ? MLB_ID_ESPN[ng.opponentId] : '') || '';
@@ -928,6 +935,7 @@ export default function SportsScreen() {
           accentColor={ACC.sabres}
           gradStart="rgba(96,165,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
+          bgImage={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg')}
           iconContent={
             <Image source={{ uri: SABRES_LOGO }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
