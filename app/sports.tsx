@@ -736,7 +736,13 @@ export default function SportsScreen() {
                 >
                   {nextUpItems.map((nextUp, idx) => (
                     // @ts-ignore
-                    <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
+                    <ImageBackground
+                      key={idx}
+                      source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
+                      style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}
+                      imageStyle={{ borderRadius: 18, opacity: 0.15 }}
+                      resizeMode="cover"
+                    >
                       <LinearGradient
                         colors={[nextUp.gradStart, nextUp.gradEnd] as [string, string]}
                         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -797,7 +803,7 @@ export default function SportsScreen() {
                           </View>
                         </View>
                       </View>
-                    </View>
+                    </ImageBackground>
                   ))}
                 </ScrollView>
                 {/* Dots — only shown when there are multiple cards */}
@@ -1095,7 +1101,6 @@ export default function SportsScreen() {
           accentColor={ACC.mlb}
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          bgImage={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
           iconContent={
             <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
@@ -1429,7 +1434,7 @@ const styles = StyleSheet.create({
   nextUpLogoRow: {
     flexDirection: 'row', alignItems: 'center', flex: 1,
   },
-  nextUpLogoCol: { alignItems: 'center', gap: 6 },
+  nextUpLogoCol: { alignItems: 'center', gap: 6, width: 90 },
   nextUpLogoBg: {
     width: 76, height: 76, borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.04)',
