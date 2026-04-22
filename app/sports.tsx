@@ -959,7 +959,11 @@ export default function SportsScreen() {
           gradStart="rgba(96,165,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
-            <Image source={{ uri: SABRES_LOGO }} style={{ width: 30, height: 30 }} resizeMode="contain" />
+            <Image
+              source={Platform.OS === 'web' ? { uri: '/hockey.png' } : require('../public/hockey.png')}
+              style={{ width: 34, height: 34 }}
+              resizeMode="contain"
+            />
           }
           name="Buffalo Sabres"
           subtitle={data?.playoffSeries ? `NHL · ${data.playoffSeries.roundLabel.replace(/-/g, ' ')} · Playoffs` : 'NHL · Atlantic Division'}
