@@ -715,8 +715,8 @@ export default function SportsScreen() {
         {(loading || nextUpItems.length > 0) && (
           <View style={styles.nextUpSection}>
             <View style={styles.sectionLabelRow}>
-              <PulsingDot color="#fb7185" size={6} />
-              <Text style={styles.sectionLabel}>Next Up</Text>
+              <PulsingDot color={nextUpItems[nextUpIdx]?.isLive ? ACC.mlb : '#fb7185'} size={6} />
+              <Text style={styles.sectionLabel}>{nextUpItems[nextUpIdx]?.isLive ? 'Live Now' : 'Next Up'}</Text>
             </View>
 
             {loading ? (
@@ -761,13 +761,7 @@ export default function SportsScreen() {
                                 </View>
                                 <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
                               </View>
-                              <LinearGradient
-                                colors={[nextUp.gradEnd, nextUp.gradStart, nextUp.gradEnd] as any}
-                                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                                style={styles.nextUpVsDivider}
-                              >
-                                <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>{connector}</Text>
-                              </LinearGradient>
+                              <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>{connector}</Text>
                               <View style={styles.nextUpLogoCol}>
                                 <View style={styles.nextUpLogoBg}>
                                   {nextUp.oppLogoUrl ? (
@@ -1436,7 +1430,7 @@ const styles = StyleSheet.create({
   nextUpHeader: { height: 130, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24 },
   nextUpBgEmoji: { fontSize: 90, opacity: 0.08, alignSelf: 'center' },
   nextUpLogoRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 0,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1,
   },
   nextUpLogoCol: { alignItems: 'center', gap: 6, width: 96, flexShrink: 0 },
   nextUpLogoBg: {
