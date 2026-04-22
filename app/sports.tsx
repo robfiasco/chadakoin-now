@@ -23,7 +23,24 @@ interface GameResult {
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
 interface JCCResult { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
 interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
-interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; opponentAbbr?: string; opponentId?: number; isHome: boolean; }
+interface MLBLiveGame {
+  inning: number; inningOrdinal: string; topBottom: string;
+  ourScore: number; theirScore: number; outs: number;
+  isHome: boolean; opponent: string; opponentAbbr: string; opponentId?: number;
+}
+interface MLBNextGame {
+  date: string; gameTime?: string | null; opponent: string;
+  opponentAbbr?: string; opponentId?: number; isHome: boolean;
+  probablePitcher?: string | null; oppProbablePitcher?: string | null;
+}
+interface MLBTeam {
+  id: number; name: string; abbr: string; record?: string;
+  divisionRank?: number; gamesBack?: string; streak?: string; last10?: string;
+  teamBA?: string; teamERA?: string;
+  games: MLBGame[]; nextGame?: MLBNextGame | null;
+  liveGame?: MLBLiveGame | null;
+  communityPick?: string;
+}
 
 // MLB team ID → ESPN CDN abbreviation (reliable fallback when API omits abbreviation)
 const MLB_ID_ESPN: Record<number, string> = {
@@ -34,7 +51,6 @@ const MLB_ID_ESPN: Record<number, string> = {
   139:'tb',  140:'tex', 141:'tor', 142:'min', 143:'phi',
   144:'atl', 145:'cws', 146:'mia', 147:'nyy', 158:'mil',
 };
-interface MLBTeam     { id: number; name: string; abbr: string; record?: string; games: MLBGame[]; nextGame?: MLBNextGame | null; }
 interface PlayoffSeries {
   round: number; roundLabel: string;
   opponent: string; bufWins: number; oppWins: number; neededToWin: number;
@@ -213,6 +229,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
       { id: 141, name: 'Blue Jays', abbr: 'TOR' },
       { id: 134, name: 'Pirates',   abbr: 'PIT' },
       { id: 147, name: 'Yankees',   abbr: 'NYY' },
+      { id: 117, name: 'Astros',    abbr: 'HOU', communityPick: "Raybeans' Pick · LOTD" },
     ];
     const now   = new Date();
     const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -220,25 +237,50 @@ async function fetchMLB(): Promise<MLBTeam[]> {
     const fmt   = (d: Date) => d.toISOString().split('T')[0];
     const year  = now.getFullYear();
 
-    let standingsMap: Record<number, string> = {};
+    let standingsMap: Record<number, { record: string; divisionRank: number; gamesBack: string; streak: string; last10: string }> = {};
     try {
-      const sRes  = await fetch(`https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${year}&standingsTypes=regularSeason&fields=records,teamRecords,team,id,wins,losses`);
+      const sRes  = await fetch(`https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${year}&standingsTypes=regularSeason`);
       const sJson = sRes.ok ? await sRes.json() : null;
       for (const div of (sJson?.records ?? [])) {
         for (const tr of (div.teamRecords ?? [])) {
-          if (tr.team?.id != null) standingsMap[tr.team.id] = `${tr.wins}-${tr.losses}`;
+          const id = tr.team?.id;
+          if (!id) continue;
+          const last10rec = (tr.records?.splitRecords ?? []).find((r: any) => r.type === 'lastTen');
+          standingsMap[id] = {
+            record: `${tr.wins ?? 0}-${tr.losses ?? 0}`,
+            divisionRank: parseInt(tr.divisionRank ?? '0'),
+            gamesBack: tr.gamesBack === '-' ? '—' : `${tr.gamesBack} GB`,
+            streak: tr.streak?.streakCode ?? '',
+            last10: last10rec ? `${last10rec.wins}-${last10rec.losses}` : '',
+          };
         }
       }
     } catch {}
 
     const results = await Promise.all(MLB_TEAMS.map(async t => {
       try {
-        const url  = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team`;
-        const res  = await fetch(url);
-        if (!res.ok) return { ...t, games: [], nextGame: null, record: standingsMap[t.id] ?? '' };
+        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team,probablePitcher,linescore`;
+        const [res, statsRes] = await Promise.all([
+          fetch(scheduleUrl),
+          fetch(`https://statsapi.mlb.com/api/v1/teams/${t.id}/stats?stats=season&group=hitting,pitching&season=${year}`),
+        ]);
+        // Parse team batting avg + ERA
+        let teamBA: string | undefined, teamERA: string | undefined;
+        if (statsRes.ok) {
+          const statsJson = await statsRes.json();
+          const hitting  = (statsJson.stats ?? []).find((s: any) => s.group?.displayName === 'hitting');
+          const pitching = (statsJson.stats ?? []).find((s: any) => s.group?.displayName === 'pitching');
+          teamBA  = hitting?.splits?.[0]?.stat?.avg   ?? undefined;
+          teamERA = pitching?.splits?.[0]?.stat?.era  ?? undefined;
+        }
+        if (!res.ok) {
+          const standing = standingsMap[t.id];
+          return { ...t, games: [], nextGame: null, liveGame: null, teamBA, teamERA, record: standing?.record ?? '', divisionRank: standing?.divisionRank, gamesBack: standing?.gamesBack, streak: standing?.streak, last10: standing?.last10 };
+        }
         const json = await res.json();
         const games: MLBGame[] = [];
         let nextGame: MLBNextGame | null = null;
+        let liveGame: MLBLiveGame | null = null;
         for (const dateObj of (json.dates ?? [])) {
           for (const g of (dateObj.games ?? [])) {
             const state = g.status?.detailedState ?? '';
@@ -247,16 +289,54 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const us   = weAreHome ? g.teams.home : g.teams.away;
               const them = weAreHome ? g.teams.away : g.teams.home;
               games.push({ date: dateObj.date, opponent: them?.team?.name ?? '???', ourScore: us?.score ?? 0, theirScore: them?.score ?? 0, isHome: weAreHome, won: us?.isWinner === true });
+            } else if (!liveGame && (state === 'In Progress' || state === 'Live Preview')) {
+              const weAreHome = g.teams?.home?.team?.id === t.id;
+              const us   = weAreHome ? g.teams.home : g.teams.away;
+              const them = weAreHome ? g.teams.away : g.teams.home;
+              const ls   = g.linescore ?? {};
+              liveGame = {
+                inning: ls.currentInning ?? 0,
+                inningOrdinal: ls.currentInningOrdinal ?? '',
+                topBottom: ls.isTopInning ? 'Top' : 'Bot',
+                ourScore:   us?.score   ?? 0,
+                theirScore: them?.score ?? 0,
+                outs: ls.outs ?? 0,
+                isHome: weAreHome,
+                opponent: them?.team?.name ?? '???',
+                opponentAbbr: them?.team?.abbreviation ?? '',
+                opponentId: them?.team?.id,
+              };
             } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game' || state === 'Warmup')) {
               const weAreHome = g.teams?.home?.team?.id === t.id;
               const them = weAreHome ? g.teams?.away : g.teams?.home;
+              const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
+              const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
               // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
-              nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', opponentAbbr: them?.team?.abbreviation ?? '', opponentId: them?.team?.id, isHome: weAreHome };
+              nextGame = {
+                date: dateObj.date, gameTime: g.gameDate ?? null,
+                opponent: them?.team?.name ?? '???',
+                opponentAbbr: them?.team?.abbreviation ?? '',
+                opponentId: them?.team?.id,
+                isHome: weAreHome,
+                probablePitcher: probUs?.lastName ?? null,
+                oppProbablePitcher: probThem?.lastName ?? null,
+              };
             }
           }
         }
-        return { ...t, games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10), nextGame, record: standingsMap[t.id] ?? '' };
-      } catch { return { ...t, games: [], nextGame: null, record: '' }; }
+        const standing = standingsMap[t.id];
+        return {
+          ...t,
+          games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
+          nextGame, liveGame,
+          record: standing?.record ?? '',
+          divisionRank: standing?.divisionRank,
+          gamesBack: standing?.gamesBack,
+          streak: standing?.streak,
+          last10: standing?.last10,
+          teamBA, teamERA,
+        };
+      } catch { return { ...t, games: [], nextGame: null, liveGame: null, record: '' }; }
     }));
     return results;
   } catch { return []; }
@@ -377,6 +457,11 @@ async function fetchSabres(): Promise<SabresData> {
   return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, mlb, playoffSeries, news: [] };
 }
 
+function ordinal(n: number): string {
+  if (n === 1) return '1st'; if (n === 2) return '2nd'; if (n === 3) return '3rd';
+  return `${n}th`;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionLabel({ label }: { label: string }) {
@@ -469,7 +554,7 @@ export default function SportsScreen() {
   // All upcoming games sorted by time — powers the Next Up carousel
   const nextUpItems = useMemo(() => {
     if (!data) return [];
-    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; };
+    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; isLive?: boolean; };
     const candidates: C[] = [];
     const now = new Date();
     const today = new Date(); today.setHours(0,0,0,0);
@@ -488,10 +573,26 @@ export default function SportsScreen() {
       }
     }
     for (const team of (data.mlb ?? [])) {
-      if (team.nextGame) {
+      if (team.liveGame) {
+        const lg = team.liveGame;
+        const oppAbbr = (lg.opponentAbbr && lg.opponentAbbr.toLowerCase())
+          || (lg.opponentId != null ? MLB_ID_ESPN[lg.opponentId] : undefined);
+        candidates.push({
+          ts: Date.now(), // live — always first
+          sport: `${team.name} · MLB`, emoji: '⚾',
+          matchup: `${team.abbr} ${lg.isHome ? 'vs' : '@'} ${lg.opponent.split(' ').pop()}`,
+          dateLabel: `${lg.topBottom} ${lg.inningOrdinal}`,
+          time: `${lg.ourScore}–${lg.theirScore} · ${lg.outs} out${lg.outs !== 1 ? 's' : ''}`,
+          accent: ACC.mlb, gradStart: 'rgba(167,139,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
+          ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
+          oppLogoUrl: oppAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${oppAbbr}.png` : undefined,
+          isLive: true,
+        });
+      } else if (team.nextGame) {
         const ng = team.nextGame;
         const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
         if (d > now) {
+          const oppAbbrRaw = ng.opponentAbbr || (ng.opponentId != null ? MLB_ID_ESPN[ng.opponentId] : '') || '';
           candidates.push({
             ts: d.getTime(), sport: `${team.name} · MLB`, emoji: '⚾',
             matchup: `${team.abbr} ${ng.isHome ? 'vs' : '@'} ${ng.opponent.split(' ').pop()}`,
@@ -499,18 +600,21 @@ export default function SportsScreen() {
             time: ng.gameTime ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : undefined,
             accent: ACC.mlb, gradStart: 'rgba(167,139,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
             ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
-            oppLogoUrl: (() => {
-              const abbr = (ng.opponentAbbr && ng.opponentAbbr.toLowerCase())
-                || (ng.opponentId != null ? MLB_ID_ESPN[ng.opponentId] : undefined);
-              return abbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png` : undefined;
-            })(),
+            oppLogoUrl: oppAbbrRaw ? `https://a.espncdn.com/i/teamlogos/mlb/500/${oppAbbrRaw.toLowerCase()}.png` : undefined,
           });
         }
       }
     }
     if (candidates.length === 0) return [];
-    candidates.sort((a, b) => a.ts - b.ts);
+    // Live games sort first, then by time
+    candidates.sort((a, b) => {
+      if (a.isLive && !b.isLive) return -1;
+      if (!a.isLive && b.isLive) return 1;
+      return a.ts - b.ts;
+    });
     return candidates.map(c => {
+      // Live games already have their dateLabel set (e.g. "Top 5th")
+      if (c.isLive) return c;
       const cd = new Date(c.ts);
       const cDay = new Date(cd); cDay.setHours(0,0,0,0);
       return {
@@ -565,7 +669,8 @@ export default function SportsScreen() {
     const timeStr = ng.gameTime
       ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : '';
-    return { abbr: best.team.abbr, opp: ng.opponent.split(' ').pop(), oppAbbr: ng.opponentAbbr ?? '', isHome: ng.isHome, dateLabel, timeStr };
+    const oppAbbrRaw = ng.opponentAbbr || (ng.opponentId != null ? MLB_ID_ESPN[ng.opponentId] : '') || '';
+    return { abbr: best.team.abbr, opp: ng.opponent.split(' ').pop(), oppAbbr: oppAbbrRaw, isHome: ng.isHome, dateLabel, timeStr };
   }, [data]);
 
   const innerCard = {
@@ -666,11 +771,11 @@ export default function SportsScreen() {
                           </View>
                           <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                            <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary }}>{nextUp.dateLabel}</Text>
+                            <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: nextUp.isLive ? '#fb7185' : dark.text.primary }}>{nextUp.dateLabel}</Text>
                             {nextUp.time && (
                               <>
                                 <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                                <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: dark.text.muted }}>{nextUp.time}</Text>
+                                <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: nextUp.isLive ? ACC.mlb : dark.text.muted }}>{nextUp.time}</Text>
                               </>
                             )}
                           </View>
@@ -968,7 +1073,7 @@ export default function SportsScreen() {
             <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
           name="Regional MLB"
-          subtitle="NYM · CLE · TOR · PIT · NYY"
+          subtitle="NYM · CLE · TOR · PIT · NYY · HOU"
           defaultOpen={false}
           glassWeb={glassWeb}
           glanceRow={
@@ -1057,9 +1162,35 @@ export default function SportsScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.mlbTeamName}>{t.name}</Text>
-                          {nextStr ? <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text> : null}
+                          {t.liveGame ? (
+                            <Text style={[styles.mlbNext, { color: dark.text.muted }]}>
+                              {`${t.abbr} ${t.liveGame.isHome ? 'vs' : '@'} ${t.liveGame.opponent.split(' ').pop()} · ${t.liveGame.ourScore}–${t.liveGame.theirScore}`}
+                            </Text>
+                          ) : nextStr ? (
+                            <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text>
+                          ) : null}
+                          {t.divisionRank ? (
+                            <Text style={[styles.mlbNext, { color: 'rgba(255,255,255,0.2)' }]}>
+                              {ordinal(t.divisionRank)} · {t.gamesBack ?? ''}
+                            </Text>
+                          ) : null}
+                          {t.communityPick ? (
+                            <Text style={[styles.mlbCommunityPick, { color: ACC.mlb }]}>🎙 {t.communityPick}</Text>
+                          ) : null}
                         </View>
                         {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
+                        {t.liveGame ? (
+                          <View style={styles.mlbLiveBadge}>
+                            <Text style={styles.mlbLiveBadgeText}>● LIVE</Text>
+                          </View>
+                        ) : t.streak ? (
+                          <View style={[styles.mlbStreakBadge, {
+                            borderColor: t.streak.startsWith('W') ? `${ACC.jcc}40` : 'rgba(251,113,133,0.4)',
+                            backgroundColor: t.streak.startsWith('W') ? `${ACC.jcc}12` : 'rgba(251,113,133,0.12)',
+                          }]}>
+                            <Text style={[styles.mlbStreakBadgeText, { color: t.streak.startsWith('W') ? ACC.jcc : '#fb7185' }]}>{t.streak}</Text>
+                          </View>
+                        ) : null}
                         <Ionicons
                           name={isExpanded ? 'chevron-up' : 'chevron-down'}
                           size={13}
@@ -1072,58 +1203,62 @@ export default function SportsScreen() {
                       {isExpanded && (
                         <View style={[styles.mlbExpanded, { borderTopColor: dark.border }]}>
                           {ng && (
-                            <View style={styles.mlbExpandedNext}>
-                              <Text style={[styles.mlbExpandLabel, { color: ACC.mlb }]}>Next</Text>
-                              <Image
-                                source={{ uri: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined }}
-                                style={styles.mlbExpandLogo}
-                                resizeMode="contain"
-                              />
-                              <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '700' }]}>
-                                {ng.isHome ? 'vs' : '@'} {ng.opponent.split(' ').pop()}
-                              </Text>
-                              <Text style={{ color: dark.text.subtle, fontSize: 10 }}>·</Text>
-                              <Text style={[styles.mlbExpandText, { color: dark.text.muted }]}>{nextStr.split('· ')[1] ?? ''}</Text>
+                            <View style={{ gap: 4 }}>
+                              <View style={styles.mlbExpandedNext}>
+                                <Text style={[styles.mlbExpandLabel, { color: ACC.mlb }]}>Next</Text>
+                                <Image
+                                  source={{ uri: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined }}
+                                  style={styles.mlbExpandLogo}
+                                  resizeMode="contain"
+                                />
+                                <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '700' }]}>
+                                  {ng.isHome ? 'vs' : '@'} {ng.opponent.split(' ').pop()}
+                                </Text>
+                                <Text style={{ color: dark.text.subtle, fontSize: 10 }}>·</Text>
+                                <Text style={[styles.mlbExpandText, { color: dark.text.muted }]}>{nextStr.split('· ')[1] ?? ''}</Text>
+                              </View>
+                              {(ng.probablePitcher || ng.oppProbablePitcher) ? (
+                                <Text style={[styles.mlbExpandText, { color: dark.text.subtle, marginTop: 3 }]}>
+                                  {ng.probablePitcher ?? 'TBD'} vs {ng.oppProbablePitcher ?? 'TBD'}
+                                </Text>
+                              ) : null}
                             </View>
                           )}
                           {t.games.length > 0 && (() => {
-                            // Compute stats from all fetched games
-                            const rs = t.games.reduce((s, g) => s + g.ourScore, 0);
-                            const ra = t.games.reduce((s, g) => s + g.theirScore, 0);
-                            const n  = t.games.length;
-                            const diff = rs - ra;
-                            // Streak: consecutive W or L from most recent
+                            // Streak from games as fallback if API data not available
                             const streakChar = t.games[0].won ? 'W' : 'L';
                             let streakCount = 0;
                             for (const g of t.games) {
                               if (g.won === t.games[0].won) streakCount++; else break;
                             }
                             const streakLabel = `${streakChar}${streakCount}`;
-                            const streakColor = t.games[0].won ? ACC.jcc : '#fb7185';
-                            const diffColor   = diff > 0 ? ACC.jcc : diff < 0 ? '#fb7185' : dark.text.muted;
                             const last3 = t.games.slice(0, 3);
+                            // Last 10 from games as fallback
+                            const last10Wins = t.games.slice(0, 10).filter(g => g.won).length;
+                            const last10Total = Math.min(t.games.length, 10);
+                            const last10FromGames = last10Total > 0 ? `${last10Wins}-${last10Total - last10Wins}` : '';
                             return (
                               <>
                                 {/* Stats strip */}
                                 <View style={[styles.mlbStatsStrip, { marginTop: ng ? 10 : 0, borderColor: 'rgba(167,139,250,0.12)' }]}>
                                   <View style={styles.mlbStatCell}>
-                                    <Text style={[styles.mlbStatVal, { color: streakColor }]}>{streakLabel}</Text>
+                                    <Text style={[styles.mlbStatVal, { color: t.games[0]?.won ? ACC.jcc : '#fb7185' }]}>{t.streak || streakLabel}</Text>
                                     <Text style={styles.mlbStatLbl}>Streak</Text>
                                   </View>
                                   <View style={styles.mlbStatDivider} />
                                   <View style={styles.mlbStatCell}>
-                                    <Text style={[styles.mlbStatVal, { color: diffColor }]}>{diff > 0 ? '+' : ''}{diff}</Text>
-                                    <Text style={styles.mlbStatLbl}>Run Diff</Text>
+                                    <Text style={styles.mlbStatVal}>{t.last10 || last10FromGames}</Text>
+                                    <Text style={styles.mlbStatLbl}>Last 10</Text>
                                   </View>
                                   <View style={styles.mlbStatDivider} />
                                   <View style={styles.mlbStatCell}>
-                                    <Text style={styles.mlbStatVal}>{(rs / n).toFixed(1)}</Text>
-                                    <Text style={styles.mlbStatLbl}>RS/G</Text>
+                                    <Text style={styles.mlbStatVal}>{t.teamBA ?? '—'}</Text>
+                                    <Text style={styles.mlbStatLbl}>Team BA</Text>
                                   </View>
                                   <View style={styles.mlbStatDivider} />
                                   <View style={styles.mlbStatCell}>
-                                    <Text style={styles.mlbStatVal}>{(ra / n).toFixed(1)}</Text>
-                                    <Text style={styles.mlbStatLbl}>RA/G</Text>
+                                    <Text style={styles.mlbStatVal}>{t.teamERA ?? '—'}</Text>
+                                    <Text style={styles.mlbStatLbl}>Team ERA</Text>
                                   </View>
                                 </View>
                                 {/* Last 3 games */}
@@ -1380,4 +1515,11 @@ const styles = StyleSheet.create({
 
   playoffsBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   playoffsBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+
+  // MLB live/streak badges and community pick
+  mlbLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(251,113,133,0.12)', borderWidth: 1, borderColor: 'rgba(251,113,133,0.3)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  mlbLiveBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', color: '#fb7185', letterSpacing: 0.8 },
+  mlbStreakBadge: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  mlbStreakBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  mlbCommunityPick: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', marginTop: 1 },
 });
