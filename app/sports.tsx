@@ -836,15 +836,14 @@ export default function SportsScreen() {
             ) : jccGlance.length > 0 ? (
               <View style={{ gap: 5 }}>
                 {jccGlance.map((r, i) => (
-                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ fontSize: 14 }}>{sportEmoji(r.sport)}</Text>
-                    <Text style={[styles.glanceText, { color: dark.text.muted }]}>{r.sport.split(' ')[0]}</Text>
-                    <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                    <Text style={[styles.glanceText, { color: r.won ? ACC.jcc : '#fb7185', fontWeight: '700' }]}>
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13, width: 22 }}>{sportEmoji(r.sport)}</Text>
+                    <Text style={[styles.glanceText, { color: dark.text.muted, width: 58 }]}>{r.sport.split(' ')[0]}</Text>
+                    <Text style={[styles.glanceText, { color: r.won ? ACC.jcc : '#fb7185', fontWeight: '700', width: 56 }]}>
                       {r.won ? 'W' : 'L'} {r.score}
                     </Text>
-                    <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                    <Text style={[styles.glanceText, { color: dark.text.subtle }]}>{r.isHome ? 'vs' : '@'} {r.opponent}</Text>
+                    <Text style={{ color: dark.text.subtle, fontSize: 11, marginRight: 4 }}>·</Text>
+                    <Text style={[styles.glanceText, { color: dark.text.subtle, flex: 1 }]} numberOfLines={1}>{r.isHome ? 'vs' : '@'} {r.opponent}</Text>
                   </View>
                 ))}
               </View>
