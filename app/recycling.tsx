@@ -5,13 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { dark } from '../lib/colors';
-import { useCivicData, RecyclingWeek } from '../hooks/useCivicData';
+import { RecyclingWeek } from '../hooks/useCivicData';
+import { useCivic } from '../lib/CivicDataContext';
 
 const ACC     = '#34d399';           // emerald-400
 const ACC_RGB = '52,211,153';
 
 export default function RecyclingScreen() {
-  const civic = useCivicData();
+  const civic = useCivic();
   const { recycling, loading } = civic;
   const [refreshing, setRefreshing] = useState(false);
 
@@ -130,7 +131,7 @@ export default function RecyclingScreen() {
         {/* @ts-ignore */}
         <View style={[styles.infoCard, glassWeb]}>
           <Ionicons name="information-circle-outline" size={18} color={ACC} />
-          <Text style={styles.infoText}>If your pickup falls on a holiday, recycling moves to Saturday.</Text>
+          <Text style={styles.infoText}>If a holiday falls on your pickup day, garbage and recycling shift back by one day for the remainder of that week.</Text>
         </View>
 
         {recycling.holidayDelay && (

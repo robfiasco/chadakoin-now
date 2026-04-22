@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  RefreshControl,
+  RefreshControl, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +10,7 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { PulsingDot } from '../components/PulsingDot';
 import { useTheme } from '../lib/ThemeContext';
-import { useCivicData } from '../hooks/useCivicData';
+import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import type { NewsItem } from '../hooks/useCivicData';
@@ -125,51 +125,74 @@ type Bucket = { label: string; items: NewsItem[] };
 
 function bucketItems(items: NewsItem[]): Bucket[] {
   const now = Date.now();
+
+  // Week starts Sunday — anything published before this Sunday is "Last Week"
+  const sunday = new Date();
+  sunday.setHours(0, 0, 0, 0);
+  sunday.setDate(sunday.getDate() - sunday.getDay());
+  const weekStartMs = sunday.getTime();
+
   const bins: Bucket[] = [
     { label: 'Just In',       items: [] },
     { label: 'Earlier Today', items: [] },
     { label: 'This Week',     items: [] },
+    { label: 'Last Week',     items: [] },
   ];
   for (const item of items) {
-    const hrs = (now - new Date(item.pubDate || '').getTime()) / 3_600_000;
-    if (hrs < 3)       bins[0].items.push(item);
-    else if (hrs < 24) bins[1].items.push(item);
-    else               bins[2].items.push(item);
+    const pubMs = new Date(item.pubDate || '').getTime();
+    const hrs = (now - pubMs) / 3_600_000;
+    if (hrs < 3)            bins[0].items.push(item);
+    else if (hrs < 24)      bins[1].items.push(item);
+    else if (pubMs >= weekStartMs) bins[2].items.push(item);
+    else                    bins[3].items.push(item);
   }
   return bins.filter(b => b.items.length > 0);
 }
 
 // ── Hero card ─────────────────────────────────────────────────────
+function shareItem(item: NewsItem) {
+  Share.share({
+    title: item.title,
+    message: `${item.title}\n\nvia Chadakoin Now — Jamestown, NY\n${item.link ?? ''}`,
+    url: item.link ?? '',
+  }).catch(() => {});
+}
+
 function HeroCard({ item }: { item: NewsItem }) {
   const category = deriveCategory(item.title, item.source ?? '');
-  const color  = CATEGORY_COLORS[category] ?? '#94a3b8';
   const banner = CATEGORY_BANNERS[category];
+  const bar = banner.bar;
 
   return (
     <TouchableOpacity
       onPress={() => openLink(item.link)}
       activeOpacity={0.75}
-      style={[hero.card, { borderTopColor: banner.bar, borderTopWidth: 3 }]}
+      style={hero.card}
     >
+      {/* ── Banner ── */}
       <View style={hero.header}>
+        {/* Horizontal gradient: vivid accent left → dark right */}
         <LinearGradient
-          colors={banner.grad as any}
-          start={banner.gStart}
-          end={banner.gEnd}
+          colors={[`${bar}cc`, `${bar}44`, 'rgba(4,8,20,0.97)'] as any}
+          start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}
         />
-        <Ionicons name={banner.icon} size={96} color={`${banner.bar}18`} style={hero.bgIcon} />
 
-        <View style={[hero.topBadge, { backgroundColor: `${banner.bar}cc` }]}>
-          <PulsingDot color="#fff" size={5} />
-          <Text style={hero.topBadgeText}>Top Story</Text>
+        {/* Huge watermark — right side, bleeds off card edge */}
+        <Text style={[hero.watermark, { color: bar }]}>
+          {category.toUpperCase()}
+        </Text>
+
+        {/* Top row: source · time */}
+        <View style={hero.headerTop}>
+          <Text style={hero.headerMeta} numberOfLines={1}>
+            {item.source ? `${item.source} · ` : ''}{relativeTime(item.pubDate)}
+          </Text>
         </View>
 
-        <View style={[hero.catPill, { backgroundColor: `${banner.bar}22`, borderColor: `${banner.bar}50` }]}>
-          <Text style={[hero.catText, { color: banner.bar }]}>{category.toUpperCase()}</Text>
-        </View>
       </View>
 
+      {/* ── Body ── */}
       <View style={hero.body}>
         <Text style={hero.title} numberOfLines={3}>{item.title}</Text>
         {item.excerpt ? (
@@ -179,6 +202,14 @@ function HeroCard({ item }: { item: NewsItem }) {
           <Text style={hero.source}>{item.source}</Text>
           <Text style={hero.dot}>·</Text>
           <Text style={hero.time}>{relativeTime(item.pubDate)}</Text>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            onPress={() => shareItem(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-social-outline" size={15} color="rgba(255,255,255,0.3)" />
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -186,22 +217,35 @@ function HeroCard({ item }: { item: NewsItem }) {
 }
 
 const hero = StyleSheet.create({
-  card:   {
+  card: {
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
     borderRadius: 18, overflow: 'hidden', marginBottom: 12,
   },
-  header: { height: 148, position: 'relative', justifyContent: 'space-between', padding: 14 },
-  bgIcon: { position: 'absolute', right: -16, bottom: -16 },
+  header: {
+    height: 90, position: 'relative',
+    justifyContent: 'space-between', padding: 14, paddingBottom: 12,
+  },
+  watermark: {
+    position: 'absolute', left: 0, right: 0, bottom: -4,
+    fontFamily: 'DMSans_800ExtraBold', fontSize: 46,
+    letterSpacing: -0.5, opacity: 0.18, textAlign: 'center',
+  },
+  headerTop: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
   topBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
   },
-  topBadgeText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.8 },
-  catPill: {
-    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
+  topBadgeText: {
+    fontFamily: 'DMSans_700Bold', fontSize: 10, letterSpacing: 0.8,
   },
-  catText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  headerMeta: {
+    fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.40)',
+  },
+  categoryLabel: {
+    fontFamily: 'DMSans_800ExtraBold', fontSize: 24, letterSpacing: 1,
+  },
   body:   { padding: 16, gap: 8 },
   title:  { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 24 },
   excerpt:{ fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 19 },
@@ -222,7 +266,17 @@ function NewsRow({ item }: { item: NewsItem }) {
       activeOpacity={0.72}
       style={row.card}
     >
-      <Text style={row.title} numberOfLines={2}>{item.title}</Text>
+      <View style={row.topRow}>
+        <Text style={row.title} numberOfLines={2}>{item.title}</Text>
+        <TouchableOpacity
+          onPress={() => shareItem(item)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          activeOpacity={0.7}
+          style={row.shareBtn}
+        >
+          <Ionicons name="share-social-outline" size={14} color="rgba(255,255,255,0.25)" />
+        </TouchableOpacity>
+      </View>
       <View style={row.meta}>
         {item.source ? <Text style={row.source}>{item.source}</Text> : null}
         {item.source ? <Text style={row.dot}>·</Text> : null}
@@ -239,7 +293,9 @@ const row = StyleSheet.create({
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
     borderRadius: 14, padding: 14, marginBottom: 6,
   },
-  title:    { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.2, lineHeight: 21, marginBottom: 8 },
+  topRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
+  title:    { flex: 1, fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.2, lineHeight: 21 },
+  shareBtn: { paddingTop: 2 },
   meta:     { flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
   source:   { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
   dot:      { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
@@ -271,7 +327,7 @@ const sec = StyleSheet.create({
 // ── Screen ────────────────────────────────────────────────────────
 export default function NewsScreen() {
   const { theme } = useTheme();
-  const civic = useCivicData();
+  const civic = useCivic();
   const { news, loading } = civic;
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [refreshing, setRefreshing] = useState(false);

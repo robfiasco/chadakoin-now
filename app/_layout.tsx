@@ -7,6 +7,8 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
+import { CivicDataProvider, useCivic } from '../lib/CivicDataContext';
+import { AppLoadingScreen } from '../components/AppLoadingScreen';
 import { onboardingResetRef } from '../lib/onboardingReset';
 import { LinearGradient } from 'expo-linear-gradient';
 import OnboardingScreen from './onboarding';
@@ -42,9 +44,11 @@ const TABS: { key: string; label: string; active: IoniconName; inactive: Ionicon
 
 function AppLayout() {
   const { theme } = useTheme();
+  const { loading: dataLoading } = useCivic();
   const [activePage, setActivePage] = useState(0);
   const pagerRef = useRef<PagerViewHandle>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [showLoading, setShowLoading] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY).then(val => {
@@ -140,6 +144,14 @@ function AppLayout() {
         </SafeAreaView>
       </View>
 
+      {/* Loading screen — stays until scramble + data both done, then fades out */}
+      {showLoading && (
+        <AppLoadingScreen
+          isAppReady={!dataLoading}
+          onFinished={() => setShowLoading(false)}
+        />
+      )}
+
       {/* Onboarding overlay — null while checking storage (avoids flash) */}
       {showOnboarding === true && (
         <View style={[StyleSheet.absoluteFillObject, { zIndex: 1000 }]}>
@@ -171,7 +183,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppLayout />
+        <CivicDataProvider>
+          <AppLayout />
+        </CivicDataProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

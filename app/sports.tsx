@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
   TouchableOpacity, Linking, Image, Animated, Easing, RefreshControl,
-  useWindowDimensions,
+  useWindowDimensions, Modal, ActivityIndicator,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +24,17 @@ interface GameResult {
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
 interface JCCResult { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
 interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
-interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; opponentAbbr?: string; isHome: boolean; }
+interface MLBNextGame { date: string; gameTime?: string | null; opponent: string; opponentAbbr?: string; opponentId?: number; isHome: boolean; }
+
+// MLB team ID → ESPN CDN abbreviation (reliable fallback when API omits abbreviation)
+const MLB_ID_ESPN: Record<number, string> = {
+  108:'laa', 109:'ari', 110:'bal', 111:'bos', 112:'chc',
+  113:'cin', 114:'cle', 115:'col', 116:'det', 117:'hou',
+  118:'kc',  119:'lad', 120:'wsh', 121:'nym', 133:'oak',
+  134:'pit', 135:'sd',  136:'sea', 137:'sf',  138:'stl',
+  139:'tb',  140:'tex', 141:'tor', 142:'min', 143:'phi',
+  144:'atl', 145:'cws', 146:'mia', 147:'nyy', 158:'mil',
+};
 interface MLBTeam     { id: number; name: string; abbr: string; record?: string; games: MLBGame[]; nextGame?: MLBNextGame | null; }
 interface PlayoffSeries {
   round: number; roundLabel: string;
@@ -41,6 +52,26 @@ interface SabresData {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
+
+// Renders a team logo with graceful fallback to abbreviation text if the image fails
+function TeamLogo({ uri, abbr, size, accent }: { uri?: string; abbr: string; size: number; accent?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!uri || failed) {
+    return (
+      <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: size * 0.28, letterSpacing: 1, color: accent ?? 'rgba(255,255,255,0.55)', textAlign: 'center' }}>
+        {abbr}
+      </Text>
+    );
+  }
+  return (
+    <Image
+      source={{ uri }}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
 const JCC_LOGO    = require('../assets/jcc.png');
 
@@ -177,7 +208,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const weAreHome = g.teams?.home?.team?.id === t.id;
               const them = weAreHome ? g.teams?.away : g.teams?.home;
               // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
-              nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', opponentAbbr: them?.team?.abbreviation ?? '', isHome: weAreHome };
+              nextGame = { date: dateObj.date, gameTime: g.gameDate ?? null, opponent: them?.team?.name ?? '???', opponentAbbr: them?.team?.abbreviation ?? '', opponentId: them?.team?.id, isHome: weAreHome };
             }
           }
         }
@@ -374,6 +405,8 @@ export default function SportsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMlbAbbr, setExpandedMlbAbbr] = useState<string | null>(null);
   const [nextUpIdx, setNextUpIdx] = useState(0);
+  const [showSkunksSchedule, setShowSkunksSchedule] = useState(false);
+  const [webLoading, setWebLoading] = useState(true);
   const { width: winWidth } = useWindowDimensions();
   const cardWidth = winWidth - 32; // 16px padding each side
 
@@ -424,7 +457,11 @@ export default function SportsScreen() {
             time: ng.gameTime ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : undefined,
             accent: ACC.mlb, gradStart: 'rgba(167,139,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
             ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
-            oppLogoUrl: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined,
+            oppLogoUrl: (() => {
+              const abbr = (ng.opponentAbbr && ng.opponentAbbr.toLowerCase())
+                || (ng.opponentId != null ? MLB_ID_ESPN[ng.opponentId] : undefined);
+              return abbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png` : undefined;
+            })(),
           });
         }
       }
@@ -551,7 +588,7 @@ export default function SportsScreen() {
                             <View style={styles.nextUpLogoRow}>
                               <View style={styles.nextUpLogoCol}>
                                 <View style={styles.nextUpLogoBg}>
-                                  <Image source={{ uri: nextUp.ourLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                                  <Image source={{ uri: nextUp.ourLogoUrl }} style={{ width: 72, height: 72 }} resizeMode="contain" />
                                 </View>
                                 <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
                               </View>
@@ -565,9 +602,9 @@ export default function SportsScreen() {
                               <View style={styles.nextUpLogoCol}>
                                 <View style={styles.nextUpLogoBg}>
                                   {nextUp.oppLogoUrl ? (
-                                    <Image source={{ uri: nextUp.oppLogoUrl }} style={styles.nextUpHeaderLogo} resizeMode="contain" />
+                                    <Image source={{ uri: nextUp.oppLogoUrl }} style={{ width: 72, height: 72 }} resizeMode="contain" />
                                   ) : (
-                                    <Text style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: '800', color: 'rgba(255,255,255,0.25)' }}>{rightLabel}</Text>
+                                    <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 }}>{rightLabel}</Text>
                                   )}
                                 </View>
                                 <Text style={[styles.nextUpLogoLabel, { color: 'rgba(255,255,255,0.45)' }]}>{rightLabel}</Text>
@@ -693,7 +730,7 @@ export default function SportsScreen() {
           accentColor={ACC.skunks}
           gradStart="rgba(132,204,22,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          iconContent={<Text style={{ fontSize: 22 }}>⚾</Text>}
+          iconContent={<Image source={require('../public/tarpskunk.png')} style={{ width: 30, height: 30 }} resizeMode="contain" />}
           name="Tarp Skunks"
           subtitle="PGCBL · Diethrick Park"
           defaultOpen={false}
@@ -725,8 +762,8 @@ export default function SportsScreen() {
               </View>
             ))}
           </View>
-          <TouchableOpacity onPress={() => Linking.openURL('https://www.jamestowntarpskunks.com')} activeOpacity={0.7} style={styles.moreLink}>
-            <Text style={[styles.moreLinkText, { color: `${ACC.skunks}70` }]}>jamestowntarpskunks.com →</Text>
+          <TouchableOpacity onPress={() => { setShowSkunksSchedule(true); setWebLoading(true); }} activeOpacity={0.7} style={styles.moreLink}>
+            <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
           </TouchableOpacity>
         </TeamCard>
 
@@ -1078,9 +1115,61 @@ export default function SportsScreen() {
         </TeamCard>
 
       </ScrollView>
+
+      {/* ── Tarp Skunks Full Schedule Modal ─────────────────────── */}
+      <Modal
+        visible={showSkunksSchedule}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowSkunksSchedule(false)}
+      >
+        <View style={schedModal.container}>
+          {/* Header */}
+          <View style={schedModal.header}>
+            <View style={schedModal.headerLeft}>
+              <Text style={schedModal.headerTitle}>Tarp Skunks</Text>
+              <Text style={schedModal.headerSub}>2026 Schedule</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowSkunksSchedule(false)}
+              activeOpacity={0.7}
+              style={schedModal.closeBtn}
+            >
+              <Ionicons name="close" size={20} color="rgba(255,255,255,0.7)" />
+            </TouchableOpacity>
+          </View>
+
+          {/* WebView */}
+          <View style={{ flex: 1 }}>
+            {webLoading && (
+              <View style={schedModal.loaderWrap}>
+                <ActivityIndicator size="large" color={ACC.skunks} />
+              </View>
+            )}
+            <WebView
+              source={{ uri: 'https://tarp-skunks-2026.vercel.app/#schedule' }}
+              style={{ flex: 1, backgroundColor: '#060e18' }}
+              onLoadEnd={() => setWebLoading(false)}
+              allowsInlineMediaPlayback
+              mediaPlaybackRequiresUserAction={false}
+            />
+          </View>
+        </View>
+      </Modal>
+
     </ThemedBackground>
   );
 }
+
+const schedModal = StyleSheet.create({
+  container:   { flex: 1, backgroundColor: '#060e18' },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
+  headerLeft:  { gap: 2 },
+  headerTitle: { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
+  headerSub:   { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: ACC.skunks, letterSpacing: 1.2, textTransform: 'uppercase' },
+  closeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
+  loaderWrap:  { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#060e18', zIndex: 10 },
+});
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
@@ -1101,11 +1190,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,23,42,0.4)',
     overflow: 'hidden',
   },
-  nextUpHeader: { height: 130, overflow: 'hidden', justifyContent: 'flex-end', padding: 12 },
-  nextUpBgEmoji: { position: 'absolute', right: -8, bottom: -16, fontSize: 90, opacity: 0.08 },
+  nextUpHeader: { height: 130, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24 },
+  nextUpBgEmoji: { fontSize: 90, opacity: 0.08, alignSelf: 'center' },
   nextUpLogoRow: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24,
+    flexDirection: 'row', alignItems: 'center', flex: 1,
   },
   nextUpLogoCol: { alignItems: 'center', gap: 6 },
   nextUpLogoBg: {

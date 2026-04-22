@@ -10,13 +10,16 @@ import { useTheme } from '../lib/ThemeContext';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { fetchWeather, WeatherData } from '../services/weather';
-import { useCivicData, EventItem, NewsItem } from '../hooks/useCivicData';
+import { EventItem, NewsItem } from '../hooks/useCivicData';
+import { useCivic } from '../lib/CivicDataContext';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { openLink } from '../lib/openLink';
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
+import RecyclingScreen from './recycling';
+import ParkingScreen from './parking';
 import { AddToHomeScreen } from '../components/AddToHomeScreen';
 import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
@@ -122,18 +125,21 @@ function relativeTime(dateStr: string): string {
 }
 
 // Derive a color from a news story's title + source — mirrors news.tsx logic
-function storyColor(title: string, source: string): string {
+function storyMeta(title: string, source: string): { color: string; label: string } {
   const t = title.toLowerCase();
   const s = source.toLowerCase();
-  if (/\b(jcc|jamestown community college)\b/i.test(t) || s.includes('jcc')) return '#a78bfa';
-  if (/breaking|urgent|alert|emergency/i.test(t)) return '#ef4444';
-  if (/dies|died|killed|fatal|crash|accident|shooting|arrested|injured|missing/i.test(t)) return '#fb923c';
-  if (/music|concert|band|jazz|blues|rock|festival/i.test(t)) return '#fb7185';
-  if (/school board|city council|mayor|budget|vote|election|municipal/i.test(t)) return '#22d3ee';
-  if (/governor|legislature|assembly|senate|nys|albany/i.test(t)) return '#fbbf24';
-  if (s.includes('city') || s.includes('jamestown') || s.includes('bpu')) return '#22d3ee';
-  if (s.includes('nys') || s.includes('dec') || s.includes('dot')) return '#fbbf24';
-  return '#34d399'; // community
+  if (/\b(jcc|jamestown community college)\b/i.test(t) || s.includes('jcc')) return { color: '#a78bfa', label: 'JCC' };
+  if (/breaking|urgent|alert|emergency/i.test(t)) return { color: '#ef4444', label: 'BREAKING' };
+  if (/dies|died|killed|fatal|crash|accident|shooting|arrested|injured|missing/i.test(t)) return { color: '#fb923c', label: 'LOCAL' };
+  if (/music|concert|band|jazz|blues|rock|festival/i.test(t)) return { color: '#fb7185', label: 'MUSIC' };
+  if (/school board|city council|mayor|budget|vote|election|municipal/i.test(t)) return { color: '#22d3ee', label: 'CITY' };
+  if (/governor|legislature|assembly|senate|nys|albany/i.test(t)) return { color: '#fbbf24', label: 'STATE' };
+  if (s.includes('city') || s.includes('jamestown') || s.includes('bpu')) return { color: '#22d3ee', label: 'CITY' };
+  if (s.includes('nys') || s.includes('dec') || s.includes('dot')) return { color: '#fbbf24', label: 'STATE' };
+  return { color: '#34d399', label: 'COMMUNITY' };
+}
+function storyColor(title: string, source: string): string {
+  return storyMeta(title, source).color;
 }
 
 function eventCategoryColor(category: string): string {
@@ -150,11 +156,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cityServicesOpen, setCityServicesOpen] = useState(false);
+  const [recyclingOpen, setRecyclingOpen] = useState(false);
+  const [parkingOpen, setParkingOpen] = useState(false);
   const [radioPlaying, setRadioPlaying] = useState(false);
   const [radioLoading, setRadioLoading] = useState(false);
+  const [cdirExpanded, setCdirExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
-  const civic = useCivicData();
+  const civic = useCivic();
 
   async function toggleRadio() {
     if (radioLoading) return;
@@ -231,10 +240,12 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const topStory: NewsItem | null = civic.news.length > 0 ? civic.news[0] : null;
   const weekendEvent = getThisWeekendEvent(civic.events);
 
-  // Simplify recycling material name — strip parenthetical
+  // Simplify recycling material name — strip parenthetical, shorten known long names
   const recyclingRaw = recycling.thisWeek.material;
   const recyclingMatch = recyclingRaw.match(/^(.+?)\s*\((.+)\)$/);
-  const recyclingName = recyclingMatch ? recyclingMatch[1].trim() : recyclingRaw;
+  const recyclingName = (recyclingMatch ? recyclingMatch[1].trim() : recyclingRaw)
+    .replace(/^Corrugated Cardboard & Boxboard$/i, 'Cardboard & Boxboard')
+    .replace(/^Corrugated Cardboard$/i, 'Cardboard');
 
   const updatedTime = civic.lastUpdated
     ? new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -346,7 +357,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         <View style={styles.todayGrid}>
           {/* Recycling card */}
           {/* @ts-ignore */}
-          <View style={[styles.todayCard, glassWeb]}>
+          <TouchableOpacity style={[styles.todayCard, glassWeb]} onPress={() => setRecyclingOpen(true)} activeOpacity={0.75}>
             <View style={styles.todayCardTop}>
               <View style={[styles.categoryIcon, { backgroundColor: 'rgba(52,211,153,0.1)' }]}>
                 <Ionicons name="sync-outline" size={14} color={dark.category.recycling} />
@@ -363,15 +374,21 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 <Text style={styles.todayCardTitle} numberOfLines={2}>
                   {recyclingName === '—' ? 'No pickup' : recyclingName}
                 </Text>
-                <Text style={styles.todayCardSub}>Pickup this week</Text>
+                {recycling.thisWeek.exclusions ? (
+                  <Text style={styles.todayCardExclusion} numberOfLines={1}>
+                    No {recycling.thisWeek.exclusions}
+                  </Text>
+                ) : (
+                  <Text style={styles.todayCardSub}>Pickup this week</Text>
+                )}
                 <Text style={styles.todayCardMeta}>{recycling.thisWeek.dateRange || '—'}</Text>
               </>
             )}
-          </View>
+          </TouchableOpacity>
 
           {/* Parking card */}
           {/* @ts-ignore */}
-          <View style={[styles.todayCard, glassWeb]}>
+          <TouchableOpacity style={[styles.todayCard, glassWeb]} onPress={() => setParkingOpen(true)} activeOpacity={0.75}>
             <View style={styles.todayCardTop}>
               <View style={[styles.categoryIcon, { backgroundColor: 'rgba(34,211,238,0.1)' }]}>
                 <Ionicons name="car-outline" size={14} color={dark.category.parking} />
@@ -397,7 +414,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 </Text>
               </>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
 
         {recycling.holidayDelay && (
@@ -438,28 +455,33 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 <SkeletonPulse width="50%" height={12} borderRadius={4} accRGB={theme.accRGB} />
               </View>
             ) : topStory ? (() => {
-              const sColor = storyColor(topStory.title, topStory.source ?? '');
+              const { color: sColor, label: sLabel } = storyMeta(topStory.title, topStory.source ?? '');
               return (
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => topStory.link ? openLink(topStory.link) : null}
                   // @ts-ignore
-                  style={[styles.heroCard, glassWeb, { borderTopColor: sColor, borderTopWidth: 3 }]}
+                  style={[styles.heroCard, glassWeb]}
                 >
-                  <LinearGradient
-                    colors={[`${sColor}40`, `${sColor}14`, 'rgba(15,23,42,0.0)'] as any}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.heroGradient}
-                  >
-                    <Ionicons name="newspaper-outline" size={72} color={`${sColor}10`} style={styles.heroWatermark} />
-                    <View style={[styles.heroBadge, { borderColor: `${sColor}30` }]}>
-                      <LiveDot color={sColor} />
-                      <Text style={[styles.heroBadgeText, { color: sColor }]}>
-                        {topStory.source ?? 'News'} · {relativeTime(topStory.pubDate)}
+                  {/* Banner */}
+                  <View style={styles.heroGradient}>
+                    <LinearGradient
+                      colors={[`${sColor}cc`, `${sColor}44`, 'rgba(4,8,20,0.97)'] as any}
+                      start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Huge watermark */}
+                    <Text style={[styles.heroWatermark, { color: sColor }]}>
+                      {sLabel}
+                    </Text>
+                    {/* Top row: source · time */}
+                    <View style={styles.heroBannerTop}>
+                      <Text style={styles.heroBannerMeta} numberOfLines={1}>
+                        {topStory.source ? `${topStory.source} · ` : ''}{relativeTime(topStory.pubDate)}
                       </Text>
                     </View>
-                  </LinearGradient>
+                  </View>
+                  {/* Body */}
                   <View style={styles.heroBody}>
                     <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
                     <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'}</Text>
@@ -526,53 +548,85 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
         {/* CDIR */}
         {/* @ts-ignore */}
-        <View style={[styles.mediaCard, {
+        <View style={[styles.cdirCard, {
           backgroundColor: radioPlaying ? 'rgba(34,211,238,0.1)' : dark.surface,
           borderColor: radioPlaying ? 'rgba(34,211,238,0.3)' : dark.border,
         }, glassWeb]}>
-          <TouchableOpacity
-            onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})}
-            activeOpacity={0.8}
-            accessibilityLabel="Open CDIR website"
-          >
-            <View style={[styles.mediaArt, { backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.15)' }]}>
-              {nowPlaying?.artwork ? (
-                <Image source={{ uri: nowPlaying.artwork }} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
-              ) : (
-                <Ionicons name="radio-outline" size={22} color={dark.category.city} />
-              )}
-            </View>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <View style={styles.mediaLabelRow}>
-              <Text style={[styles.mediaLabel, { color: dark.category.city, flex: 1 }]} numberOfLines={1}>Chadakoin Digital Internet Radio</Text>
+          {/* Main row */}
+          <View style={styles.cdirRow}>
+            {/* Artwork + LIVE badge below */}
+            <View style={styles.cdirArtCol}>
+              <TouchableOpacity
+                onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})}
+                activeOpacity={0.8}
+                accessibilityLabel="Open CDIR website"
+              >
+                <View style={[styles.mediaArt, { backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.15)' }]}>
+                  {nowPlaying?.artwork ? (
+                    <Image source={{ uri: nowPlaying.artwork }} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
+                  ) : (
+                    <Ionicons name="radio-outline" size={22} color={dark.category.city} />
+                  )}
+                </View>
+              </TouchableOpacity>
               <View style={styles.liveChip}>
                 <LiveDot color="#fb7185" />
                 <Text style={styles.liveLabel}>LIVE</Text>
               </View>
             </View>
-            {nowPlaying?.title ? (
-              <>
-                <Text style={styles.mediaTitle} numberOfLines={1}>{nowPlaying.title}</Text>
-                <Text style={styles.mediaSub} numberOfLines={1}>{nowPlaying.artist}</Text>
-              </>
-            ) : (
-              <Text style={styles.mediaSub}>Local music & podcasts · 24/7</Text>
-            )}
+
+            {/* Track info */}
+            <View style={{ flex: 1 }}>
+              <View style={styles.mediaLabelRow}>
+                <Text style={[styles.mediaLabel, { color: dark.category.city }]} numberOfLines={1}>CDIR</Text>
+                <TouchableOpacity onPress={() => setCdirExpanded(v => !v)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name={cdirExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="rgba(255,255,255,0.35)" />
+                </TouchableOpacity>
+              </View>
+              {nowPlaying?.title ? (
+                <>
+                  <Text style={styles.mediaTitle} numberOfLines={2}>{nowPlaying.title}</Text>
+                  <Text style={styles.mediaSub} numberOfLines={1}>{nowPlaying.artist}</Text>
+                </>
+              ) : (
+                <Text style={styles.mediaSub}>Local music & podcasts · 24/7</Text>
+              )}
+            </View>
+
+            {/* Play button */}
+            <TouchableOpacity
+              onPress={toggleRadio}
+              activeOpacity={0.7}
+              style={[styles.playBtn, { backgroundColor: dark.category.city, alignSelf: 'center' }]}
+              accessibilityLabel={radioPlaying ? 'Stop radio' : 'Play CDIR radio'}
+            >
+              {radioLoading
+                ? <Ionicons name="hourglass-outline" size={16} color="#060e18" />
+                : radioPlaying
+                ? <Ionicons name="pause" size={16} color="#060e18" />
+                : <Ionicons name="play" size={16} color="#060e18" />
+              }
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={toggleRadio}
-            activeOpacity={0.7}
-            style={[styles.playBtn, { backgroundColor: dark.category.city }]}
-            accessibilityLabel={radioPlaying ? 'Stop radio' : 'Play CDIR radio'}
-          >
-            {radioLoading
-              ? <Ionicons name="hourglass-outline" size={16} color="#060e18" />
-              : radioPlaying
-              ? <Ionicons name="pause" size={16} color="#060e18" />
-              : <Ionicons name="play" size={16} color="#060e18" />
-            }
-          </TouchableOpacity>
+
+          {/* Expanded info panel */}
+          {cdirExpanded && (
+            <View style={styles.cdirExpandedPanel}>
+              <View style={styles.cdirDivider} />
+              <Text style={styles.cdirExpandedTitle}>Chadakoin Digital Internet Radio</Text>
+              <Text style={styles.cdirExpandedDesc}>
+                A living archive of Jamestown's local music scene — past and present. Original recordings, local bands, and community podcasts, streaming 24/7.
+              </Text>
+              <TouchableOpacity
+                onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})}
+                activeOpacity={0.7}
+                style={styles.cdirExpandedLink}
+              >
+                <Text style={[styles.cdirExpandedLinkText, { color: dark.category.city }]}>radio.chadakoindigital.com</Text>
+                <Ionicons name="arrow-forward" size={11} color={dark.category.city} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* LOTD */}
@@ -622,6 +676,34 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       {cityServicesOpen && (
         <View style={styles.overlay}>
           <CityServicesScreen onClose={() => setCityServicesOpen(false)} />
+        </View>
+      )}
+
+      {/* Recycling overlay */}
+      {recyclingOpen && (
+        <View style={styles.overlay}>
+          <RecyclingScreen />
+          <TouchableOpacity
+            onPress={() => setRecyclingOpen(false)}
+            activeOpacity={0.7}
+            style={styles.overlayClose}
+          >
+            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Parking overlay */}
+      {parkingOpen && (
+        <View style={styles.overlay}>
+          <ParkingScreen />
+          <TouchableOpacity
+            onPress={() => setParkingOpen(false)}
+            activeOpacity={0.7}
+            style={styles.overlayClose}
+          >
+            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -686,6 +768,7 @@ const styles = StyleSheet.create({
   todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   todayCardTitle: { fontFamily: 'Syne', fontSize: 17, fontWeight: '700', color: dark.text.primary, lineHeight: 22, marginBottom: 4 },
   todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted },
+  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginBottom: 2 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', marginTop: 2 },
 
   // Delay banner
@@ -698,15 +781,20 @@ const styles = StyleSheet.create({
 
   // Hero news card
   heroCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden' },
-  heroGradient: { height: 100, justifyContent: 'flex-end', padding: 12 },
-  heroWatermark: { position: 'absolute', right: -16, bottom: -16 },
+  heroGradient: { height: 90, justifyContent: 'space-between', padding: 14, paddingBottom: 12, position: 'relative' },
+  heroWatermark: {
+    position: 'absolute', left: 0, right: 0, bottom: -4,
+    fontFamily: 'DMSans_800ExtraBold', fontSize: 46, letterSpacing: -0.5, opacity: 0.18, textAlign: 'center',
+  },
+  heroBannerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroBannerMeta: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.40)' },
+  heroCategoryLabel: { fontFamily: 'DMSans_800ExtraBold', fontSize: 24, letterSpacing: 1 },
   heroBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)', alignSelf: 'flex-start',
-    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    alignSelf: 'flex-start', borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 4,
   },
-  heroBadgeText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: dark.category.city, letterSpacing: 0.5 },
+  heroBadgeText: { fontFamily: 'DMSans_700Bold', fontSize: 10, letterSpacing: 0.8 },
   heroBody: { padding: 14 },
   heroTitle: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: dark.text.primary, lineHeight: 22, letterSpacing: -0.2 },
   heroMeta: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 6 },
@@ -729,13 +817,25 @@ const styles = StyleSheet.create({
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
     borderRadius: 16, padding: 12, marginBottom: 8, overflow: 'hidden',
   },
+  cdirCard: {
+    backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
+    borderRadius: 16, padding: 12, marginBottom: 8, overflow: 'hidden',
+  },
+  cdirRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  cdirArtCol: { alignItems: 'center', gap: 5 },
+  cdirExpandedPanel: { marginTop: 10 },
+  cdirDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: 10 },
+  cdirExpandedTitle: { fontFamily: 'DMSans_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 4 },
+  cdirExpandedDesc: { fontFamily: 'DMSans_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 18 },
+  cdirExpandedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  cdirExpandedLinkText: { fontFamily: 'DMSans_500Medium', fontSize: 11 },
   mediaArt: { width: 52, height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, overflow: 'hidden' },
   mediaLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
   mediaLabel: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   liveChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   liveLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', color: '#fb7185', letterSpacing: 1 },
   epNumber: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', color: dark.text.subtle, letterSpacing: 0.5 },
-  mediaTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: dark.text.primary },
+  mediaTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: dark.text.primary, lineHeight: 18 },
   mediaSub: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 2 },
   playBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 

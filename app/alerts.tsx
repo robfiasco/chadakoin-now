@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { dark } from '../lib/colors';
-import { useCivicData } from '../hooks/useCivicData';
+import { useCivic } from '../lib/CivicDataContext';
 import { openLink } from '../lib/openLink';
 
 const ACC     = '#22d3ee';  // cyan-400
@@ -17,7 +17,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function AlertsScreen() {
-  const civic = useCivicData();
+  const civic = useCivic();
   const { alerts, loading } = civic;
   const isClear = !alerts.hasActiveAlerts;
   const [refreshing, setRefreshing] = useState(false);

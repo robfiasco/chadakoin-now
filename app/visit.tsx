@@ -577,12 +577,20 @@ export default function VisitScreen() {
           )}
         </View>
 
+        {/* ── Editor's Picks ──────────────────────────────── */}
+        {editorPicks.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Editor's Picks</Text>
+            {editorPicks.map(fav => <EditorPickCard key={fav.name} fav={fav} />)}
+          </>
+        )}
+
         {/* ── Filter chips ────────────────────────────────── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipRow}
-          style={{ marginBottom: 16 }}
+          style={{ marginTop: 8, marginBottom: 16 }}
         >
           {FILTERS.map(f => {
             const isActive = active === f.key;
@@ -604,14 +612,6 @@ export default function VisitScreen() {
             );
           })}
         </ScrollView>
-
-        {/* ── Editor's Picks ──────────────────────────────── */}
-        {editorPicks.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Editor's Picks</Text>
-            {editorPicks.map(fav => <EditorPickCard key={fav.name} fav={fav} />)}
-          </>
-        )}
 
         {/* ── Browse ──────────────────────────────────────── */}
         {hasBrowseContent && (

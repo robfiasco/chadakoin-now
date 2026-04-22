@@ -5,13 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { dark } from '../lib/colors';
-import { useCivicData, computeParkingSchedule } from '../hooks/useCivicData';
+import { computeParkingSchedule } from '../hooks/useCivicData';
+import { useCivic } from '../lib/CivicDataContext';
 
 const ACC     = '#22d3ee';           // cyan-400
 const ACC_RGB = '34,211,238';
 
 export default function ParkingScreen() {
-  const civic = useCivicData();
+  const civic = useCivic();
   const { parking, loading } = civic;
   const [refreshing, setRefreshing] = useState(false);
   const schedule = computeParkingSchedule();

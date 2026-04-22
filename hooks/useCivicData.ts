@@ -192,7 +192,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v18_';
+const CACHE_PREFIX = 'civic_v20_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -669,6 +669,7 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Arts & Entertainment',
     tags: ['RTPI', 'Reg Lenna', 'Festival'],
     link: 'https://rtpi.org/programs/',
+    imageUrl: 'https://rtpi.org/wp-content/uploads/2025/12/WT-NA-Horiz-16-9-2560x1440_25-1680x945.jpg',
   },
   {
     title: 'Jennifer Anderson Gallery Talk & Drypoint Demo',
@@ -757,7 +758,6 @@ async function fetchEvents(): Promise<EventItem[]> {
   }
 
   const cutoff = new Date();
-  cutoff.setHours(0, 0, 0, 0);
   const result = merged
     .filter(e => new Date(e.startDate) >= cutoff)
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -774,7 +774,7 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
   const seen = new Set(fetched.map(key));
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
-  const fresh = CURATED_EVENTS.filter(e => new Date(e.startDate) >= cutoff);
+  const fresh = CURATED_EVENTS.filter(e => new Date(e.startDate) >= new Date());
   const combined = [
     ...fresh.filter(e => !seen.has(key(e))),
     ...fetched,
@@ -1222,13 +1222,13 @@ export function useCivicData(): CivicData {
       eventsResult.status === 'fulfilled' ? eventsResult.value : []
     );
 
-    const wrfaNews = newsResult.status === 'fulfilled' ? newsResult.value : [];
-    const libraryNews = libraryResult.status === 'fulfilled' ? (libraryResult.value as any).news ?? [] : [];
-    const seenTitles = new Set(wrfaNews.map((n: NewsItem) => n.title.toLowerCase()));
+    const allNews: NewsItem[] = newsResult.status === 'fulfilled' ? newsResult.value : [];
+    const libraryNews: NewsItem[] = libraryResult.status === 'fulfilled' ? (libraryResult.value as any).news ?? [] : [];
+    const seenTitles = new Set(allNews.map((n: NewsItem) => n.title.toLowerCase()));
     const news: NewsItem[] = [
-      ...wrfaNews,
+      ...allNews,
       ...libraryNews.filter((n: NewsItem) => !seenTitles.has(n.title.toLowerCase())),
-    ].slice(0, 5);
+    ];
 
     const latestEpisode = lotdResult.status === 'fulfilled'
       ? lotdResult.value

@@ -8,7 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
-import { useCivicData, EventItem } from '../hooks/useCivicData';
+import { EventItem } from '../hooks/useCivicData';
+import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 
@@ -145,7 +146,11 @@ function FeaturedCard({ event }: { event: EventItem }) {
       <View style={feat.header}>
         {event.imageUrl ? (
           <>
-            <Image source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image
+              source={{ uri: event.imageUrl }}
+              style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.25 }, { translateY: 22 }] }]}
+              resizeMode="cover"
+            />
             {/* Dark gradient overlay so pills remain readable over photos */}
             <LinearGradient
               colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.15)', 'transparent'] as any}
@@ -312,7 +317,7 @@ const ec = StyleSheet.create({
 // ── Screen ────────────────────────────────────────────────────────
 export default function EventsScreen() {
   const { theme } = useTheme();
-  const civic = useCivicData();
+  const civic = useCivic();
   const { events, loading } = civic;
   const [activeFilter, setActiveFilter] = useState<FilterKey>('weekend');
   const [refreshing, setRefreshing] = useState(false);
