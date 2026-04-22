@@ -736,48 +736,13 @@ export default function SportsScreen() {
                 >
                   {nextUpItems.map((nextUp, idx) => (
                     // @ts-ignore
-                    <ImageBackground
-                      key={idx}
-                      source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
-                      style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}
-                      imageStyle={{ borderRadius: 18, opacity: 0.35 }}
-                      resizeMode="cover"
-                    >
-                      <LinearGradient
-                        colors={[nextUp.gradStart, nextUp.gradEnd] as [string, string]}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                        style={styles.nextUpHeader}
-                      >
-                        {nextUp.ourLogoUrl ? (() => {
-                          const parts = nextUp.matchup.split(/\s+(vs|@)\s+/);
-                          const leftLabel  = parts[0] ?? '';
-                          const connector  = nextUp.matchup.includes('@') ? '@' : 'vs';
-                          const rightLabel = parts[2] ?? '';
-                          return (
-                            <View style={styles.nextUpLogoRow}>
-                              <View style={styles.nextUpLogoCol}>
-                                <View style={styles.nextUpLogoBg}>
-                                  <Image source={{ uri: nextUp.ourLogoUrl }} style={{ width: 72, height: 72 }} resizeMode="contain" />
-                                </View>
-                                <Text style={[styles.nextUpLogoLabel, { color: nextUp.accent }]}>{leftLabel}</Text>
-                              </View>
-                              <Text style={[styles.nextUpVsText, { color: nextUp.accent }]}>{connector}</Text>
-                              <View style={styles.nextUpLogoCol}>
-                                <View style={styles.nextUpLogoBg}>
-                                  {nextUp.oppLogoUrl ? (
-                                    <Image source={{ uri: nextUp.oppLogoUrl }} style={{ width: 72, height: 72 }} resizeMode="contain" />
-                                  ) : (
-                                    <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 }}>{rightLabel}</Text>
-                                  )}
-                                </View>
-                                <Text style={[styles.nextUpLogoLabel, { color: 'rgba(255,255,255,0.45)' }]}>{rightLabel}</Text>
-                              </View>
-                            </View>
-                          );
-                        })() : (
-                          <Text style={styles.nextUpBgEmoji} aria-hidden>{nextUp.emoji}</Text>
-                        )}
-                      </LinearGradient>
+                    <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
+                      {/* Ballpark background — bottom-anchored to show the field */}
+                      <Image
+                        source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
+                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '100%', height: 300, opacity: 0.4 }}
+                        resizeMode="cover"
+                      />
                       <View style={styles.nextUpBody}>
                         <View style={{ flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -797,7 +762,7 @@ export default function SportsScreen() {
                           </View>
                         </View>
                       </View>
-                    </ImageBackground>
+                    </View>
                   ))}
                 </ScrollView>
                 {/* Dots — only shown when there are multiple cards */}
