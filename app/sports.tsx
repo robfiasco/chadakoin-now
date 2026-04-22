@@ -570,7 +570,7 @@ export default function SportsScreen() {
   // All upcoming games sorted by time — powers the Next Up carousel
   const nextUpItems = useMemo(() => {
     if (!data) return [];
-    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; isLive?: boolean; };
+    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; isLive?: boolean; bgKey?: 'hockey' | 'baseball'; };
     const candidates: C[] = [];
     const now = new Date();
     const today = new Date(); today.setHours(0,0,0,0);
@@ -585,6 +585,7 @@ export default function SportsScreen() {
           dateLabel: '', time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           accent: ACC.sabres, gradStart: 'rgba(96,165,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
           ourLogoUrl: SABRES_LOGO, oppLogoUrl: data.nextGame.opponentLogo || undefined,
+          bgKey: 'hockey',
         });
       }
     }
@@ -602,7 +603,7 @@ export default function SportsScreen() {
           accent: ACC.mlb, gradStart: 'rgba(167,139,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
           ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
           oppLogoUrl: oppAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${oppAbbr}.png` : undefined,
-          isLive: true,
+          isLive: true, bgKey: 'baseball',
         });
       } else if (team.nextGame) {
         const ng = team.nextGame;
@@ -617,6 +618,7 @@ export default function SportsScreen() {
             accent: ACC.mlb, gradStart: 'rgba(167,139,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
             ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
             oppLogoUrl: oppAbbrRaw ? `https://a.espncdn.com/i/teamlogos/mlb/500/${oppAbbrRaw.toLowerCase()}.png` : undefined,
+            bgKey: 'baseball',
           });
         }
       }
@@ -737,12 +739,21 @@ export default function SportsScreen() {
                   {nextUpItems.map((nextUp, idx) => (
                     // @ts-ignore
                     <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
-                      {/* Ballpark background — bottom-anchored to show the field */}
-                      <Image
-                        source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
-                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '100%', height: 300, opacity: 0.4 }}
-                        resizeMode="cover"
-                      />
+                      {/* Sport-specific background image */}
+                      {nextUp.bgKey === 'baseball' && (
+                        <Image
+                          source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
+                          style={{ position: 'absolute', left: 0, right: 0, top: -180, width: '100%', height: 380, opacity: 0.45 }}
+                          resizeMode="cover"
+                        />
+                      )}
+                      {nextUp.bgKey === 'hockey' && (
+                        <Image
+                          source={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg')}
+                          style={{ position: 'absolute', left: 0, right: 0, top: 0, width: '100%', height: '100%', opacity: 0.4 }}
+                          resizeMode="cover"
+                        />
+                      )}
                       <View style={styles.nextUpBody}>
                         <View style={{ flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -918,11 +929,7 @@ export default function SportsScreen() {
           gradStart="rgba(96,165,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
-            <Image
-              source={Platform.OS === 'web' ? { uri: '/hockey.png' } : require('../public/hockey.png')}
-              style={{ width: 34, height: 34 }}
-              resizeMode="contain"
-            />
+            <Image source={{ uri: SABRES_LOGO }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
           name="Buffalo Sabres"
           subtitle={data?.playoffSeries ? `NHL · ${data.playoffSeries.roundLabel.replace(/-/g, ' ')} · Playoffs` : 'NHL · Atlantic Division'}
