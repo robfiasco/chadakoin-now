@@ -214,7 +214,7 @@ const feat = StyleSheet.create({
   },
   header: { height: 160, justifyContent: 'space-between', padding: 14 },
   bgIcon: { position: 'absolute', right: -14, bottom: -14 },
-  topRow: { flexDirection: 'row', gap: 6, alignSelf: 'flex-start' },
+  topRow: { flexDirection: 'row', gap: 6, alignSelf: 'flex-end' },
   pill:   {
     backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
     borderRadius: 7, paddingHorizontal: 10, paddingVertical: 5,
