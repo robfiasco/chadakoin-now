@@ -631,12 +631,10 @@ export default function SportsScreen() {
       }
     }
     if (candidates.length === 0) return [];
-    // Live games sort first, then by time
-    candidates.sort((a, b) => {
-      if (a.isLive && !b.isLive) return -1;
-      if (!a.isLive && b.isLive) return 1;
-      return a.ts - b.ts;
-    });
+    // If any game is live, show only live games. Otherwise show upcoming.
+    const liveOnly = candidates.filter(c => c.isLive);
+    if (liveOnly.length > 0) return liveOnly;
+    candidates.sort((a, b) => a.ts - b.ts);
     return candidates.map(c => {
       // Live games already have their dateLabel set (e.g. "Top 5th")
       if (c.isLive) return c;
