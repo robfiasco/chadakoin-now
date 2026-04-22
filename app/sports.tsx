@@ -740,7 +740,7 @@ export default function SportsScreen() {
                       key={idx}
                       source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
                       style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}
-                      imageStyle={{ borderRadius: 18, opacity: 0.15 }}
+                      imageStyle={{ borderRadius: 18, opacity: 0.35 }}
                       resizeMode="cover"
                     >
                       <LinearGradient
@@ -1436,9 +1436,9 @@ const styles = StyleSheet.create({
   nextUpHeader: { height: 130, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24 },
   nextUpBgEmoji: { fontSize: 90, opacity: 0.08, alignSelf: 'center' },
   nextUpLogoRow: {
-    flexDirection: 'row', alignItems: 'center', flex: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 0,
   },
-  nextUpLogoCol: { alignItems: 'center', gap: 6, width: 90 },
+  nextUpLogoCol: { alignItems: 'center', gap: 6, width: 96, flexShrink: 0 },
   nextUpLogoBg: {
     width: 76, height: 76, borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -1446,7 +1446,7 @@ const styles = StyleSheet.create({
   },
   nextUpHeaderLogo: { width: 72, height: 72, flexShrink: 0 },
   nextUpLogoLabel: { fontFamily: 'Syne', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
-  nextUpVsDivider: { flex: 1, height: 1, alignItems: 'center', justifyContent: 'center' },
+  nextUpVsDivider: { width: 64, flexShrink: 0, height: 1, alignItems: 'center', justifyContent: 'center' },
   nextUpVsText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '800', letterSpacing: 1, backgroundColor: 'transparent', paddingHorizontal: 8 },
   nextUpPill: {
     alignSelf: 'flex-start',
