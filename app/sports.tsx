@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
-  TouchableOpacity, Linking, Image, Animated, Easing, RefreshControl,
+  TouchableOpacity, Linking, Image, ImageBackground, Animated, Easing, RefreshControl,
   useWindowDimensions, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -473,7 +473,7 @@ function SectionLabel({ label }: { label: string }) {
 function TeamCard({
   accentColor, gradStart, gradEnd, iconContent,
   name, subtitle, glanceRow, children,
-  defaultOpen = false, glassWeb,
+  defaultOpen = false, glassWeb, bgImage,
 }: {
   accentColor: string; gradStart: string; gradEnd: string;
   iconContent: React.ReactNode;
@@ -482,6 +482,7 @@ function TeamCard({
   children?: React.ReactNode;
   defaultOpen?: boolean;
   glassWeb: any;
+  bgImage?: any;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const rot = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
@@ -493,9 +494,8 @@ function TeamCard({
 
   const chevronRotate = rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
 
-  return (
-    // @ts-ignore
-    <View style={[styles.teamCard, glassWeb]}>
+  const cardContent = (
+    <>
       <TouchableOpacity onPress={toggle} activeOpacity={0.7} style={styles.teamCardHeader}>
         <LinearGradient
           colors={[gradStart, gradEnd]}
@@ -522,6 +522,22 @@ function TeamCard({
           {children}
         </View>
       )}
+    </>
+  );
+
+  if (bgImage) {
+    return (
+      // @ts-ignore
+      <ImageBackground source={bgImage} style={[styles.teamCard, glassWeb]} imageStyle={{ borderRadius: 16, opacity: 0.18 }} resizeMode="cover">
+        {cardContent}
+      </ImageBackground>
+    );
+  }
+
+  return (
+    // @ts-ignore
+    <View style={[styles.teamCard, glassWeb]}>
+      {cardContent}
     </View>
   );
 }
@@ -902,16 +918,27 @@ export default function SportsScreen() {
           <Text style={[styles.innerLabel, { color: `${ACC.skunks}80` }]}>Upcoming Home Games</Text>
           {/* @ts-ignore */}
           <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-            {SKUNKS_SCHEDULE.map((game, i) => (
-              <View key={i} style={[styles.skunksRow, i < SKUNKS_SCHEDULE.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                <View style={styles.skunksDateCol}>
-                  <Text style={[styles.skunksDay, { color: ACC.skunks }]}>{game.day}</Text>
-                  <Text style={styles.skunksMonth}>{game.month}</Text>
-                </View>
-                <Text style={styles.skunksOpponent}>{game.opponent}</Text>
-                <Text style={[styles.skunksTime, { color: dark.text.subtle }]}>{game.time}</Text>
-              </View>
-            ))}
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const upcoming = SKUNKS_SCHEDULE
+                .filter(g => g.isHome && g.date >= todayStr)
+                .slice(0, 5);
+              return upcoming.map((game, i) => {
+                const d = new Date(game.date + 'T12:00:00');
+                const dayNum = d.toLocaleDateString('en-US', { day: 'numeric' });
+                const month  = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                return (
+                  <View key={i} style={[styles.skunksRow, i < upcoming.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                    <View style={styles.skunksDateCol}>
+                      <Text style={[styles.skunksDay, { color: ACC.skunks }]}>{dayNum}</Text>
+                      <Text style={styles.skunksMonth}>{month}</Text>
+                    </View>
+                    <Text style={styles.skunksOpponent}>{game.opponent}</Text>
+                    <Text style={[styles.skunksTime, { color: dark.text.subtle }]}>{game.time}</Text>
+                  </View>
+                );
+              });
+            })()}
           </View>
           <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7} style={styles.moreLink}>
             <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
@@ -1069,6 +1096,7 @@ export default function SportsScreen() {
           accentColor={ACC.mlb}
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
+          bgImage={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
           iconContent={
             <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
@@ -1488,7 +1516,7 @@ const styles = StyleSheet.create({
 
   // MLB team list
   mlbTeamRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
-  mlbLogoWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
+  mlbLogoWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' },
   mlbLogo:     { width: 28, height: 28 },
   mlbTeamName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
   mlbNext:     { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
