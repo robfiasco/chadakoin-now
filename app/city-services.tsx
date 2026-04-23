@@ -144,7 +144,7 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
             </TouchableOpacity>
           )}
           <View style={{ flex: 1 }}>
-            <Text style={cs.title}>City Services</Text>
+            <Text style={cs.title}>City <Text style={{ color: '#22d3ee' }}>Services</Text></Text>
             <Text style={cs.subtitle}>BPU & DPW · Jamestown, NY</Text>
           </View>
         </View>
@@ -194,7 +194,7 @@ const cs = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   closeBtn: { padding: 8, borderRadius: 20, backgroundColor: 'rgba(15,23,42,0.6)', borderWidth: 1, borderColor: dark.border, marginTop: 4 },
-  title: { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  title: { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: dark.category.city, letterSpacing: 1.8, textTransform: 'uppercase', marginTop: 4 },
 
   chipRow: { paddingHorizontal: 16, gap: 8, flexDirection: 'row' },

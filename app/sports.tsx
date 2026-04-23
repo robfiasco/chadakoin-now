@@ -21,7 +21,9 @@ interface GameResult {
   won: boolean | null; venue: string; broadcast: string;
 }
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
-interface JCCResult { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
+interface JCCResult   { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
+interface JCCUpcoming { date: string; sport: string; opponent: string; isHome: boolean; link: string; }
+interface JCCData     { results: JCCResult[]; upcoming: JCCUpcoming[]; records: Record<string, { w: number; l: number }>; }
 interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
 interface MLBLiveGame {
   inning: number; inningOrdinal: string; topBottom: string;
@@ -59,7 +61,7 @@ interface SabresData {
   record: string; standing: string; points?: number;
   wins?: number; losses?: number; otLosses?: number;
   recentGame?: GameResult; nextGame?: GameResult;
-  topScorers?: Scorer[]; jcc?: JCCResult[]; mlb?: MLBTeam[];
+  topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[];
   playoffSeries?: PlayoffSeries | null;
   news: any[];
 }
@@ -342,12 +344,14 @@ async function fetchMLB(): Promise<MLBTeam[]> {
   } catch { return []; }
 }
 
-async function fetchJCCNative(): Promise<JCCResult[]> {
+async function fetchJCCNative(): Promise<JCCData> {
+  const empty: JCCData = { results: [], upcoming: [], records: {} };
   try {
     const res = await fetch('https://jccjayhawks.com/composite?print=rss');
-    if (!res.ok) return [];
+    if (!res.ok) return empty;
     const text = await res.text();
-    const items: JCCResult[] = [];
+    const results: JCCResult[] = [];
+    const upcoming: JCCUpcoming[] = [];
     const itemRx = /<item>([\s\S]*?)<\/item>/g;
     let m;
     while ((m = itemRx.exec(text)) !== null) {
@@ -367,19 +371,30 @@ async function fetchJCCNative(): Promise<JCCResult[]> {
       const link     = get('link');
       if (!pubDate) continue;
       const date = new Date(pubDate);
-      if (!score || score.trim() === '' || date >= new Date()) continue;
-      const parts = score.split(',').map((s: string) => s.trim());
-      const wl = parts[0];
-      const final = parts[1] ?? '';
-      if (final === '0-0') continue;
+      const now  = new Date();
       const opponentClean = opponent
         .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
         .replace(/^(at|vs\.?)\s*/i, '');
-      items.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), result: wl, score: final, won: wl === 'W', link });
+      const hasResult = score && score.trim() !== '';
+      if (hasResult && date < now) {
+        const parts = score.split(',').map((s: string) => s.trim());
+        const wl = parts[0]; const final = parts[1] ?? '';
+        if (final === '0-0') continue;
+        results.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), result: wl, score: final, won: wl === 'W', link });
+      } else if (!hasResult && date >= now) {
+        upcoming.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), link });
+      }
     }
-    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
-  } catch { return []; }
+    results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const records: Record<string, { w: number; l: number }> = {};
+    for (const r of results) {
+      if (!records[r.sport]) records[r.sport] = { w: 0, l: 0 };
+      if (r.won) records[r.sport].w++; else records[r.sport].l++;
+    }
+    return { results: results.slice(0, 8), upcoming: upcoming.slice(0, 8), records };
+  } catch { return empty; }
 }
 
 async function fetchPlayoffSeries(): Promise<PlayoffSeries | null> {
@@ -415,7 +430,11 @@ async function fetchSabres(): Promise<SabresData> {
     const [sabresRes, mlbRes] = await Promise.all([fetch('/api/sabres'), fetchMLB()]);
     if (!sabresRes.ok) throw new Error('Sabres API failed');
     const json = await sabresRes.json();
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc: json.jcc ?? [], mlb: mlbRes, playoffSeries: json.playoffSeries ?? null, news: [] };
+    const rawJcc = json.jcc;
+    const jcc: JCCData = rawJcc && typeof rawJcc === 'object' && !Array.isArray(rawJcc)
+      ? rawJcc
+      : { results: [], upcoming: [], records: {} };
+    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, playoffSeries: json.playoffSeries ?? null, news: [] };
   }
   const [schedRes, standRes, statsRes, jcc, mlb, playoffSeries] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
@@ -656,18 +675,29 @@ export default function SportsScreen() {
     return Math.max(0, Math.ceil((open.getTime() - today.getTime()) / 86400000));
   }, []);
 
-  // JCC glance: last 2 results across different sports
+  // JCC glance: last result per sport (up to 2 distinct sports)
   const jccGlance = useMemo(() => {
-    const results = data?.jcc ?? [];
+    const results = data?.jcc?.results ?? [];
     const seen = new Set<string>();
-    const out: typeof results = [];
+    const out: JCCResult[] = [];
     for (const r of results) {
       const key = r.sport.toLowerCase().split(' ')[0];
       if (!seen.has(key)) { seen.add(key); out.push(r); }
       if (out.length >= 2) break;
     }
-    // Fall back to last 2 if no distinct sports
     return out.length > 0 ? out : results.slice(0, 2);
+  }, [data]);
+
+  // JCC next game per sport (soonest upcoming per unique sport)
+  const jccNextBySport = useMemo(() => {
+    const upcomingList = data?.jcc?.upcoming ?? [];
+    const seen = new Set<string>();
+    const out: JCCUpcoming[] = [];
+    for (const u of upcomingList) {
+      const key = u.sport.toLowerCase().split(' ')[0];
+      if (!seen.has(key)) { seen.add(key); out.push(u); }
+    }
+    return out;
   }, [data]);
 
   // Nearest MLB next game for MLB glance row
@@ -749,7 +779,7 @@ export default function SportsScreen() {
                         <Image
                           source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
                           style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.45 }}
-                          resizeMode="cover"
+                          resizeMode="contain"
                         />
                       )}
                       {nextUp.bgKey === 'hockey' && (
@@ -816,17 +846,24 @@ export default function SportsScreen() {
               <SkeletonPulse width="60%" height={14} borderRadius={4} accRGB="52,211,153" />
             ) : jccGlance.length > 0 ? (
               <View style={{ gap: 5 }}>
-                {jccGlance.map((r, i) => (
-                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 13, width: 22 }}>{sportEmoji(r.sport)}</Text>
-                    <Text style={[styles.glanceText, { color: dark.text.muted, width: 58 }]}>{r.sport.split(' ')[0]}</Text>
-                    <Text style={[styles.glanceText, { color: r.won ? ACC.jcc : '#fb7185', fontWeight: '700', width: 56 }]}>
-                      {r.won ? 'W' : 'L'} {r.score}
-                    </Text>
-                    <Text style={{ color: dark.text.subtle, fontSize: 11, marginRight: 4 }}>·</Text>
-                    <Text style={[styles.glanceText, { color: dark.text.subtle, flex: 1 }]} numberOfLines={1}>{r.isHome ? 'vs' : '@'} {r.opponent}</Text>
-                  </View>
-                ))}
+                {jccGlance.map((r, i) => {
+                  const rec = data?.jcc?.records?.[r.sport];
+                  const recLabel = rec ? `${rec.w}-${rec.l}` : '';
+                  return (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 13, width: 22 }}>{sportEmoji(r.sport)}</Text>
+                      <Text style={[styles.glanceText, { color: dark.text.muted, width: 52 }]}>{r.sport.split(' ')[0]}</Text>
+                      {recLabel ? (
+                        <Text style={[styles.glanceText, { color: `${ACC.jcc}80`, width: 36 }]}>{recLabel}</Text>
+                      ) : null}
+                      <Text style={[styles.glanceText, { color: r.won ? ACC.jcc : '#fb7185', fontWeight: '700', width: 52 }]}>
+                        {r.won ? 'W' : 'L'} {r.score}
+                      </Text>
+                      <Text style={{ color: dark.text.subtle, fontSize: 11, marginRight: 4 }}>·</Text>
+                      <Text style={[styles.glanceText, { color: dark.text.subtle, flex: 1 }]} numberOfLines={1}>{r.isHome ? 'vs' : '@'} {r.opponent}</Text>
+                    </View>
+                  );
+                })}
               </View>
             ) : (
               <Text style={[styles.glanceText, { color: dark.text.subtle }]}>No recent results</Text>
@@ -835,16 +872,43 @@ export default function SportsScreen() {
         >
           {loading ? (
             <SkeletonPulse width="100%" height={180} borderRadius={12} accRGB="52,211,153" />
-          ) : data?.jcc && data.jcc.length > 0 ? (
+          ) : (data?.jcc?.results?.length ?? 0) > 0 ? (
             <>
+              {jccNextBySport.length > 0 && (
+                <>
+                  <Text style={[styles.innerLabel, { color: `${ACC.jcc}80` }]}>Next Games</Text>
+                  {/* @ts-ignore */}
+                  <View style={[innerCard, { padding: 0, overflow: 'hidden', marginBottom: 10 }]}>
+                    {jccNextBySport.map((u, i) => {
+                      const d = new Date(u.date);
+                      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                      return (
+                        <TouchableOpacity key={i} onPress={() => openLink(u.link)} activeOpacity={0.7}
+                          style={[styles.jccRow, i < jccNextBySport.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                          <Text style={styles.jccSportIcon}>{sportEmoji(u.sport)}</Text>
+                          <View style={{ flex: 1, gap: 2 }}>
+                            <Text style={styles.jccGame}>{u.isHome ? 'vs' : '@'} {u.opponent}</Text>
+                            <Text style={[styles.jccSport, { color: dark.text.subtle }]}>{u.sport}</Text>
+                          </View>
+                          <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                            <Text style={[styles.jccDate, { color: ACC.jcc }]}>{dateStr}</Text>
+                            <Text style={[styles.jccDate, { color: dark.text.subtle }]}>{timeStr}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
               <Text style={[styles.innerLabel, { color: `${ACC.jcc}80` }]}>Recent Results</Text>
               {/* @ts-ignore */}
               <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-                {data.jcc.map((g, i) => {
+                {data!.jcc!.results.map((g, i) => {
                   const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                   return (
                     <TouchableOpacity key={i} onPress={() => openLink(g.link)} activeOpacity={0.7}
-                      style={[styles.jccRow, i < data.jcc!.length - 1 && { borderBottomWidth: 1, borderBottomColor: `${dark.border}` }]}>
+                      style={[styles.jccRow, i < data!.jcc!.results.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
                       <Text style={[styles.jccResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.result}</Text>
                       <Text style={styles.jccSportIcon}>{sportEmoji(g.sport)}</Text>
                       <View style={{ flex: 1, gap: 2 }}>
@@ -1388,7 +1452,7 @@ const schedModal = StyleSheet.create({
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
-  title:   { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  title:   { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subhead: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC.label },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 10 },
 

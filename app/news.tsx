@@ -15,18 +15,6 @@ import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import type { NewsItem } from '../hooks/useCivicData';
 
-// ── Filters ───────────────────────────────────────────────────────
-type FilterKey = 'All' | 'WRFA' | 'City' | 'State' | 'JCC';
-const FILTERS: FilterKey[] = ['All', 'WRFA', 'City', 'State', 'JCC'];
-
-function matchesFilter(source: string, f: FilterKey): boolean {
-  if (f === 'All')   return true;
-  if (f === 'WRFA')  return source.includes('WRFA');
-  if (f === 'City')  return source.includes('City') || source.includes('Jamestown');
-  if (f === 'State') return source.includes('DEC') || source.includes('DOT') || source.includes('NYS');
-  if (f === 'JCC')   return source.includes('JCC');
-  return true;
-}
 
 // ── Category derivation ───────────────────────────────────────────
 type NewsCategory = 'Music' | 'City' | 'State' | 'JCC' | 'Education' | 'Community' | 'Breaking' | 'Local';
@@ -338,7 +326,6 @@ export default function NewsScreen() {
   const { theme } = useTheme();
   const civic = useCivic();
   const { news, loading } = civic;
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [refreshing, setRefreshing] = useState(false);
 
   async function onRefresh() {
@@ -349,8 +336,7 @@ export default function NewsScreen() {
 
   const cutoff = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
   const filtered = news
-    .filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff)
-    .filter(item => matchesFilter(item.source ?? '', activeFilter));
+    .filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff);
 
   const hero  = filtered[0] ?? null;
   const rest  = filtered.slice(1);
@@ -359,33 +345,9 @@ export default function NewsScreen() {
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.safe}>
-        <Text style={styles.title}>Local News</Text>
+        <Text style={styles.title}>Local <Text style={{ color: '#22d3ee' }}>News</Text></Text>
         <Text style={[styles.subtitle, { color: theme.acc }]}>Jamestown, NY</Text>
 
-        {/* Filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsRow}
-          style={{ marginTop: 14 }}
-        >
-          {FILTERS.map(f => {
-            const active = f === activeFilter;
-            return (
-              <TouchableOpacity
-                key={f}
-                onPress={() => setActiveFilter(f)}
-                activeOpacity={0.7}
-                style={[styles.chip, active && {
-                  backgroundColor: `rgba(${theme.accRGB},0.12)`,
-                  borderColor: `rgba(${theme.accRGB},0.35)`,
-                }]}
-              >
-                <Text style={[styles.chipText, active && { color: theme.acc }]}>{f}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
       </SafeAreaView>
 
       <ScrollView
@@ -455,7 +417,7 @@ export default function NewsScreen() {
 
 const styles = StyleSheet.create({
   safe:     { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 16 },
-  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  title:    { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },
 
   chipsRow: { flexDirection: 'row', gap: 8, paddingBottom: 4 },

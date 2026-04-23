@@ -145,7 +145,7 @@ export default function RecyclingScreen() {
         {/* @ts-ignore */}
         <View style={[styles.infoCard, glassWeb]}>
           <Ionicons name="information-circle-outline" size={18} color={ACC} />
-          <Text style={styles.infoText}>If a holiday falls on your pickup day, garbage and recycling shift back by one day for the remainder of that week.</Text>
+          <Text style={styles.infoText}>If a holiday falls on your pickup day, your pickup shifts to the next day — and every pickup after it that week shifts one day too. A Monday holiday means Monday pickup moves to Tuesday, Tuesday moves to Wednesday, and so on.</Text>
         </View>
 
         {recycling.holidayDelay && (
@@ -187,7 +187,7 @@ export default function RecyclingScreen() {
 
 const styles = StyleSheet.create({
   header:  { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
-  title:   { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  title:   { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC },
   content: { padding: 16, paddingTop: 4, paddingBottom: 32, gap: 0 },
 

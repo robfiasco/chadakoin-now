@@ -557,7 +557,7 @@ export default function VisitScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Visit Jamestown</Text>
+            <Text style={styles.title}>Visit <Text style={{ color: '#22d3ee' }}>Jamestown</Text></Text>
             <Text style={[styles.subtitle, { color: theme.acc }]}>Jamestown, NY</Text>
           </View>
         </View>
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   safeArea: { paddingHorizontal: 20 },
 
   header:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 20, paddingBottom: 8 },
-  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  title:    { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },
 
   searchWrap: {

@@ -1,14 +1,15 @@
 import { Text, StyleSheet } from 'react-native';
 
-// Native fallback — plain styled text
 export function WaterTitle() {
   return (
-    <Text style={styles.appName} numberOfLines={1}>
-      Chadakoin Now
+    <Text style={styles.root} numberOfLines={1}>
+      Chadakoin{' '}
+      <Text style={styles.accent}>Now</Text>
     </Text>
   );
 }
 
 const styles = StyleSheet.create({
-  appName: { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  root:   { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
+  accent: { color: '#22d3ee' },
 });

@@ -1,10 +1,11 @@
 async function fetchJCC(signal) {
   try {
     const res = await fetch('https://jccjayhawks.com/composite?print=rss', { signal });
-    if (!res.ok) return [];
+    if (!res.ok) return { results: [], upcoming: [], records: {} };
     const text = await res.text();
 
-    const items = [];
+    const results = [];
+    const upcoming = [];
     const itemRx = /<item>([\s\S]*?)<\/item>/g;
     let m;
     while ((m = itemRx.exec(text)) !== null) {
@@ -29,25 +30,22 @@ async function fetchJCC(signal) {
       const date = new Date(pubDate);
       const now  = new Date();
 
-      const hasResult = score && score.trim() !== '';
-      const isPast    = date < now;
+      const opponentClean = opponent
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/^(at|vs\.?)\s*/i, '');
 
-      if (hasResult && isPast) {
+      const hasResult = score && score.trim() !== '';
+
+      if (hasResult && date < now) {
         const parts = score.split(',').map(s => s.trim());
         const wl    = parts[0];
         const final = parts[1] ?? '';
-
         if (final === '0-0') continue; // postponed/cancelled/bad data
-
-        const opponentClean = opponent
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/^(at|vs\.?)\s*/i, '');
-
-        items.push({
+        results.push({
           date:     date.toISOString(),
           sport:    category,
           opponent: opponentClean,
@@ -57,14 +55,35 @@ async function fetchJCC(signal) {
           won:      wl === 'W',
           link,
         });
+      } else if (!hasResult && date >= now) {
+        upcoming.push({
+          date:     date.toISOString(),
+          sport:    category,
+          opponent: opponentClean,
+          isHome:   !opponent.toLowerCase().startsWith('at '),
+          link,
+        });
       }
     }
 
-    return items
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 6);
+    results.sort((a, b) => new Date(b.date) - new Date(a.date));
+    upcoming.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Compute per-sport season records from all results (not just the slice)
+    const records = {};
+    for (const r of results) {
+      if (!records[r.sport]) records[r.sport] = { w: 0, l: 0 };
+      if (r.won) records[r.sport].w++;
+      else records[r.sport].l++;
+    }
+
+    return {
+      results:  results.slice(0, 8),
+      upcoming: upcoming.slice(0, 8),
+      records,
+    };
   } catch {
-    return [];
+    return { results: [], upcoming: [], records: {} };
   }
 }
 

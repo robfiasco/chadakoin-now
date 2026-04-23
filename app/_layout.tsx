@@ -22,6 +22,11 @@ import {
   DMSans_700Bold,
   DMSans_800ExtraBold,
 } from '@expo-google-fonts/dm-sans';
+import {
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
 
 // Screens imported as components so PagerView can render them natively
 import HomeScreen from './index';
@@ -169,8 +174,12 @@ export default function RootLayout() {
     DMSans_600SemiBold,
     DMSans_700Bold,
     DMSans_800ExtraBold,
-    // Aliases — all existing fontFamily: 'Syne' / 'Outfit' references auto-upgrade to DM Sans
-    Syne: DMSans_800ExtraBold,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    // 'Syne' alias → Space Grotesk Bold (display headers)
+    // 'Outfit' alias → DM Sans (body text, labels)
+    Syne: SpaceGrotesk_700Bold,
     Outfit: DMSans_400Regular,
   });
 
