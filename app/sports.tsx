@@ -1168,11 +1168,13 @@ export default function SportsScreen() {
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
-              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
                 {(data?.mlb ?? []).map(t => (
-                  <View key={t.abbr} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 16, height: 16 }} resizeMode="contain" />
-                    <Text style={[styles.glanceText, { color: dark.text.subtle }]}>{t.record ?? t.abbr}</Text>
+                  <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
+                    <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
+                    <View style={{ backgroundColor: 'rgba(241,245,249,0.18)', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 }}>
+                      <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.75)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
+                    </View>
                   </View>
                 ))}
               </View>
