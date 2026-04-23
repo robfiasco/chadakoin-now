@@ -1174,14 +1174,18 @@ export default function SportsScreen() {
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, justifyContent: 'space-between', flex: 1, backgroundColor: 'rgba(148,163,184,0.1)' }}>
+              <LinearGradient
+                colors={['rgba(203,213,225,0.18)', 'rgba(15,23,42,0.0)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, justifyContent: 'space-between', flex: 1 }}
+              >
                 {(data?.mlb ?? []).map(t => (
                   <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
                     <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
                     <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
                   </View>
                 ))}
-              </View>
+              </LinearGradient>
             )
           }
         >
@@ -1567,7 +1571,7 @@ const styles = StyleSheet.create({
 
   // MLB team list
   mlbTeamRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
-  mlbLogoWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' },
+  mlbLogoWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   mlbLogo:     { width: 28, height: 28 },
   mlbTeamName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
   mlbNext:     { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },

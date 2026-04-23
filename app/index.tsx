@@ -317,8 +317,9 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   <Text style={styles.weatherTemp}>{weather.temp}</Text>
                   <Text style={styles.weatherCondition}>{weather.condition}</Text>
                   <Text style={styles.weatherInline}>
-                    H {weather.high} · L {weather.low} · Rain {weather.precip}
-                    {weather.precipAt ? ` · ~${weather.precipAt}` : ''}
+                    H {weather.high} · L {weather.low}
+                    {weather.precip !== '0%' ? ` · Rain ${weather.precip}` : ''}
+                    {weather.precipAt && parseInt(weather.precip) >= 30 ? ` · ~${weather.precipAt}` : ''}
                   </Text>
                 </View>
                 <Text style={styles.weatherIcon}>{weather.icon}</Text>
@@ -476,16 +477,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     <Text style={styles.heroWatermark}>
                       {sLabel}
                     </Text>
-                    {/* TOP STORY pill + source/time */}
-                    <View style={styles.heroBannerTop}>
-                      <View style={[styles.heroTopBadge, { borderColor: `${sColor}50`, backgroundColor: `${sColor}14` }]}>
-                        <View style={[styles.heroBadgeDot, { backgroundColor: sColor }]} />
-                        <Text style={[styles.heroTopBadgeText, { color: sColor }]}>TOP STORY</Text>
-                      </View>
-                      <Text style={styles.heroBannerMeta} numberOfLines={1}>
-                        {topStory.source ? `${topStory.source} · ` : ''}{relativeTime(topStory.pubDate)}
-                      </Text>
-                    </View>
+                    {/* Source + time */}
+                    <Text style={styles.heroBannerMeta} numberOfLines={1}>
+                      {topStory.source ? `${topStory.source} · ` : ''}{relativeTime(topStory.pubDate)}
+                    </Text>
                   </View>
                   {/* Body */}
                   <View style={styles.heroBody}>

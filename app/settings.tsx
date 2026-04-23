@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   footer:  { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
   sources: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 6, color: 'rgba(255,255,255,0.1)', lineHeight: 16 },
 
-  fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 600, flex: 1 },
+  fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 9999, elevation: 9999, flex: 1 },
 
   comingSoonRow: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
