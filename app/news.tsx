@@ -226,9 +226,9 @@ const hero = StyleSheet.create({
     justifyContent: 'space-between', padding: 14, paddingBottom: 12,
   },
   watermark: {
-    position: 'absolute', left: 0, right: 0, bottom: -4,
-    fontFamily: 'DMSans_800ExtraBold', fontSize: 46,
-    letterSpacing: -0.5, opacity: 0.18, textAlign: 'center',
+    position: 'absolute', left: 0, right: 16, bottom: 8,
+    fontFamily: 'DMSans_800ExtraBold', fontSize: 80,
+    letterSpacing: 14, opacity: 0.22, textAlign: 'right',
   },
   headerTop: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
