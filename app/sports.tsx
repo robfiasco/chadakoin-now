@@ -792,14 +792,14 @@ export default function SportsScreen() {
                       {nextUp.bgKey === 'baseball' && (
                         <Image
                           source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
-                          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.45 }}
+                          style={[StyleSheet.absoluteFillObject, { opacity: 0.45 }]}
                           resizeMode="cover"
                         />
                       )}
                       {nextUp.bgKey === 'hockey' && (
                         <Image
                           source={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg')}
-                          style={{ position: 'absolute', left: 0, right: 0, top: 0, width: '100%', height: '100%', opacity: 0.4 }}
+                          style={[StyleSheet.absoluteFillObject, { opacity: 0.4 }]}
                           resizeMode="cover"
                         />
                       )}
@@ -1169,7 +1169,7 @@ export default function SportsScreen() {
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
               <LinearGradient
-                colors={['rgba(15,23,42,0)', 'rgba(255,255,255,0.13)', 'rgba(255,255,255,0.13)', 'rgba(15,23,42,0)']}
+                colors={['rgba(15,23,42,0)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.2)', 'rgba(15,23,42,0)']}
                 locations={[0, 0.15, 0.85, 1]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4, justifyContent: 'space-between', flex: 1 }}
