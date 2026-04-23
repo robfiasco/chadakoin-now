@@ -785,24 +785,13 @@ export default function SportsScreen() {
                   style={{ marginHorizontal: -16 }}
                   contentContainerStyle={{ paddingHorizontal: 16 }}
                 >
-                  {nextUpItems.map((nextUp, idx) => (
-                    // @ts-ignore
-                    <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
-                      {/* Sport-specific background image */}
-                      {nextUp.bgKey === 'baseball' && (
-                        <Image
-                          source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
-                          style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%', opacity: 0.45 }]}
-                          resizeMode="contain"
-                        />
-                      )}
-                      {nextUp.bgKey === 'hockey' && (
-                        <Image
-                          source={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg')}
-                          style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%', opacity: 0.4 }]}
-                          resizeMode="cover"
-                        />
-                      )}
+                  {nextUpItems.map((nextUp, idx) => {
+                    const bgSource = nextUp.bgKey === 'baseball'
+                      ? (Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg'))
+                      : nextUp.bgKey === 'hockey'
+                      ? (Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg'))
+                      : null;
+                    const cardContent = (
                       <View style={styles.nextUpBody}>
                         <View style={{ flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -822,8 +811,25 @@ export default function SportsScreen() {
                           </View>
                         </View>
                       </View>
-                    </View>
-                  ))}
+                    );
+                    // @ts-ignore
+                    return bgSource ? (
+                      <ImageBackground
+                        key={idx}
+                        source={bgSource}
+                        style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}
+                        imageStyle={{ borderRadius: 16, opacity: nextUp.bgKey === 'baseball' ? 0.45 : 0.4 }}
+                        resizeMode={nextUp.bgKey === 'baseball' ? 'contain' : 'cover'}
+                      >
+                        {cardContent}
+                      </ImageBackground>
+                    ) : (
+                      // @ts-ignore
+                      <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
+                        {cardContent}
+                      </View>
+                    );
+                  })}
                 </ScrollView>
                 {/* Dots — only shown when there are multiple cards */}
                 {nextUpItems.length > 1 && (
@@ -1168,19 +1174,14 @@ export default function SportsScreen() {
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
-              <LinearGradient
-                colors={['rgba(15,23,42,0)', 'rgba(37,99,235,0.18)', 'rgba(37,99,235,0.18)', 'rgba(15,23,42,0)']}
-                locations={[0, 0.15, 0.85, 1]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4, justifyContent: 'space-between', flex: 1 }}
-              >
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, justifyContent: 'space-between', flex: 1, backgroundColor: 'rgba(148,163,184,0.1)' }}>
                 {(data?.mlb ?? []).map(t => (
                   <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
                     <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
                     <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
                   </View>
                 ))}
-              </LinearGradient>
+              </View>
             )
           }
         >
