@@ -8,21 +8,42 @@ import { dark } from '../lib/colors';
 import { RecyclingWeek } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
 
-const ACC     = '#34d399';           // emerald-400
+const ACC     = '#34d399';
 const ACC_RGB = '52,211,153';
 
-const NOT_ACCEPTED = [
-  { icon: '🛍️', label: 'Plastic bags', detail: 'Drop off at grocery store bins instead' },
-  { icon: '🍕', label: 'Pizza boxes & waxed cartons', detail: 'Grease-contaminated cardboard is trash' },
-  { icon: '🥡', label: 'Styrofoam & foam packaging', detail: null },
-  { icon: '🥫', label: 'Food residue containers', detail: 'Rinse before recycling' },
-  { icon: '🪣', label: 'Buckets, pots, pans & toys', detail: null },
-  { icon: '🪜', label: 'Laundry baskets & totes', detail: 'No lids either' },
-  { icon: '🩺', label: 'Medical waste & syringes', detail: null },
-  { icon: '🧹', label: 'Garden hoses, hangers & brooms', detail: null },
-  { icon: '📦', label: 'Bubblewrap & packing peanuts', detail: null },
-  { icon: '📄', label: 'Shredded paper', detail: 'Bag it and place in trash' },
-  { icon: '🪟', label: 'Vinyl, PVC & furniture', detail: null },
+// Color per material type — no emojis
+function materialColor(material: string): string {
+  const m = material.toLowerCase();
+  if (m.includes('cardboard') || m.includes('boxboard')) return '#d97706'; // amber
+  if (m.includes('plastic'))  return '#0891b2'; // cyan
+  if (m.includes('metal') || m.includes('can')) return '#64748b'; // slate
+  if (m.includes('paper'))    return '#16a34a'; // green
+  if (m.includes('glass'))    return '#7c3aed'; // violet
+  return ACC;
+}
+
+function materialIcon(material: string): keyof typeof Ionicons.glyphMap {
+  const m = material.toLowerCase();
+  if (m.includes('cardboard') || m.includes('boxboard')) return 'cube-outline';
+  if (m.includes('plastic'))  return 'water-outline';
+  if (m.includes('metal') || m.includes('can')) return 'ellipse-outline';
+  if (m.includes('paper'))    return 'document-outline';
+  if (m.includes('glass'))    return 'wine-outline';
+  return 'refresh-outline';
+}
+
+const NOT_ACCEPTED: { icon: keyof typeof Ionicons.glyphMap; label: string; detail: string | null }[] = [
+  { icon: 'bag-outline',          label: 'Plastic bags',                    detail: 'Drop off at grocery store bins' },
+  { icon: 'pizza-outline',        label: 'Pizza boxes & waxed cartons',     detail: 'Grease-contaminated cardboard is trash' },
+  { icon: 'cube-outline',         label: 'Styrofoam & foam packaging',      detail: null },
+  { icon: 'restaurant-outline',   label: 'Food residue containers',         detail: 'Rinse before recycling' },
+  { icon: 'apps-outline',         label: 'Buckets, pots, pans & toys',      detail: null },
+  { icon: 'shirt-outline',        label: 'Laundry baskets & totes',         detail: 'No lids either' },
+  { icon: 'medkit-outline',       label: 'Medical waste & syringes',        detail: null },
+  { icon: 'git-branch-outline',   label: 'Garden hoses, hangers & brooms',  detail: null },
+  { icon: 'archive-outline',      label: 'Bubblewrap & packing peanuts',    detail: null },
+  { icon: 'document-outline',     label: 'Shredded paper',                  detail: 'Bag it and place in trash' },
+  { icon: 'construct-outline',    label: 'Vinyl, PVC & furniture',          detail: null },
 ];
 
 export default function RecyclingScreen() {
@@ -57,12 +78,7 @@ export default function RecyclingScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={ACC}
-            colors={[ACC]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACC} colors={[ACC]} />
         }
       >
         <Text style={styles.sectionLabel}>SCHEDULE</Text>
@@ -73,7 +89,6 @@ export default function RecyclingScreen() {
             <View style={{ gap: 10, padding: 20 }}>
               <SkeletonPulse width={80}  height={11} borderRadius={4} accRGB={ACC_RGB} />
               <SkeletonPulse width={160} height={28} borderRadius={6} accRGB={ACC_RGB} />
-              <SkeletonPulse width={120} height={20} borderRadius={6} accRGB={ACC_RGB} />
               <SkeletonPulse width={140} height={11} borderRadius={4} accRGB={ACC_RGB} />
               <SkeletonPulse width={100} height={20} borderRadius={6} accRGB={ACC_RGB} />
             </View>
@@ -81,63 +96,68 @@ export default function RecyclingScreen() {
         ) : (
           // @ts-ignore
           <View style={[styles.scheduleCard, glassWeb]}>
-            {allWeeks.map((week, i) => (
-              <View
-                key={week.startDate || i}
-                style={[
-                  styles.weekRow,
-                  i < allWeeks.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border },
-                  week.isThis && { paddingBottom: 16 },
-                ]}
-              >
-                <View style={styles.weekDate}>
-                  {week.label ? (
-                    <Text style={[styles.weekLabel, { color: week.isThis ? ACC : `rgba(${ACC_RGB},0.45)` }]}>
-                      {week.label}
+            {allWeeks.map((week, i) => {
+              const color = materialColor(week.material);
+              const icon  = materialIcon(week.material);
+              const pm    = week.material.match(/^(.+?)\s*\((.+)\)$/);
+              const name   = pm ? pm[1].trim() : week.material;
+              const detail = pm ? pm[2].trim() : '';
+
+              return (
+                <View
+                  key={week.startDate || i}
+                  style={[
+                    styles.weekRow,
+                    week.isThis && { backgroundColor: `${color}0d` },
+                    i < allWeeks.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border },
+                  ]}
+                >
+                  {/* Left color stripe */}
+                  <View style={[styles.stripe, { backgroundColor: week.isThis ? color : `${color}44` }]} />
+
+                  {/* Date column */}
+                  <View style={styles.weekDate}>
+                    {week.label ? (
+                      <Text style={[styles.weekLabel, { color: week.isThis ? color : `${color}70` }]}>
+                        {week.label}
+                      </Text>
+                    ) : null}
+                    <Text style={[styles.weekRange, { color: week.isThis ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)' }]}>
+                      {week.dateRange || '—'}
                     </Text>
-                  ) : null}
-                  <Text style={[styles.weekRange, { color: week.isThis ? ACC : `rgba(${ACC_RGB},0.4)` }]}>
-                    {week.dateRange || '—'}
-                  </Text>
-                </View>
+                  </View>
 
-                <View style={[styles.dividerV, { backgroundColor: dark.border }]} />
-
-                <View style={styles.weekMaterial}>
-                  <Text style={[styles.weekEmoji, { opacity: week.isThis ? 1 : 0.55 }]}>{week.emoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    {(() => {
-                      const pm = week.material.match(/^(.+?)\s*\((.+)\)$/);
-                      const name   = pm ? pm[1].trim() : week.material;
-                      const detail = pm ? pm[2].trim() : '';
-                      return (
-                        <>
-                          <Text style={[
-                            week.isThis ? styles.materialName : styles.materialNameDim,
-                            { color: week.isThis ? '#fff' : 'rgba(255,255,255,0.55)' },
-                          ]}>
-                            {name}
-                          </Text>
-                          {detail && week.isThis ? (
-                            <Text style={styles.materialDetail}>{detail}</Text>
-                          ) : null}
-                          {week.note && week.isThis ? (
-                            <Text style={[styles.materialDetail, { color: 'rgba(255,255,255,0.7)' }]}>
-                              • {week.note}
-                            </Text>
-                          ) : null}
-                          {week.exclusions && week.isThis ? (
-                            <Text style={[styles.exclusions, { color: `rgba(${ACC_RGB},0.5)` }]}>
-                              ✕ {week.exclusions}
-                            </Text>
-                          ) : null}
-                        </>
-                      );
-                    })()}
+                  {/* Material column */}
+                  <View style={styles.weekMaterial}>
+                    <View style={[styles.iconWrap, { backgroundColor: `${color}18` }]}>
+                      <Ionicons name={icon} size={16} color={week.isThis ? color : `${color}88`} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[
+                        styles.materialName,
+                        { color: week.isThis ? '#fff' : 'rgba(255,255,255,0.45)' },
+                      ]}>
+                        {name}
+                      </Text>
+                      {detail && week.isThis ? (
+                        <Text style={styles.materialDetail}>{detail}</Text>
+                      ) : null}
+                      {week.note && week.isThis ? (
+                        <Text style={[styles.materialDetail, { color: 'rgba(255,255,255,0.55)' }]}>
+                          {week.note}
+                        </Text>
+                      ) : null}
+                      {week.exclusions && week.isThis ? (
+                        <View style={styles.exclusionRow}>
+                          <Ionicons name="close-circle" size={11} color={`${color}80`} />
+                          <Text style={[styles.exclusions, { color: `${color}80` }]}>{week.exclusions}</Text>
+                        </View>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -166,11 +186,14 @@ export default function RecyclingScreen() {
                 i < NOT_ACCEPTED.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border },
               ]}
             >
-              <Text style={styles.naIcon}>{item.icon}</Text>
+              <View style={styles.naIconWrap}>
+                <Ionicons name={item.icon} size={14} color="rgba(255,255,255,0.3)" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.naLabel}>{item.label}</Text>
                 {item.detail ? <Text style={styles.naDetail}>{item.detail}</Text> : null}
               </View>
+              <Ionicons name="close-circle" size={14} color="rgba(251,113,133,0.4)" />
             </View>
           ))}
         </View>
@@ -201,19 +224,22 @@ const styles = StyleSheet.create({
     borderRadius: 18, borderWidth: 1,
     backgroundColor: dark.surface,
     borderColor: dark.border,
-    overflow: 'hidden', marginBottom: 0,
+    overflow: 'hidden',
   },
-  weekRow:     { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
-  weekDate:    { width: 72, gap: 3 },
-  weekLabel:   { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
-  weekRange:   { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', lineHeight: 15 },
-  dividerV:    { width: 1, alignSelf: 'stretch' },
-  weekMaterial:{ flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  weekEmoji:   { fontSize: 22, lineHeight: 28 },
-  materialName:    { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', lineHeight: 20 },
-  materialNameDim: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '500', lineHeight: 18 },
+
+  weekRow:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingRight: 16, gap: 12 },
+  stripe:   { width: 3, alignSelf: 'stretch', borderRadius: 2 },
+  weekDate: { width: 76, gap: 3 },
+  weekLabel:  { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
+  weekRange:  { fontFamily: 'Outfit', fontSize: 11, fontWeight: '500', lineHeight: 15 },
+
+  weekMaterial: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  iconWrap:     { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+
+  materialName:    { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', lineHeight: 19 },
   materialDetail:  { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2, lineHeight: 14 },
-  exclusions:      { fontFamily: 'Outfit', fontSize: 10, marginTop: 4, lineHeight: 14 },
+  exclusionRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  exclusions:      { fontFamily: 'Outfit', fontSize: 10, lineHeight: 14 },
 
   infoCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 16,
@@ -234,9 +260,8 @@ const styles = StyleSheet.create({
     color: `rgba(${ACC_RGB},0.3)`,
   },
 
-  notAcceptedRow: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 12 },
-  naIcon:   { fontSize: 18, lineHeight: 24 },
-  naLabel:  { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.75)', lineHeight: 18 },
-  naDetail: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1, lineHeight: 14 },
-
+  notAcceptedRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
+  naIconWrap: { width: 28, height: 28, borderRadius: 7, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+  naLabel:  { fontFamily: 'Outfit', fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
+  naDetail: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1, lineHeight: 14 },
 });
