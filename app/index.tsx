@@ -473,7 +473,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     {/* Thin accent bar */}
                     <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
                     {/* Category watermark — bleeds off right */}
-                    <Text style={[styles.heroWatermark, { color: sColor }]}>
+                    <Text style={styles.heroWatermark}>
                       {sLabel}
                     </Text>
                     {/* TOP STORY pill + source/time */}
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   heroAccentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
   heroWatermark: {
     position: 'absolute', right: -8, bottom: -6,
-    fontFamily: 'DMSans_800ExtraBold', fontSize: 88, letterSpacing: 4, opacity: 0.18, textAlign: 'right',
+    fontFamily: 'Syne', fontSize: 88, letterSpacing: 4, opacity: 0.03, color: '#fff', textAlign: 'right',
   },
   heroBannerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroTopBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },

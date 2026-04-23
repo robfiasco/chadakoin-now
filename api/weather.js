@@ -45,15 +45,15 @@ export default async function handler(req, res) {
     const todayPeriods = periods.filter(f => f.dt_txt.startsWith(todayStr));
     // Fall back to next 8 periods when today's data is sparse (e.g. late-night call)
     const hlPeriods = todayPeriods.length ? todayPeriods : periods.slice(0, 8);
-    const next24 = periods.slice(0, 8);
     const high = hlPeriods.length
       ? Math.round(Math.max(...hlPeriods.map(f => f.main.temp_max)))
       : Math.round(current.main.temp_max ?? temp);
     const low = hlPeriods.length
       ? Math.round(Math.min(...hlPeriods.map(f => f.main.temp_min)))
       : Math.round(current.main.temp_min ?? temp);
-    const precip = next24.length
-      ? Math.round(Math.max(...next24.map(f => (f.pop ?? 0) * 100)))
+    // Use today-only periods for rain % so it doesn't bleed into tomorrow
+    const precip = hlPeriods.length
+      ? Math.round(Math.max(...hlPeriods.map(f => (f.pop ?? 0) * 100)))
       : 0;
 
     const dailyMap = {};
@@ -99,7 +99,9 @@ export default async function handler(req, res) {
         const hour = dt.getHours();
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const h = hour % 12 || 12;
-        precipAt = `${h} ${ampm}`;
+        const dayStr = firstWetPeriod.dt_txt.split(' ')[0];
+        const dayPrefix = dayStr > todayStr ? 'Tmrw ' : '';
+        precipAt = `${dayPrefix}${h} ${ampm}`;
       }
     }
 
