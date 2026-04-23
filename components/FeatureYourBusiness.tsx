@@ -5,11 +5,17 @@ import { useTheme } from '../lib/ThemeContext';
 import { dark } from '../lib/colors';
 
 const INCLUDES = [
-  { icon: 'chatbubble-ellipses-outline' as const, text: "A short note in Rob's voice" },
+  { icon: 'chatbubble-ellipses-outline' as const, text: 'A genuine local endorsement — not ad copy' },
   { icon: 'star-outline' as const,                text: 'Featured badge + top placement' },
-  { icon: 'search-outline' as const,              text: 'Appear in Visit tab searches' },
-  { icon: 'calendar-outline' as const,            text: 'Monthly fee · renew or cancel anytime' },
-  { icon: 'people-outline' as const,              text: 'Only 5 slots available per month' },
+  { icon: 'card-outline' as const,                text: 'Your listing card with photo, quote & direct links' },
+  { icon: 'calendar-outline' as const,            text: 'Monthly · renew or cancel anytime' },
+  { icon: 'people-outline' as const,              text: 'Only 5 slots available' },
+];
+
+const ADDONS = [
+  { icon: 'megaphone-outline' as const,  title: 'Event Boost',       desc: '$25 for 2 weeks · $45 for 30 days · listed through your event date' },
+  { icon: 'business-outline' as const,   title: 'Extended Profile',  desc: '$19/mo · updated hours, photos, seasonal details' },
+  { icon: 'sparkles-outline' as const,   title: 'Business Story',    desc: '$15 · a 48-hour featured post on the home screen' },
 ];
 
 export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
@@ -89,7 +95,15 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
         ))}
       </View>
 
-      {/* ── CTA button ── */}
+      {/* ── Pricing ── */}
+      <View style={[s.pricingBlock, { borderColor: `rgba(${accRGB},0.12)`, backgroundColor: `rgba(${accRGB},0.05)` }]}>
+        <Text style={[s.pricingMain, { color: acc }]}>$59<Text style={s.pricingPer}>/mo</Text></Text>
+        <Text style={s.pricingNote}>for your first 3 months</Text>
+        <View style={[s.pricingDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
+        <Text style={s.pricingThen}>Then $79/mo off-season (Oct–Apr) · $129/mo peak season (May–Sep)</Text>
+      </View>
+
+      {/* ── Primary CTA ── */}
       <TouchableOpacity
         onPress={onContact}
         activeOpacity={0.85}
@@ -97,6 +111,40 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
       >
         <Text style={s.ctaBtnText}>Get featured</Text>
         <Ionicons name="arrow-forward" size={14} color="#000" />
+      </TouchableOpacity>
+
+      {/* ── Waitlist note ── */}
+      <Text style={[s.waitlistNote, { color: `rgba(${accRGB},0.45)` }]}>
+        Slots are first come, first served. If full, you'll be added to the waitlist and notified within 48 hours when one opens.
+      </Text>
+
+      {/* ── Add-ons ── */}
+      <View style={[s.addonsDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
+      <Text style={[s.subLabel, { color: `rgba(${accRGB},0.4)`, marginTop: 4 }]}>ADD-ONS · ANY BUSINESS</Text>
+      <View style={[s.includesList, { borderColor: `rgba(${accRGB},0.1)` }]}>
+        {ADDONS.map((item, i) => (
+          <View key={i}>
+            {i > 0 && <View style={[s.includesDivider, { backgroundColor: `rgba(${accRGB},0.07)` }]} />}
+            <View style={s.includesRow}>
+              <View style={[s.includesIcon, { backgroundColor: `rgba(${accRGB},0.08)` }]}>
+                <Ionicons name={item.icon} size={13} color={`rgba(${accRGB},0.6)`} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.includesText, { fontWeight: '700', marginBottom: 2 }]}>{item.title}</Text>
+                <Text style={[s.includesText, { fontSize: 11, color: 'rgba(255,255,255,0.45)' }]}>{item.desc}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* ── Secondary CTA ── */}
+      <TouchableOpacity onPress={onContact} activeOpacity={0.7} style={s.secondaryCta}>
+        <Text style={[s.secondaryCtaLabel, { color: `rgba(${accRGB},0.55)` }]}>Not ready for a featured slot?</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={[s.secondaryCtaLink, { color: acc }]}>Boost an event, add your story, or update your profile</Text>
+          <Ionicons name="arrow-forward" size={12} color={acc} />
+        </View>
       </TouchableOpacity>
 
     </View>
@@ -202,11 +250,30 @@ const s = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)', flex: 1,
   },
 
+  // ── Pricing ──
+  pricingBlock: {
+    borderWidth: 1, borderRadius: 12, padding: 14, marginTop: 14, alignItems: 'center', gap: 4,
+  },
+  pricingMain: { fontFamily: 'Syne', fontSize: 32, fontWeight: '700', letterSpacing: -1 },
+  pricingPer:  { fontFamily: 'Outfit', fontSize: 14, fontWeight: '400', letterSpacing: 0 },
+  pricingNote: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  pricingDivider: { height: 1, width: '100%', marginVertical: 8 },
+  pricingThen: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 17 },
+
   // ── Button ──
   ctaBtn: {
     marginTop: 14,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     height: 46, borderRadius: 12,
   },
-  ctaBtnText: { fontFamily: 'DMSans_700Bold', fontSize: 14, color: '#000' },
+  ctaBtnText: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#000' },
+
+  waitlistNote: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', lineHeight: 17, marginTop: 10 },
+
+  addonsDivider: { height: 1, marginVertical: 20 },
+
+  // ── Secondary CTA ──
+  secondaryCta: { marginTop: 14, alignItems: 'center', gap: 4 },
+  secondaryCtaLabel: { fontFamily: 'Outfit', fontSize: 11 },
+  secondaryCtaLink:  { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
 });
