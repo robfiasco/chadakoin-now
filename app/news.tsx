@@ -224,7 +224,7 @@ const hero = StyleSheet.create({
   watermark: {
     position: 'absolute', right: -8, bottom: -6,
     fontFamily: 'DMSans_800ExtraBold', fontSize: 88,
-    letterSpacing: 4, opacity: 0.07, textAlign: 'right',
+    letterSpacing: 4, opacity: 0.03, textAlign: 'right',
     color: '#fff',
   },
   headerTop: {
