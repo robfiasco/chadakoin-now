@@ -171,25 +171,30 @@ function HeroCard({ item }: { item: NewsItem }) {
     >
       {/* ── Banner ── */}
       <View style={hero.header}>
-        {/* Horizontal gradient: vivid accent left → dark right */}
+        {/* Dark navy gradient — subtle, no accent color bleed */}
         <LinearGradient
-          colors={[`${bar}cc`, `${bar}44`, 'rgba(4,8,20,0.97)'] as any}
-          start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+          colors={['rgba(12,22,48,0.98)', 'rgba(6,12,30,0.99)'] as any}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
         />
+        {/* Thin accent bar on left edge */}
+        <View style={[hero.accentBar, { backgroundColor: bar }]} />
 
-        {/* Huge watermark — right side, bleeds off card edge */}
+        {/* Category watermark — bleeds off right edge */}
         <Text style={[hero.watermark, { color: bar }]}>
           {category.toUpperCase()}
         </Text>
 
-        {/* Top row: source · time */}
+        {/* Row: TOP STORY pill left · source/time right */}
         <View style={hero.headerTop}>
+          <View style={[hero.topBadge, { borderColor: `${bar}50`, backgroundColor: `${bar}14` }]}>
+            <View style={[hero.badgeDot, { backgroundColor: bar }]} />
+            <Text style={[hero.topBadgeText, { color: bar }]}>TOP STORY</Text>
+          </View>
           <Text style={hero.headerMeta} numberOfLines={1}>
             {item.source ? `${item.source} · ` : ''}{relativeTime(item.pubDate)}
           </Text>
         </View>
-
       </View>
 
       {/* ── Body ── */}
@@ -222,21 +227,25 @@ const hero = StyleSheet.create({
     borderRadius: 18, overflow: 'hidden', marginBottom: 12,
   },
   header: {
-    height: 90, position: 'relative',
-    justifyContent: 'space-between', padding: 14, paddingBottom: 12,
+    height: 72, position: 'relative',
+    justifyContent: 'center', paddingHorizontal: 14, paddingLeft: 18,
+  },
+  accentBar: {
+    position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2,
   },
   watermark: {
-    position: 'absolute', left: 0, right: 16, bottom: 8,
-    fontFamily: 'DMSans_800ExtraBold', fontSize: 80,
-    letterSpacing: 14, opacity: 0.22, textAlign: 'right',
+    position: 'absolute', right: -12, bottom: -10,
+    fontFamily: 'DMSans_800ExtraBold', fontSize: 88,
+    letterSpacing: 4, opacity: 0.18, textAlign: 'right',
   },
   headerTop: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   topBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6, borderWidth: 1,
   },
+  badgeDot: { width: 5, height: 5, borderRadius: 3 },
   topBadgeText: {
     fontFamily: 'DMSans_700Bold', fontSize: 10, letterSpacing: 0.8,
   },
