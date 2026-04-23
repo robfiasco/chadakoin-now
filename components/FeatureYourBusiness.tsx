@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/ThemeContext';
@@ -22,15 +22,27 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
   const { theme } = useTheme();
   const acc = theme.acc;
   const accRGB = theme.accRGB;
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <View style={[s.container, { borderColor: `rgba(${accRGB},0.18)`, backgroundColor: `rgba(${accRGB},0.04)` }]}>
 
-      {/* ── Badge + headline ── */}
-      <View style={[s.badge, { backgroundColor: `rgba(${accRGB},0.1)`, borderColor: `rgba(${accRGB},0.2)` }]}>
-        <Ionicons name="sparkles" size={10} color={acc} />
-        <Text style={[s.badgeText, { color: acc }]}>FEATURED PLACEMENT</Text>
-      </View>
+      {/* ── Collapsed header row ── */}
+      <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.8} style={s.collapseRow}>
+        <View style={[s.badge, { backgroundColor: `rgba(${accRGB},0.1)`, borderColor: `rgba(${accRGB},0.2)`, marginBottom: 0 }]}>
+          <Ionicons name="sparkles" size={10} color={acc} />
+          <Text style={[s.badgeText, { color: acc }]}>FEATURED PLACEMENT</Text>
+        </View>
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color="rgba(255,255,255,0.3)" />
+      </TouchableOpacity>
+
+      {!expanded && (
+        <Text style={[s.collapsedHint, { color: `rgba(${accRGB},0.5)` }]}>
+          Reach locals and visitors where they're already looking. Tap to learn more.
+        </Text>
+      )}
+
+      {expanded && <>
       <Text style={s.headline}>
         Reach locals and visitors{'\n'}where they're already looking.
       </Text>
@@ -146,6 +158,7 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
           <Ionicons name="arrow-forward" size={12} color={acc} />
         </View>
       </TouchableOpacity>
+      </>}
 
     </View>
   );
@@ -157,6 +170,9 @@ const s = StyleSheet.create({
     padding: 18, gap: 0,
     overflow: 'hidden',
   },
+  collapseRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  collapsedHint: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 18, marginBottom: 4 },
+
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     alignSelf: 'flex-start',

@@ -1168,16 +1168,21 @@ export default function SportsScreen() {
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
-              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+              <LinearGradient
+                colors={['rgba(15,23,42,0)', 'rgba(255,255,255,0.13)', 'rgba(255,255,255,0.13)', 'rgba(15,23,42,0)']}
+                locations={[0, 0.15, 0.85, 1]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4 }}
+              >
                 {(data?.mlb ?? []).map(t => (
                   <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
                     <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
-                    <View style={{ backgroundColor: 'rgba(241,245,249,0.18)', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 }}>
-                      <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.75)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 }}>
+                      <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.8)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
                     </View>
                   </View>
                 ))}
-              </View>
+              </LinearGradient>
             )
           }
         >
