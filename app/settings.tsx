@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 36, height: 4, borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.15)',
-    alignSelf: 'center', marginBottom: 20,
+    alignSelf: 'center', marginTop: 32, marginBottom: 20,
   },
   sheetSwatch: {
     height: 3, borderRadius: 2, marginBottom: 20, opacity: 0.6,

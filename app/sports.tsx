@@ -786,10 +786,13 @@ export default function SportsScreen() {
                   contentContainerStyle={{ paddingHorizontal: 16 }}
                 >
                   {nextUpItems.map((nextUp, idx) => {
-                    const bgSource = nextUp.bgKey === 'baseball'
-                      ? (Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg'))
+                    const bgOpacity = nextUp.bgKey === 'baseball' ? 0.45 : 0.4;
+                    const bgUri = nextUp.bgKey === 'baseball' ? '/ballpark.jpg'
+                      : nextUp.bgKey === 'hockey' ? '/hockey.jpg' : null;
+                    const bgSourceNative = nextUp.bgKey === 'baseball'
+                      ? require('../public/ballpark.jpg')
                       : nextUp.bgKey === 'hockey'
-                      ? (Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg'))
+                      ? require('../public/hockey.jpg')
                       : null;
                     const cardContent = (
                       <View style={styles.nextUpBody}>
@@ -812,14 +815,24 @@ export default function SportsScreen() {
                         </View>
                       </View>
                     );
+                    if (Platform.OS === 'web' && bgUri) {
+                      return (
+                        // @ts-ignore
+                        <View key={idx} style={[styles.nextUpCard, { width: cardWidth, backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 1 }]}>
+                          {/* dark overlay so text stays legible */}
+                          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: `rgba(6,14,24,${1 - bgOpacity})`, borderRadius: 16 }]} pointerEvents="none" />
+                          {cardContent}
+                        </View>
+                      );
+                    }
                     // @ts-ignore
-                    return bgSource ? (
+                    return bgSourceNative ? (
                       <ImageBackground
                         key={idx}
-                        source={bgSource}
-                        style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}
-                        imageStyle={{ borderRadius: 16, opacity: nextUp.bgKey === 'baseball' ? 0.45 : 0.4 }}
-                        resizeMode={nextUp.bgKey === 'baseball' ? 'contain' : 'cover'}
+                        source={bgSourceNative}
+                        style={[styles.nextUpCard, { width: cardWidth }]}
+                        imageStyle={{ borderRadius: 16, opacity: bgOpacity }}
+                        resizeMode="cover"
                       >
                         {cardContent}
                       </ImageBackground>
