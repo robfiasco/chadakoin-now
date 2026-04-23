@@ -43,8 +43,8 @@ export default async function handler(req, res) {
   ].join('\n');
 
   const emailPayload = {
-    from:    'Chadakoin Now <feedback@chadakoindigital.com>',
-    to:      ['rob@robfiasco.dev'],
+    from:    'Chadakoin Now <onboarding@resend.dev>',
+    to:      ['robfiasco@gmail.com'],
     subject,
     text:    textBody,
     ...(replyTo ? { reply_to: replyTo } : {}),

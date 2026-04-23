@@ -559,8 +559,16 @@ export default function VisitScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+        {/* ── Editor's Picks ──────────────────────────────── */}
+        {editorPicks.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Editor's Picks</Text>
+            {editorPicks.map(fav => <EditorPickCard key={fav.name} fav={fav} />)}
+          </>
+        )}
+
         {/* ── Search bar ──────────────────────────────────── */}
-        <View style={[styles.searchWrap, { borderColor: dark.border }]}>
+        <View style={[styles.searchWrap, { borderColor: dark.border, marginTop: 8 }]}>
           <Ionicons name="search-outline" size={15} color="rgba(255,255,255,0.3)" />
           <TextInput
             value={search}
@@ -576,14 +584,6 @@ export default function VisitScreen() {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* ── Editor's Picks ──────────────────────────────── */}
-        {editorPicks.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Editor's Picks</Text>
-            {editorPicks.map(fav => <EditorPickCard key={fav.name} fav={fav} />)}
-          </>
-        )}
 
         {/* ── Filter chips ────────────────────────────────── */}
         <ScrollView
