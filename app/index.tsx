@@ -466,16 +466,22 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   {/* Banner */}
                   <View style={styles.heroGradient}>
                     <LinearGradient
-                      colors={[`${sColor}cc`, `${sColor}44`, 'rgba(4,8,20,0.97)'] as any}
-                      start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                      colors={['rgba(12,22,48,0.98)', 'rgba(6,12,30,0.99)'] as any}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                       style={StyleSheet.absoluteFill}
                     />
-                    {/* Huge watermark */}
+                    {/* Thin accent bar */}
+                    <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
+                    {/* Category watermark — bleeds off right */}
                     <Text style={[styles.heroWatermark, { color: sColor }]}>
                       {sLabel}
                     </Text>
-                    {/* Top row: source · time */}
+                    {/* TOP STORY pill + source/time */}
                     <View style={styles.heroBannerTop}>
+                      <View style={[styles.heroTopBadge, { borderColor: `${sColor}50`, backgroundColor: `${sColor}14` }]}>
+                        <View style={[styles.heroBadgeDot, { backgroundColor: sColor }]} />
+                        <Text style={[styles.heroTopBadgeText, { color: sColor }]}>TOP STORY</Text>
+                      </View>
                       <Text style={styles.heroBannerMeta} numberOfLines={1}>
                         {topStory.source ? `${topStory.source} · ` : ''}{relativeTime(topStory.pubDate)}
                       </Text>
@@ -781,12 +787,16 @@ const styles = StyleSheet.create({
 
   // Hero news card
   heroCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden' },
-  heroGradient: { height: 90, justifyContent: 'space-between', padding: 14, paddingBottom: 12, position: 'relative' },
+  heroGradient: { height: 96, justifyContent: 'center', paddingHorizontal: 14, paddingLeft: 18, position: 'relative' },
+  heroAccentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
   heroWatermark: {
-    position: 'absolute', left: 0, right: 0, bottom: -4,
-    fontFamily: 'DMSans_800ExtraBold', fontSize: 46, letterSpacing: -0.5, opacity: 0.18, textAlign: 'center',
+    position: 'absolute', right: -8, bottom: -6,
+    fontFamily: 'DMSans_800ExtraBold', fontSize: 88, letterSpacing: 4, opacity: 0.18, textAlign: 'right',
   },
   heroBannerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroTopBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  heroBadgeDot: { width: 5, height: 5, borderRadius: 3 },
+  heroTopBadgeText: { fontFamily: 'DMSans_700Bold', fontSize: 10, letterSpacing: 0.8 },
   heroBannerMeta: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.40)' },
   heroCategoryLabel: { fontFamily: 'DMSans_800ExtraBold', fontSize: 24, letterSpacing: 1 },
   heroBadge: {

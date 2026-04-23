@@ -29,6 +29,10 @@ const ALLOWED_HOSTS = new Set([
   'www.reglenna.com',
   'chautauquacountyny.gov',
   'www.chautauquacountyny.gov',
+  'wnynewsnow.com',
+  'www.wnynewsnow.com',
+  'spectrumlocalnews.com',
+  'www.spectrumlocalnews.com',
 ]);
 
 // In-memory rate limiter: 60 req/IP/min rolling window

@@ -10,5 +10,5 @@ export function WaterTitle() {
 }
 
 const styles = StyleSheet.create({
-  appName: { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  appName: { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
 });

@@ -227,14 +227,14 @@ const hero = StyleSheet.create({
     borderRadius: 18, overflow: 'hidden', marginBottom: 12,
   },
   header: {
-    height: 72, position: 'relative',
+    height: 96, position: 'relative',
     justifyContent: 'center', paddingHorizontal: 14, paddingLeft: 18,
   },
   accentBar: {
     position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2,
   },
   watermark: {
-    position: 'absolute', right: -12, bottom: -10,
+    position: 'absolute', right: -8, bottom: -6,
     fontFamily: 'DMSans_800ExtraBold', fontSize: 88,
     letterSpacing: 4, opacity: 0.18, textAlign: 'right',
   },

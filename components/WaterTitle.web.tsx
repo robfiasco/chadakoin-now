@@ -3,7 +3,7 @@ export function WaterTitle() {
   return (
     <svg
       overflow="visible"
-      style={{ display: 'block', height: 34, width: '100%' }}
+      style={{ display: 'block', height: 28, width: '100%' }}
       aria-label="Chadakoin Now"
     >
       <defs>
@@ -33,9 +33,9 @@ export function WaterTitle() {
         </filter>
       </defs>
       <text
-        y="27"
+        y="22"
         style={{
-          fontSize: 26,
+          fontSize: 22,
           fontFamily: 'Syne, sans-serif',
           fontWeight: '700',
           letterSpacing: '-0.5px',

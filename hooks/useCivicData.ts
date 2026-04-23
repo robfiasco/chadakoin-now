@@ -110,20 +110,20 @@ const TTL = {
   lotd:      12 * 60 * 60 * 1000,   // 12h — weekly show
 };
 
+// BPU only observes 6 holidays for collection delay (per 2026 Recycling Calendar):
+// New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving, Christmas
 // Update annually
-const FEDERAL_HOLIDAYS_2026 = [
-  '2026-01-01', '2026-01-19', '2026-02-16', '2026-05-25',
-  '2026-06-19', '2026-07-04', '2026-09-07', '2026-10-12',
-  '2026-11-11', '2026-11-26', '2026-12-25',
+const BPU_HOLIDAYS_2026 = [
+  '2026-01-01', '2026-05-25', '2026-07-04',
+  '2026-09-07', '2026-11-26', '2026-12-25',
 ];
 
-const FEDERAL_HOLIDAYS_2027 = [
-  '2027-01-01', '2027-01-18', '2027-02-15', '2027-05-31',
-  '2027-06-19', '2027-07-05', '2027-09-06', '2027-10-11',
-  '2027-11-11', '2027-11-25', '2027-12-24',
+const BPU_HOLIDAYS_2027 = [
+  '2027-01-01', '2027-05-31', '2027-07-05',  // Jul 4 = Sunday → observed Mon Jul 5
+  '2027-09-06', '2027-11-25', '2027-12-24',  // Dec 25 = Saturday → observed Fri Dec 24
 ];
 
-const FEDERAL_HOLIDAYS = [...FEDERAL_HOLIDAYS_2026, ...FEDERAL_HOLIDAYS_2027];
+const FEDERAL_HOLIDAYS = [...BPU_HOLIDAYS_2026, ...BPU_HOLIDAYS_2027];
 
 const EMPTY_WEEK: RecyclingWeek = { material: '—', dateRange: '—', exclusions: '', startDate: '', emoji: '♻️' };
 
@@ -335,9 +335,9 @@ function parseRecyclingTitle(summary: string, description: string, start: Date |
   if (lowerSummary.includes('cardboard') || lowerSummary.includes('corrugated') || lowerSummary.includes('box board') || lowerSummary.includes('boxboard')) {
     material = 'Corrugated Cardboard & Boxboard';
   } else if (lowerSummary.includes('plastic')) {
-    material = 'Plastics (bottles, jugs, containers)';
+    material = 'Plastics (bottles, jugs, containers — no lids)';
   } else if (lowerSummary.includes('paper')) {
-    material = 'Paper (newspaper, mail, magazines, office paper)';
+    material = 'Paper (newspaper, magazines, junk mail, envelopes, paper bags)';
   } else if (lowerSummary.includes('metal') || lowerSummary.includes('tin') || lowerSummary.includes('alumin')) {
     material = 'Metals & Cans (aluminum, tin)';
   } else if (lowerSummary.includes('glass')) {

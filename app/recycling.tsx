@@ -11,6 +11,20 @@ import { useCivic } from '../lib/CivicDataContext';
 const ACC     = '#34d399';           // emerald-400
 const ACC_RGB = '52,211,153';
 
+const NOT_ACCEPTED = [
+  { icon: '🛍️', label: 'Plastic bags', detail: 'Drop off at grocery store bins instead' },
+  { icon: '🍕', label: 'Pizza boxes & waxed cartons', detail: 'Grease-contaminated cardboard is trash' },
+  { icon: '🥡', label: 'Styrofoam & foam packaging', detail: null },
+  { icon: '🥫', label: 'Food residue containers', detail: 'Rinse before recycling' },
+  { icon: '🪣', label: 'Buckets, pots, pans & toys', detail: null },
+  { icon: '🪜', label: 'Laundry baskets & totes', detail: 'No lids either' },
+  { icon: '🩺', label: 'Medical waste & syringes', detail: null },
+  { icon: '🧹', label: 'Garden hoses, hangers & brooms', detail: null },
+  { icon: '📦', label: 'Bubblewrap & packing peanuts', detail: null },
+  { icon: '📄', label: 'Shredded paper', detail: 'Bag it and place in trash' },
+  { icon: '🪟', label: 'Vinyl, PVC & furniture', detail: null },
+];
+
 export default function RecyclingScreen() {
   const civic = useCivic();
   const { recycling, loading } = civic;
@@ -141,6 +155,26 @@ export default function RecyclingScreen() {
           </View>
         )}
 
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>NOT ACCEPTED</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.scheduleCard, glassWeb]}>
+          {NOT_ACCEPTED.map((item, i) => (
+            <View
+              key={item.label}
+              style={[
+                styles.notAcceptedRow,
+                i < NOT_ACCEPTED.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border },
+              ]}
+            >
+              <Text style={styles.naIcon}>{item.icon}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.naLabel}>{item.label}</Text>
+                {item.detail ? <Text style={styles.naDetail}>{item.detail}</Text> : null}
+              </View>
+            </View>
+          ))}
+        </View>
+
         <Text style={styles.updatedLine}>
           {civic.lastUpdated
             ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -199,4 +233,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28,
     color: `rgba(${ACC_RGB},0.3)`,
   },
+
+  notAcceptedRow: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 12 },
+  naIcon:   { fontSize: 18, lineHeight: 24 },
+  naLabel:  { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.75)', lineHeight: 18 },
+  naDetail: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1, lineHeight: 14 },
+
 });
