@@ -882,7 +882,9 @@ export default function SportsScreen() {
                     {jccNextBySport.map((u, i) => {
                       const d = new Date(u.date);
                       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                      const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                      // Suppress time if feed only provided a date (defaults to midnight)
+                      const isMidnight = d.getHours() === 0 && d.getMinutes() === 0;
+                      const timeStr = isMidnight ? null : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
                       return (
                         <TouchableOpacity key={i} onPress={() => openLink(u.link)} activeOpacity={0.7}
                           style={[styles.jccRow, i < jccNextBySport.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
@@ -893,7 +895,7 @@ export default function SportsScreen() {
                           </View>
                           <View style={{ alignItems: 'flex-end', gap: 2 }}>
                             <Text style={[styles.jccDate, { color: ACC.jcc }]}>{dateStr}</Text>
-                            <Text style={[styles.jccDate, { color: dark.text.subtle }]}>{timeStr}</Text>
+                            {timeStr ? <Text style={[styles.jccDate, { color: dark.text.subtle }]}>{timeStr}</Text> : null}
                           </View>
                         </TouchableOpacity>
                       );
