@@ -78,14 +78,44 @@ function ServiceCard({ service }: { service: CityService }) {
 
       {expanded && (
         <View style={[svc.expanded, { borderTopColor: `rgba(${rgb},0.1)` }]}>
-          <View style={svc.detailGrid}>
-            {service.details.map(d => (
-              <View key={d.label} style={svc.detailRow}>
-                <Text style={svc.detailLabel}>{d.label}</Text>
-                <Text style={svc.detailValue}>{d.value}</Text>
-              </View>
-            ))}
-          </View>
+          {service.details.length > 0 && (
+            <View style={svc.detailGrid}>
+              {service.details.map(d => (
+                <View key={d.label} style={svc.detailRow}>
+                  <Text style={svc.detailLabel}>{d.label}</Text>
+                  <Text style={svc.detailValue}>{d.value}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {service.schedule && (
+            <View style={[svc.scheduleBlock, { borderColor: `rgba(${rgb},0.12)` }]}>
+              <Text style={[svc.scheduleHeader, { color: `rgba(${rgb},0.5)` }]}>FLUSH SCHEDULE</Text>
+              {service.schedule.map((entry, i) => (
+                <View
+                  key={entry.date}
+                  style={[
+                    svc.scheduleRow,
+                    i < service.schedule!.length - 1 && { borderBottomWidth: 1, borderBottomColor: `rgba(${rgb},0.08)` },
+                  ]}
+                >
+                  <View style={[svc.scheduleDateBadge, { backgroundColor: `rgba(${rgb},0.1)` }]}>
+                    <Text style={[svc.scheduleDateText, { color: `rgba(${rgb},0.9)` }]}>{entry.date}</Text>
+                    <Text style={[svc.scheduleDayText, { color: `rgba(${rgb},0.5)` }]}>{entry.day}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={svc.scheduleAreas}>{entry.areas}</Text>
+                    {entry.warn && (
+                      <View style={svc.scheduleWarnRow}>
+                        <Ionicons name="warning-outline" size={10} color="#f59e0b" />
+                        <Text style={svc.scheduleWarnText}>{entry.warn}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
           {service.tip && (
             <View style={[svc.tip, { backgroundColor: `rgba(${rgb},0.06)`, borderColor: `rgba(${rgb},0.18)` }]}>
               <Ionicons name="information-circle-outline" size={14} color={`rgba(${rgb},0.6)`} style={{ marginTop: 1 }} />
@@ -117,6 +147,16 @@ const svc = StyleSheet.create({
   detailValue: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.65)', flex: 1, lineHeight: 16 },
   tip: { flexDirection: 'row', gap: 8, borderWidth: 1, borderRadius: 10, padding: 10 },
   tipText: { fontFamily: 'Outfit', fontSize: 11, flex: 1, lineHeight: 17, color: 'rgba(255,255,255,0.5)' },
+
+  scheduleBlock: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginTop: 4 },
+  scheduleHeader: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1.5, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
+  scheduleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  scheduleDateBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, alignItems: 'center', minWidth: 52 },
+  scheduleDateText: { fontFamily: 'Syne', fontSize: 11, fontWeight: '700', lineHeight: 14 },
+  scheduleDayText: { fontFamily: 'Outfit', fontSize: 9, lineHeight: 13 },
+  scheduleAreas: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 16 },
+  scheduleWarnRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  scheduleWarnText: { fontFamily: 'Outfit', fontSize: 10, color: '#f59e0b', lineHeight: 14 },
 });
 
 const FILTERS: { id: FilterOption; label: string }[] = [
@@ -183,7 +223,7 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
         </View>
 
         <Text style={cs.footer}>
-          Pulled from jamestownny.gov & jamestownbpu.com
+          Data sourced from jamestownny.gov & jamestownbpu.com
         </Text>
       </ScrollView>
     </ThemedBackground>

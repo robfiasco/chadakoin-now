@@ -144,7 +144,17 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
 
       {/* ── Add-ons ── */}
       <View style={[s.addonsDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
-      <Text style={[s.subLabel, { color: `rgba(${accRGB},0.4)`, marginTop: 4 }]}>ADD-ONS · ANY BUSINESS</Text>
+
+      {/* ── Secondary CTA ── */}
+      <TouchableOpacity onPress={onContact} activeOpacity={0.7} style={s.secondaryCta}>
+        <Text style={[s.secondaryCtaLabel, { color: `rgba(${accRGB},0.55)` }]}>Not ready for a featured slot?</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={[s.secondaryCtaLink, { color: acc }]}>Boost an event, add your story, or update your profile</Text>
+          <Ionicons name="arrow-forward" size={12} color={acc} />
+        </View>
+      </TouchableOpacity>
+
+      <Text style={[s.subLabel, { color: `rgba(${accRGB},0.4)`, marginTop: 12 }]}>ADD-ONS · ANY BUSINESS</Text>
       <View style={{ gap: 8 }}>
         {ADDONS.map((item, i) => (
           <View key={i} style={[s.addonCard, { borderColor: `rgba(${accRGB},0.1)` }]}>
@@ -162,15 +172,6 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
           </View>
         ))}
       </View>
-
-      {/* ── Secondary CTA ── */}
-      <TouchableOpacity onPress={onContact} activeOpacity={0.7} style={s.secondaryCta}>
-        <Text style={[s.secondaryCtaLabel, { color: `rgba(${accRGB},0.55)` }]}>Not ready for a featured slot?</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Text style={[s.secondaryCtaLink, { color: acc }]}>Boost an event, add your story, or update your profile</Text>
-          <Ionicons name="arrow-forward" size={12} color={acc} />
-        </View>
-      </TouchableOpacity>
       </>}
 
     </View>

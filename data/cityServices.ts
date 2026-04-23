@@ -3,6 +3,13 @@ export interface ServiceDetail {
   value: string;
 }
 
+export interface ScheduleEntry {
+  date: string;   // e.g. "May 1"
+  day: string;    // e.g. "Fri" or "Sat–Sun"
+  areas: string;
+  warn?: string;  // optional warning note
+}
+
 export type ServiceStatus = 'active' | 'coming-up' | 'year-round';
 
 export interface CityService {
@@ -14,6 +21,7 @@ export interface CityService {
   status: ServiceStatus;
   summary: string;
   details: ServiceDetail[];
+  schedule?: ScheduleEntry[];
   tip?: string;
 }
 
@@ -46,18 +54,21 @@ export const CITY_SERVICES: CityService[] = [
     status: 'coming-up',
     summary: 'BPU Spring 2026 · May 1–13 · Check your area',
     details: [
-      { label: 'Hours',       value: '8:00 AM – 4:30 PM (Mon–Fri)' },
-      { label: 'Falconer',    value: 'Pre-flush Fri May 1 @ 1 PM (Aldren, Mapleshade, Ralph, Valmeere). Full flush Sat–Sun May 2–3 @ 8 PM — also affects Jamestown north side.' },
-      { label: 'May 4 Mon',   value: 'E. Ellicott' },
-      { label: 'May 5 Tue',   value: 'Central Jamestown (Lafayette, Washington, Clinton, 15th–18th St area)' },
-      { label: 'May 6 Wed',   value: 'Downtown & Fairmount Ave — EARLY START 4:30 AM for businesses. Also W. Third St, Harding, Fairmount (Rt 394) neighborhoods. Also Celoron (Jones & Gifford, Walden Ave area).' },
-      { label: 'May 7 Thu',   value: 'W. Ellicott (Fairmount Ave, Robinson, S. Alleghany), Lakewood (E. Terrace, Fairmount, Mall Blvd area), Celoron' },
-      { label: 'May 8 Fri',   value: 'S. Jamestown (Hallock, Summit, Trenton, Schuyler), Lakewood (E. Fairmount, Shadyside, Lakeview area)' },
-      { label: 'May 11 Mon',  value: 'Celoron south, Town of Busti, Orr St Ext to Busti 5-Corners, W. Ellicott (Orchard Rd area)' },
-      { label: 'May 12 Tue',  value: 'SW Jamestown (Baker St, State St, Chautauqua Ave), Busti north, S. Main St. Ext.' },
-      { label: 'May 13 Wed',  value: 'SE Jamestown (Barrows, Sciota, Vega, Virginia Blvd, Collins, Allendae Ave area)' },
-      { label: 'Hotline',     value: '716-661-1613 · Leave address + cross streets for a callback' },
-      { label: 'Call notice',  value: 'BPU calls residents 2–5 days before their flushing day' },
+      { label: 'Hours',      value: '8:00 AM – 4:30 PM (Mon–Fri)' },
+      { label: 'Hotline',    value: '716-661-1613 · Leave address + cross streets' },
+      { label: 'Heads up',   value: 'BPU calls residents 2–5 days before their flush day' },
+    ],
+    schedule: [
+      { date: 'May 1',    day: 'Fri',     areas: 'Falconer — Pre-flush (Aldren, Mapleshade, Ralph, Valmeere)', warn: 'Starts 1 PM' },
+      { date: 'May 2–3',  day: 'Sat–Sun', areas: 'Falconer full flush + Jamestown north side', warn: 'Starts 8 PM overnight' },
+      { date: 'May 4',    day: 'Mon',     areas: 'E. Ellicott' },
+      { date: 'May 5',    day: 'Tue',     areas: 'Central Jamestown — Lafayette, Washington, Clinton, 15th–18th St' },
+      { date: 'May 6',    day: 'Wed',     areas: 'Downtown, Fairmount Ave, W. Third St, Harding, Celoron', warn: 'Early start 4:30 AM' },
+      { date: 'May 7',    day: 'Thu',     areas: 'W. Ellicott, Lakewood, Celoron' },
+      { date: 'May 8',    day: 'Fri',     areas: 'S. Jamestown — Hallock, Summit, Trenton, Schuyler · Lakewood E.' },
+      { date: 'May 11',   day: 'Mon',     areas: 'Celoron south, Town of Busti, Orr St Ext' },
+      { date: 'May 12',   day: 'Tue',     areas: 'SW Jamestown — Baker, State, Chautauqua Ave · Busti north' },
+      { date: 'May 13',   day: 'Wed',     areas: 'SE Jamestown — Barrows, Sciota, Virginia Blvd, Collins' },
     ],
     tip: 'Before your flush day: set aside water for drinking/cooking, and check the tap before doing laundry — discolored water can stain clothes. Never add discolored water to your hot water tank. If laundry is affected, don\'t dry it — rewash with rust remover (free at BPU Customer Service, 661-1660). Discoloration clears in 12–24 hours.',
   },
