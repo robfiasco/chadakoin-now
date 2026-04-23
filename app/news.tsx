@@ -169,7 +169,7 @@ function HeroCard({ item }: { item: NewsItem }) {
         <View style={[hero.accentBar, { backgroundColor: bar }]} />
 
         {/* Category watermark — bleeds off right edge */}
-        <Text style={[hero.watermark, { color: bar }]}>
+        <Text style={hero.watermark}>
           {category.toUpperCase()}
         </Text>
 
@@ -224,7 +224,8 @@ const hero = StyleSheet.create({
   watermark: {
     position: 'absolute', right: -8, bottom: -6,
     fontFamily: 'DMSans_800ExtraBold', fontSize: 88,
-    letterSpacing: 4, opacity: 0.18, textAlign: 'right',
+    letterSpacing: 4, opacity: 0.07, textAlign: 'right',
+    color: '#fff',
   },
   headerTop: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

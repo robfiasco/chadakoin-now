@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
   TouchableOpacity, Linking, Image, ImageBackground, Animated, Easing, RefreshControl,
@@ -567,6 +568,19 @@ export default function SportsScreen() {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMlbAbbr, setExpandedMlbAbbr] = useState<string | null>(null);
+  const [pinnedMlbAbbr, setPinnedMlbAbbr] = useState<string | null>(null);
+
+  // Load pinned team on mount
+  useEffect(() => {
+    AsyncStorage.getItem('pinnedMlb').then(v => { if (v) setPinnedMlbAbbr(v); });
+  }, []);
+
+  function togglePinMlb(abbr: string) {
+    const next = pinnedMlbAbbr === abbr ? null : abbr;
+    setPinnedMlbAbbr(next);
+    if (next) AsyncStorage.setItem('pinnedMlb', next);
+    else AsyncStorage.removeItem('pinnedMlb');
+  }
   const [nextUpIdx, setNextUpIdx] = useState(0);
   const [showSkunksSchedule, setShowSkunksSchedule] = useState(false);
   const { width: winWidth } = useWindowDimensions();
@@ -1153,46 +1167,15 @@ export default function SportsScreen() {
           glanceRow={
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
-            ) : mlbNextUp ? (
-              <View style={styles.mlbMatchup}>
-                {/* Left logo + gradient */}
-                <Image
-                  source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${mlbNextUp.abbr.toLowerCase()}.png` }}
-                  style={styles.mlbMatchupLogo}
-                  resizeMode="contain"
-                />
-                <LinearGradient
-                  colors={['rgba(167,139,250,0.18)', 'transparent']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={styles.mlbMatchupGradL}
-                  pointerEvents="none"
-                />
-                {/* Center info */}
-                <View style={styles.mlbMatchupCenter}>
-                  <Text style={styles.mlbMatchupGame}>
-                    {mlbNextUp.abbr} {mlbNextUp.isHome ? 'vs' : '@'} {mlbNextUp.opp}
-                  </Text>
-                  <Text style={[styles.mlbMatchupMeta, { color: dark.text.subtle }]}>
-                    {mlbNextUp.dateLabel}{mlbNextUp.timeStr ? ` · ${mlbNextUp.timeStr}` : ''}
-                  </Text>
-                </View>
-                {/* Right gradient + logo */}
-                <LinearGradient
-                  colors={['transparent', 'rgba(167,139,250,0.18)']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={styles.mlbMatchupGradR}
-                  pointerEvents="none"
-                />
-                {mlbNextUp.oppAbbr ? (
-                  <Image
-                    source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${mlbNextUp.oppAbbr.toLowerCase()}.png` }}
-                    style={styles.mlbMatchupLogo}
-                    resizeMode="contain"
-                  />
-                ) : null}
-              </View>
             ) : (
-              <Text style={[styles.glanceText, { color: dark.text.subtle }]}>No upcoming games found</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                {(data?.mlb ?? []).map(t => (
+                  <View key={t.abbr} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 16, height: 16 }} resizeMode="contain" />
+                    <Text style={[styles.glanceText, { color: dark.text.subtle }]}>{t.record ?? t.abbr}</Text>
+                  </View>
+                ))}
+              </View>
             )
           }
         >
@@ -1202,7 +1185,11 @@ export default function SportsScreen() {
             <>
               {/* @ts-ignore */}
               <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-                {(data?.mlb ?? []).map((t, i) => {
+                {[...(data?.mlb ?? [])].sort((a, b) => {
+                  if (a.abbr === pinnedMlbAbbr) return -1;
+                  if (b.abbr === pinnedMlbAbbr) return 1;
+                  return 0;
+                }).map((t, i) => {
                   const ng = t.nextGame;
                   const opp = ng?.opponent?.split(' ').pop() ?? '';
                   const today = new Date(); today.setHours(0,0,0,0);
@@ -1265,6 +1252,18 @@ export default function SportsScreen() {
                             <Text style={[styles.mlbStreakBadgeText, { color: t.streak.startsWith('W') ? ACC.jcc : '#fb7185' }]}>{t.streak}</Text>
                           </View>
                         ) : null}
+                        <TouchableOpacity
+                          onPress={() => togglePinMlb(t.abbr)}
+                          activeOpacity={0.7}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{ marginLeft: 6 }}
+                        >
+                          <Ionicons
+                            name={pinnedMlbAbbr === t.abbr ? 'star' : 'star-outline'}
+                            size={14}
+                            color={pinnedMlbAbbr === t.abbr ? '#f59e0b' : 'rgba(255,255,255,0.18)'}
+                          />
+                        </TouchableOpacity>
                         <Ionicons
                           name={isExpanded ? 'chevron-up' : 'chevron-down'}
                           size={13}

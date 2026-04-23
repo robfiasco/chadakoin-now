@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 600, flex: 1 },
   safeArea: { paddingHorizontal: 20 },
 
-  header:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 20, paddingBottom: 8 },
+  header:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 40, paddingBottom: 8 },
   title:    { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },
 
