@@ -1172,7 +1172,7 @@ export default function SportsScreen() {
                 colors={['rgba(15,23,42,0)', 'rgba(255,255,255,0.13)', 'rgba(255,255,255,0.13)', 'rgba(15,23,42,0)']}
                 locations={[0, 0.15, 0.85, 1]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4, justifyContent: 'center', flex: 1 }}
+                style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4, justifyContent: 'space-between', flex: 1 }}
               >
                 {(data?.mlb ?? []).map(t => (
                   <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
