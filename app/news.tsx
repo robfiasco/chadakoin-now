@@ -446,7 +446,7 @@ export default function NewsScreen() {
 
 const styles = StyleSheet.create({
   safe:     { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 16 },
-  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },
 
   chipsRow: { flexDirection: 'row', gap: 8, paddingBottom: 4 },

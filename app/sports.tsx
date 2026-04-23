@@ -1389,7 +1389,7 @@ const schedModal = StyleSheet.create({
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
   title:   { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-  subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC.label },
+  subhead: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC.label },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 10 },
 
   // Section labels

@@ -523,7 +523,13 @@ export default function VisitScreen() {
         }
         return true;
       })
-      .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+      .sort((a, b) => {
+        // When browsing all (no search), alphabetize
+        if (active === 'all' && !q) return a.name.localeCompare(b.name);
+        // Within a category, featured first then alpha
+        const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+        return featDiff !== 0 ? featDiff : a.name.localeCompare(b.name);
+      });
   }, [active, q]);
 
   // Also in Jamestown — only for stay/all
@@ -702,7 +708,7 @@ const styles = StyleSheet.create({
   safeArea: { paddingHorizontal: 20 },
 
   header:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 20, paddingBottom: 8 },
-  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  title:    { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },
 
   searchWrap: {
