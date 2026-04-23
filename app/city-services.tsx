@@ -71,7 +71,7 @@ function ServiceCard({ service }: { service: CityService }) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={svc.title}>{service.title}</Text>
-            <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]} numberOfLines={1}>{service.summary}</Text>
+            <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]}>{service.summary}</Text>
           </View>
           <StatusPill status={service.status} />
           <Ionicons
@@ -141,7 +141,7 @@ const svc = StyleSheet.create({
     borderRadius: 16, overflow: 'hidden', marginBottom: 8,
   },
   stripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, zIndex: 10 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   iconWrap: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.1 },
   summary: { fontFamily: 'Outfit', fontSize: 10, marginTop: 2, lineHeight: 14 },
@@ -156,7 +156,7 @@ const svc = StyleSheet.create({
   scheduleBlock: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginTop: 4 },
   scheduleHeader: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1.5, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
   scheduleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  scheduleDateBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, alignItems: 'center', minWidth: 52 },
+  scheduleDateBadge: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, alignItems: 'center', width: 58 },
   scheduleDateText: { fontFamily: 'Syne', fontSize: 11, fontWeight: '700', lineHeight: 14 },
   scheduleDayText: { fontFamily: 'Outfit', fontSize: 9, lineHeight: 13 },
   scheduleAreas: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 16 },
