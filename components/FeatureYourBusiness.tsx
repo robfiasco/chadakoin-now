@@ -13,9 +13,21 @@ const INCLUDES = [
 ];
 
 const ADDONS = [
-  { icon: 'megaphone-outline' as const,  title: 'Event Boost',       desc: '$25 for 2 weeks · $45 for 30 days · listed through your event date' },
-  { icon: 'business-outline' as const,   title: 'Extended Profile',  desc: '$19/mo · updated hours, photos, seasonal details' },
-  { icon: 'sparkles-outline' as const,   title: 'Business Story',    desc: '$15 · a 48-hour featured post on the home screen' },
+  {
+    title: 'Event Boost',
+    prices: ['$25 / 2 wks', '$45 / 30 days'],
+    desc: 'Listed in the app through your event date.',
+  },
+  {
+    title: 'Extended Profile',
+    prices: ['$19 / mo'],
+    desc: 'Updated hours, photos & seasonal details on your listing.',
+  },
+  {
+    title: 'Business Story',
+    prices: ['$25 / 48 hrs', '$49 / 7 days'],
+    desc: 'A featured post on the home screen. You write it, we post it.',
+  },
 ];
 
 export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
@@ -133,19 +145,20 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
       {/* ── Add-ons ── */}
       <View style={[s.addonsDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
       <Text style={[s.subLabel, { color: `rgba(${accRGB},0.4)`, marginTop: 4 }]}>ADD-ONS · ANY BUSINESS</Text>
-      <View style={[s.includesList, { borderColor: `rgba(${accRGB},0.1)` }]}>
+      <View style={{ gap: 8 }}>
         {ADDONS.map((item, i) => (
-          <View key={i}>
-            {i > 0 && <View style={[s.includesDivider, { backgroundColor: `rgba(${accRGB},0.07)` }]} />}
-            <View style={s.includesRow}>
-              <View style={[s.includesIcon, { backgroundColor: `rgba(${accRGB},0.08)` }]}>
-                <Ionicons name={item.icon} size={13} color={`rgba(${accRGB},0.6)`} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.includesText, { fontWeight: '700', marginBottom: 2 }]}>{item.title}</Text>
-                <Text style={[s.includesText, { fontSize: 11, color: 'rgba(255,255,255,0.45)' }]}>{item.desc}</Text>
+          <View key={i} style={[s.addonCard, { borderColor: `rgba(${accRGB},0.1)` }]}>
+            <View style={s.addonTop}>
+              <Text style={s.addonTitle}>{item.title}</Text>
+              <View style={s.addonPrices}>
+                {item.prices.map(p => (
+                  <View key={p} style={[s.addonPricePill, { backgroundColor: `rgba(${accRGB},0.1)`, borderColor: `rgba(${accRGB},0.2)` }]}>
+                    <Text style={[s.addonPriceText, { color: acc }]}>{p}</Text>
+                  </View>
+                ))}
               </View>
             </View>
+            <Text style={s.addonDesc}>{item.desc}</Text>
           </View>
         ))}
       </View>
@@ -287,6 +300,14 @@ const s = StyleSheet.create({
   waitlistNote: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', lineHeight: 17, marginTop: 10 },
 
   addonsDivider: { height: 1, marginVertical: 20 },
+
+  addonCard: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 6, backgroundColor: 'rgba(255,255,255,0.02)' },
+  addonTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  addonTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fff' },
+  addonPrices: { flexDirection: 'row', gap: 5, flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  addonPricePill: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  addonPriceText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700' },
+  addonDesc: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 16 },
 
   // ── Secondary CTA ──
   secondaryCta: { marginTop: 14, alignItems: 'center', gap: 4 },
