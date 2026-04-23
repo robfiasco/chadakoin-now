@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -34,8 +35,8 @@ function StatusPill({ status }: { status: ServiceStatus }) {
 }
 
 const pill = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
-  text: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, flexShrink: 0 },
+  text: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
 });
 
 function hexToRgb(hex: string): string {
@@ -46,7 +47,7 @@ function hexToRgb(hex: string): string {
 }
 
 function ServiceCard({ service }: { service: CityService }) {
-  const [expanded, setExpanded] = useState(service.status === 'active');
+  const [expanded, setExpanded] = useState(false);
   const rgb = hexToRgb(service.badgeColor);
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
@@ -55,24 +56,29 @@ function ServiceCard({ service }: { service: CityService }) {
   return (
     // @ts-ignore
     <View style={[svc.card, glassWeb]}>
+      {/* Gradient wash from badge color */}
+      <LinearGradient
+        colors={[`rgba(${rgb},0.14)`, `rgba(${rgb},0.04)`, 'transparent']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       <View style={[svc.stripe, { backgroundColor: service.badgeColor }]} />
       <TouchableOpacity activeOpacity={0.85} onPress={() => setExpanded(e => !e)}>
         <View style={svc.cardTop}>
-          <View style={[svc.iconWrap, { backgroundColor: `rgba(${rgb},0.12)` }]}>
-            <Ionicons name={service.icon as any} size={18} color={service.badgeColor} />
+          <View style={[svc.iconWrap, { backgroundColor: `rgba(${rgb},0.15)` }]}>
+            <Ionicons name={service.icon as any} size={16} color={service.badgeColor} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={svc.title}>{service.title}</Text>
-            <Text style={[svc.summary, { color: `rgba(${rgb},0.6)` }]}>{service.summary}</Text>
+            <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]} numberOfLines={1}>{service.summary}</Text>
           </View>
+          <StatusPill status={service.status} />
           <Ionicons
             name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={14}
+            size={13}
             color="rgba(255,255,255,0.3)"
           />
-        </View>
-        <View style={svc.statusRow}>
-          <StatusPill status={service.status} />
         </View>
       </TouchableOpacity>
 
@@ -135,12 +141,11 @@ const svc = StyleSheet.create({
     borderRadius: 16, overflow: 'hidden', marginBottom: 8,
   },
   stripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, zIndex: 10 },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, paddingBottom: 8 },
-  iconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  title: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.1 },
-  summary: { fontFamily: 'Outfit', fontSize: 11, marginTop: 3, lineHeight: 16 },
-  statusRow: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 2 },
-  expanded: { borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  iconWrap: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  title: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.1 },
+  summary: { fontFamily: 'Outfit', fontSize: 10, marginTop: 2, lineHeight: 14 },
+  expanded: { borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
   detailGrid: { gap: 8 },
   detailRow: { flexDirection: 'row', gap: 12 },
   detailLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', minWidth: 80, flexShrink: 0, lineHeight: 16 },

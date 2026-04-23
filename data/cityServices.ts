@@ -77,7 +77,7 @@ export const CITY_SERVICES: CityService[] = [
     icon: 'trash-outline',
     title: 'Bulk Trash & Electronics',
     badge: 'DATE TBD',
-    badgeColor: '#F5A623',
+    badgeColor: '#a78bfa',
     status: 'coming-up',
     summary: 'Amnesty Day · City residents only · Free drop-off',
     details: [
