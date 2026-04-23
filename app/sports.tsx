@@ -748,7 +748,7 @@ export default function SportsScreen() {
                       {nextUp.bgKey === 'baseball' && (
                         <Image
                           source={Platform.OS === 'web' ? { uri: '/ballpark.jpg' } : require('../public/ballpark.jpg')}
-                          style={{ position: 'absolute', left: 0, right: 0, top: -180, width: '100%', height: 380, opacity: 0.45 }}
+                          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.45 }}
                           resizeMode="cover"
                         />
                       )}
