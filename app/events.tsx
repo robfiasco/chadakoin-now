@@ -148,7 +148,7 @@ function FeaturedCard({ event }: { event: EventItem }) {
           <>
             <Image
               source={{ uri: event.imageUrl }}
-              style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.45 }, { translateY: 22 }] }]}
+              style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.45 }, { translateY: 38 }] }]}
               resizeMode="cover"
             />
             {/* Dark gradient overlay so pills remain readable over photos */}
