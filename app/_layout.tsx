@@ -102,7 +102,6 @@ function AppLayout() {
     pagerRef.current?.setPage(index);
   };
 
-  // Wire the shared ref so Settings can trigger onboarding immediately
   onboardingResetRef.reset = () => {
     AsyncStorage.removeItem(ONBOARDING_KEY).catch(() => {});
     setShowOnboarding(true);
@@ -128,7 +127,6 @@ function AppLayout() {
         {/* Now-playing banner — appears above the tab bar when CDIR is active (not on Home) */}
         <NowPlayingBar activePage={activePage} />
 
-        {/* Gradient fade above the tab bar */}
         <LinearGradient
           colors={['transparent', theme.tabBarBg ?? 'rgba(0,5,15,0.97)']}
           start={{ x: 0, y: 0 }}

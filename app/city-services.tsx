@@ -59,7 +59,6 @@ function ServiceCard({ service }: { service: CityService }) {
   return (
     // @ts-ignore
     <View style={[svc.card, glassWeb]}>
-      {/* Gradient wash from badge color */}
       <LinearGradient
         colors={[`rgba(${rgb},0.14)`, `rgba(${rgb},0.04)`, 'transparent']}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
@@ -223,7 +222,6 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={cs.content} showsVerticalScrollIndicator={false}>
-        {/* Filter chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

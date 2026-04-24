@@ -90,8 +90,8 @@ async function fetchJCC(signal) {
 async function fetchPlayoffSeries(signal) {
   try {
     const now = new Date();
-    // Season ID: playoffs run Apr–Jun, season = prior year + current year
-    const year = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear();
+    const year = now.getFullYear();
+    // NHL season ID format: "{priorYear}{currentYear}" e.g. "20252026"
     const seasonId = `${year - 1}${year}`;
     const res = await fetch(`https://api-web.nhle.com/v1/playoff-series/carousel/${seasonId}`, { signal });
     if (!res.ok) return null;
@@ -145,7 +145,6 @@ export default async function handler(req, res) {
     const standJson = standRes.ok ? await standRes.json() : null;
     const statsJson = statsRes.ok ? await statsRes.json() : null;
 
-    // Top 5 skaters by points
     const topScorers = (statsJson?.skaters ?? [])
       .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
       .slice(0, 5)
@@ -191,7 +190,6 @@ export default async function handler(req, res) {
       } catch {}
     }
 
-    // Sabres record from standings
     let record = '';
     let standing = '';
     if (standJson?.standings) {
@@ -241,7 +239,7 @@ export default async function handler(req, res) {
       standing,
       liveGame,
       recentGame:    parseGame(past[0]),
-      nextGame:      parseGame(upcoming[0]),   // next scheduled game only — never the live one
+      nextGame:      parseGame(upcoming[0]),
       topScorers,
       jcc:           jccResults,
       playoffSeries: playoffSeries ?? null,

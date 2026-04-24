@@ -136,7 +136,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   const dateBadge = getDateBadge();
 
-  // Shimmer sweep on the app title — fires every 15 seconds
   const shimmerAnim = useRef(new Animated.Value(-100)).current;
   useEffect(() => {
     function runShimmer() {
@@ -148,7 +147,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         useNativeDriver: true,
       }).start();
     }
-    // First shimmer fires after 3 s so it's noticeable on load
     const first = setTimeout(runShimmer, 3000);
     const id = setInterval(runShimmer, 15000);
     return () => { clearTimeout(first); clearInterval(id); };
@@ -194,7 +192,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   return (
     <ThemedBackground>
 
-      {/* ── Header ─────────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
@@ -217,7 +214,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
       </SafeAreaView>
 
-      {/* ── Snow emergency banner ──────────────────────── */}
       {snowEmergency && (
         <View style={styles.snowBanner}>
           <Ionicons name="snow" size={18} color="#fff" />
@@ -247,8 +243,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         }
       >
 
-        {/* ── Weather ────────────────────────────────────── */}
-        {/* @ts-ignore */}
+        {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
         <View style={[styles.card, glassWeb]}>
           {weather ? (
             <>
@@ -290,13 +285,11 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           )}
         </View>
 
-        {/* ── Today in Jamestown ─────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Today in Jamestown</Text>
         </View>
 
         <View style={styles.todayGrid}>
-          {/* Recycling card */}
           <TouchableOpacity onPress={() => setRecyclingOpen(true)} activeOpacity={0.75}>
             <LinearGradient
               colors={[`rgba(${theme.accRGB},0.13)`, 'transparent']}
@@ -325,7 +318,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Parking card */}
           <TouchableOpacity onPress={() => setParkingOpen(true)} activeOpacity={0.75}>
             <LinearGradient
               colors={[`rgba(${theme.accRGB},0.13)`, 'transparent']}
@@ -359,7 +351,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
 
         {recycling.holidayDelay && (
-          // @ts-ignore
+          {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
           <View style={[styles.delayBanner, glassWeb]}>
             <Ionicons name="warning-outline" size={14} color="#f59e0b" />
             <Text style={styles.delayText}>Holiday this week — pickup may shift by one day.</Text>
@@ -375,7 +367,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           <Ionicons name="chevron-forward" size={12} color={dark.text.subtle} />
         </TouchableOpacity>
 
-        {/* ── Top Story ──────────────────────────────────── */}
         {(civic.loading || topStory) && (
           <>
             <View style={styles.sectionHeader}>
@@ -389,7 +380,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </View>
 
             {civic.loading ? (
-              // @ts-ignore
+              {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
               <View style={[styles.card, glassWeb, { gap: 10 }]}>
                 <SkeletonPulse width="100%" height={80} borderRadius={8} accRGB={theme.accRGB} />
                 <SkeletonPulse width="90%" height={18} borderRadius={4} accRGB={theme.accRGB} />
@@ -401,7 +392,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => topStory.link ? openLink(topStory.link) : null}
-                  // @ts-ignore
+                  // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
                   style={[styles.heroCard, glassWeb]}
                 >
                   {/* Banner */}
@@ -411,18 +402,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                       style={StyleSheet.absoluteFill}
                     />
-                    {/* Thin accent bar */}
                     <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
-                    {/* Category watermark — bleeds off right */}
                     <Text style={styles.heroWatermark}>
                       {sLabel}
                     </Text>
-                    {/* Source + time */}
                     <Text style={styles.heroBannerMeta} numberOfLines={1}>
                       {relativeTime(topStory.pubDate)}
                     </Text>
                   </View>
-                  {/* Body */}
                   <View style={styles.heroBody}>
                     <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
                     <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'} · {relativeTime(topStory.pubDate)}</Text>
@@ -433,7 +420,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </>
         )}
 
-        {/* ── This Weekend ───────────────────────────────── */}
         {(civic.loading || weekendEvent) && (
           <>
             <View style={styles.sectionHeader}>
@@ -447,7 +433,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </View>
 
             {civic.loading ? (
-              // @ts-ignore
+              {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
               <View style={[styles.card, glassWeb, { gap: 10 }]}>
                 <SkeletonPulse width="70%" height={18} borderRadius={4} accRGB={theme.accRGB} />
                 <SkeletonPulse width="45%" height={12} borderRadius={4} accRGB={theme.accRGB} />
@@ -460,7 +446,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => weekendEvent.link ? openLink(weekendEvent.link) : onNavigateToTab?.(3)}
-                  // @ts-ignore
+                  // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
                   style={[styles.eventCard, glassWeb]}
                 >
                   <View style={[styles.eventBar, { backgroundColor: evtColor }]} />
@@ -482,20 +468,16 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </>
         )}
 
-        {/* ── From Jamestown ─────────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>From Jamestown</Text>
         </View>
 
-        {/* CDIR */}
-        {/* @ts-ignore */}
+        {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
         <View style={[styles.cdirCard, {
           backgroundColor: radioPlaying ? 'rgba(34,211,238,0.1)' : dark.surface,
           borderColor: radioPlaying ? 'rgba(34,211,238,0.3)' : dark.border,
         }, glassWeb]}>
-          {/* Main row */}
           <View style={styles.cdirRow}>
-            {/* Artwork + LIVE badge below */}
             <View style={styles.cdirArtCol}>
               <TouchableOpacity
                 onPress={() => WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {})}
@@ -516,7 +498,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               </View>
             </View>
 
-            {/* Track info */}
             <View style={{ flex: 1 }}>
               <View style={styles.mediaLabelRow}>
                 <Text style={[styles.mediaLabel, { color: dark.category.city }]} numberOfLines={1}>CDIR</Text>
@@ -534,7 +515,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               )}
             </View>
 
-            {/* Play button */}
             <TouchableOpacity
               onPress={toggleRadio}
               activeOpacity={0.7}
@@ -550,7 +530,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </TouchableOpacity>
           </View>
 
-          {/* Expanded info panel */}
           {cdirExpanded && (
             <View style={styles.cdirExpandedPanel}>
               <View style={styles.cdirDivider} />
@@ -570,14 +549,11 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           )}
         </View>
 
-        {/* LOTD */}
-
-        {/* ── Did You Know? ──────────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Did You Know?</Text>
         </View>
 
-        {/* @ts-ignore */}
+        {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
         <View style={[styles.card, glassWeb]}>
           <View style={styles.factRow}>
             <View style={[{ width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }, { backgroundColor: 'rgba(251,191,36,0.1)', marginTop: 2 }]}>
@@ -590,7 +566,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </View>
         </View>
 
-        {/* Footer */}
         {updatedTime && (
           <Text style={styles.updatedLine}>Updated {updatedTime}</Text>
         )}
@@ -599,21 +574,18 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
       <AddToHomeScreen />
 
-      {/* Settings overlay */}
       {settingsOpen && (
         <View style={styles.overlay}>
           <SettingsScreen onClose={() => setSettingsOpen(false)} />
         </View>
       )}
 
-      {/* City Services overlay */}
       {cityServicesOpen && (
         <View style={styles.overlay}>
           <CityServicesScreen onClose={() => setCityServicesOpen(false)} />
         </View>
       )}
 
-      {/* Recycling overlay */}
       {recyclingOpen && (
         <View style={styles.overlay}>
           <RecyclingScreen />
@@ -627,7 +599,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
       )}
 
-      {/* Parking overlay */}
       {parkingOpen && (
         <View style={styles.overlay}>
           <ParkingScreen />
@@ -646,7 +617,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 }
 
 const styles = StyleSheet.create({
-  // Header
   header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 40, zIndex: 10 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -658,7 +628,6 @@ const styles = StyleSheet.create({
   dateBadgeText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: dark.category.city, textTransform: 'uppercase' },
   settingsBtn: { padding: 8, borderRadius: 20, backgroundColor: 'rgba(15,23,42,0.6)', borderWidth: 1, borderColor: dark.border },
 
-  // Snow banner
   snowBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: 'rgba(220,0,50,0.18)', borderTopWidth: 1, borderBottomWidth: 1,
@@ -668,20 +637,16 @@ const styles = StyleSheet.create({
   snowBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
 
-  // Scroll
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 8, paddingBottom: 48 },
 
-  // Section header row
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10, paddingHorizontal: 2 },
   sectionLabel: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: dark.category.city, letterSpacing: 1.8, textTransform: 'uppercase' },
   sectionLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   sectionLink: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle, fontWeight: '500' },
 
-  // Base card
   card: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, padding: 18, overflow: 'hidden' },
 
-  // Weather
   weatherTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
   weatherTemp: { fontFamily: 'Syne', fontSize: 56, fontWeight: '700', color: '#fff', lineHeight: 60, letterSpacing: -1 },
   weatherCondition: { fontFamily: 'Outfit', fontSize: 14, fontWeight: '600', color: '#34d399', marginTop: 6 },
@@ -694,7 +659,6 @@ const styles = StyleSheet.create({
   forecastHigh: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#34d399' },
   forecastLow: { fontFamily: 'Outfit', fontSize: 11, color: '#475569' },
 
-  // Today in Jamestown grid
   todayGrid: { flexDirection: 'column', marginHorizontal: -16 },
   todayCard: { paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
@@ -703,15 +667,12 @@ const styles = StyleSheet.create({
   todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginTop: 1 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', textAlign: 'right' },
 
-  // Delay banner
   delayBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: 10, marginTop: 8 },
   delayText: { fontFamily: 'Outfit', fontSize: 11, color: '#f59e0b', flex: 1, lineHeight: 16 },
 
-  // More services link
   moreServicesLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10, paddingVertical: 4 },
   moreServicesText: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle },
 
-  // Hero news card
   heroCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden' },
   heroGradient: { height: 96, justifyContent: 'center', paddingHorizontal: 14, paddingLeft: 18, position: 'relative' },
   heroAccentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
@@ -735,7 +696,6 @@ const styles = StyleSheet.create({
   heroTitle: { fontFamily: 'Editorial', fontSize: 17, color: dark.text.primary, lineHeight: 23 },
   heroMeta: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 6 },
 
-  // Event card
   eventCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden', flexDirection: 'row', alignItems: 'stretch' },
   eventBar: { width: 4 },
   eventDateBlock: { alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, minWidth: 64 },
@@ -747,7 +707,6 @@ const styles = StyleSheet.create({
   eventVenue: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 4 },
   eventCategory: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: 6 },
 
-  // Media cards (CDIR + LOTD)
   mediaCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
@@ -775,15 +734,12 @@ const styles = StyleSheet.create({
   mediaSub: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 2 },
   playBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
-  // Did You Know
   factRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   factText: { fontFamily: 'Outfit', fontSize: 13, color: dark.text.primary, lineHeight: 20 },
   factMeta: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 8 },
 
-  // Footer
   updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', color: '#475569', marginTop: 24 },
 
-  // Overlays
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 500 },
   overlayClose: { position: 'absolute', top: 52, right: 20, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: 6 },
 });

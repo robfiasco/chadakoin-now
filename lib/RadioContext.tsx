@@ -54,7 +54,6 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
   // Player lives here at the root level — survives tab navigation
   const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
 
-  // Poll now-playing while radio is active
   useEffect(() => {
     if (radioPlaying) {
       fetchNowPlaying().then(setNowPlaying).catch(() => {});

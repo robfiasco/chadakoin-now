@@ -14,7 +14,6 @@ import { PulsingDot } from '../components/PulsingDot';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface NextUpItem {
   ts: number; sport: string; emoji: string; matchup: string;
   dateLabel: string; time?: string;
@@ -82,7 +81,6 @@ interface SabresData {
   news: any[];
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
 
@@ -166,7 +164,6 @@ const SKUNKS_SCHEDULE: SkunksGame[] = [
   { date: '2026-07-25', time: '6:30 PM', isHome: true,  opponent: 'Geneva Red Wings',      promotion: 'Xmas in July' },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function sportEmoji(sport: string): string {
   const s = sport.toLowerCase();
   if (s.includes('basketball')) return '🏀';
@@ -284,7 +281,6 @@ async function fetchMLB(): Promise<MLBTeam[]> {
           fetch(scheduleUrl),
           fetch(`https://statsapi.mlb.com/api/v1/teams/${t.id}/stats?stats=season&group=hitting,pitching&season=${year}`),
         ]);
-        // Parse team batting avg + ERA
         let teamBA: string | undefined, teamERA: string | undefined;
         if (statsRes.ok) {
           const statsJson = await statsRes.json();
@@ -331,7 +327,6 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const them = weAreHome ? g.teams?.away : g.teams?.home;
               const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
               const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
-              // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
               const oppRec = them?.leagueRecord;
               nextGame = {
                 date: dateObj.date, gameTime: g.gameDate ?? null,
@@ -504,8 +499,6 @@ function ordinal(n: number): string {
   return `${n}th`;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 function SectionLabel({ label }: { label: string }) {
   return (
     <Text style={styles.sectionLabel}>{label}</Text>
@@ -555,10 +548,8 @@ function TeamCard({
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Glance row — always visible */}
       <View style={styles.glanceRow}>{glanceRow}</View>
 
-      {/* Expanded section */}
       {open && children && (
         <View style={[styles.teamCardExpanded, { borderTopColor: dark.border }]}>
           {children}
@@ -584,7 +575,6 @@ function TeamCard({
   );
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function SportsScreen() {
   const [data, setData]           = useState<SabresData | null>(null);
   const [loading, setLoading]     = useState(true);
@@ -593,7 +583,6 @@ export default function SportsScreen() {
   const [pinnedMlbAbbr, setPinnedMlbAbbr] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load pinned team on mount
   useEffect(() => {
     AsyncStorage.getItem('pinnedMlb').then(v => { if (v) setPinnedMlbAbbr(v); });
   }, []);
@@ -836,7 +825,6 @@ export default function SportsScreen() {
         }
       >
 
-        {/* ── Next Up hero ────────────────────────────────────── */}
         {(loading || nextUpItems.length > 0) && (
           <View style={styles.nextUpSection}>
             <View style={styles.sectionLabelRow}>
@@ -848,7 +836,6 @@ export default function SportsScreen() {
               <SkeletonPulse width="100%" height={112} borderRadius={18} accRGB="34,211,238" />
             ) : nextUpItems.length > 0 ? (
               <>
-                {/* Carousel — single card or swipeable when multiple games */}
                 <ScrollView
                   horizontal
                   pagingEnabled
