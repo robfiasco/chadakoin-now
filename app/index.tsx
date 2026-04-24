@@ -357,60 +357,64 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
         <View style={styles.todayGrid}>
           {/* Recycling card */}
-          {/* @ts-ignore */}
-          <TouchableOpacity style={[styles.todayCard, glassWeb]} onPress={() => setRecyclingOpen(true)} activeOpacity={0.75}>
-            <View style={[styles.categoryIcon, { backgroundColor: 'rgba(52,211,153,0.1)' }]}>
-              <Ionicons name="sync-outline" size={14} color={dark.category.recycling} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.todayCategoryLabel, { color: dark.category.recycling }]}>Recycling</Text>
-              {civic.loading ? (
-                <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="52,211,153" />
-              ) : (
-                <>
-                  <Text style={styles.todayCardTitle} numberOfLines={1}>
-                    {recyclingName === '—' ? 'No pickup' : recyclingName}
-                  </Text>
-                  {recycling.thisWeek.exclusions ? (
-                    <Text style={styles.todayCardExclusion} numberOfLines={1}>No {recycling.thisWeek.exclusions}</Text>
-                  ) : null}
-                </>
+          <TouchableOpacity onPress={() => setRecyclingOpen(true)} activeOpacity={0.75}>
+            <LinearGradient
+              colors={[`rgba(${theme.accRGB},0.13)`, 'transparent']}
+              start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }}
+              style={styles.todayCard}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.todayCategoryLabel, { color: dark.category.recycling }]}>Recycling</Text>
+                {civic.loading ? (
+                  <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="52,211,153" />
+                ) : (
+                  <>
+                    <Text style={styles.todayCardTitle}>
+                      {recyclingName === '—' ? 'No pickup' : recyclingName}
+                    </Text>
+                    {recycling.thisWeek.exclusions ? (
+                      <Text style={styles.todayCardExclusion}>No {recycling.thisWeek.exclusions}</Text>
+                    ) : null}
+                  </>
+                )}
+              </View>
+              {!civic.loading && (
+                <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>{recycling.thisWeek.dateRange || '—'}</Text>
               )}
-            </View>
-            {!civic.loading && (
-              <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>{recycling.thisWeek.dateRange || '—'}</Text>
-            )}
-            <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
+              <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
+            </LinearGradient>
           </TouchableOpacity>
 
           {/* Parking card */}
-          {/* @ts-ignore */}
-          <TouchableOpacity style={[styles.todayCard, glassWeb]} onPress={() => setParkingOpen(true)} activeOpacity={0.75}>
-            <View style={[styles.categoryIcon, { backgroundColor: 'rgba(34,211,238,0.1)' }]}>
-              <Ionicons name="car-outline" size={14} color={dark.category.parking} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.todayCategoryLabel, { color: dark.category.parking }]}>Parking</Text>
-              {civic.loading ? (
-                <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="34,211,238" />
-              ) : (
-                <>
-                  <Text style={styles.todayCardTitle} numberOfLines={1}>
-                    {parking.side === 'EVEN' ? 'Even Side' : parking.side === 'ODD' ? 'Odd Side' : '—'}
-                  </Text>
-                  <Text style={styles.todayCardSub} numberOfLines={1}>
-                    {parking.side === 'EVEN' ? 'Park even-numbered' : parking.side === 'ODD' ? 'Park odd-numbered' : 'Check sign'}
-                  </Text>
-                </>
+          <TouchableOpacity onPress={() => setParkingOpen(true)} activeOpacity={0.75}>
+            <LinearGradient
+              colors={[`rgba(${theme.accRGB},0.13)`, 'transparent']}
+              start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }}
+              style={styles.todayCard}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.todayCategoryLabel, { color: dark.category.parking }]}>Parking</Text>
+                {civic.loading ? (
+                  <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="34,211,238" />
+                ) : (
+                  <>
+                    <Text style={styles.todayCardTitle}>
+                      {parking.side === 'EVEN' ? 'Even Side' : parking.side === 'ODD' ? 'Odd Side' : '—'}
+                    </Text>
+                    <Text style={styles.todayCardSub}>
+                      {parking.side === 'EVEN' ? 'Park even-numbered' : parking.side === 'ODD' ? 'Park odd-numbered' : 'Check sign'}
+                    </Text>
+                  </>
+                )}
+              </View>
+              {!civic.loading && (
+                <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
+                  {parking.mode === 'daily' ? 'Daily' : 'All month'}
+                  {getParkingModeNote() ? `\n${getParkingModeNote()}` : ''}
+                </Text>
               )}
-            </View>
-            {!civic.loading && (
-              <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
-                {parking.mode === 'daily' ? 'Daily' : 'All month'}
-                {getParkingModeNote() ? `\n${getParkingModeNote()}` : ''}
-              </Text>
-            )}
-            <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
+              <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -758,15 +762,13 @@ const styles = StyleSheet.create({
   forecastLow: { fontFamily: 'Outfit', fontSize: 11, color: '#475569' },
 
   // Today in Jamestown grid
-  todayGrid: { flexDirection: 'column', gap: 8 },
-  todayCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  todayCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  categoryIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 1 },
-  todayCardTitle: { fontFamily: 'Editorial', fontSize: 16, color: dark.text.primary, lineHeight: 20 },
-  todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted },
-  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginBottom: 2 },
-  todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', marginTop: 2 },
+  todayGrid: { flexDirection: 'column', marginHorizontal: -16 },
+  todayCard: { paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
+  todayCardTitle: { fontFamily: 'Editorial', fontSize: 16, color: dark.text.primary, lineHeight: 21 },
+  todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 1 },
+  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginTop: 1 },
+  todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', textAlign: 'right' },
 
   // Delay banner
   delayBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: 10, marginTop: 8 },
