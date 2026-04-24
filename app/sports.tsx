@@ -1270,7 +1270,7 @@ export default function SportsScreen() {
             ) : (
               <LinearGradient
                 colors={['rgba(203,213,225,0.18)', 'rgba(15,23,42,0.0)']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }}
                 style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, justifyContent: 'space-between', flex: 1 }}
               >
                 {(data?.mlb ?? []).map(t => (
@@ -1535,52 +1535,84 @@ export default function SportsScreen() {
         animationType="slide"
         onRequestClose={() => setDetailGame(null)}
       >
-        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setDetailGame(null)} />
-        {detailGame && (
-          <View style={styles.sheetCard}>
-            <View style={styles.sheetHandle} />
-            <TouchableOpacity onPress={() => setDetailGame(null)} style={styles.sheetClose}>
-              <Ionicons name="close" size={18} color="rgba(255,255,255,0.4)" />
-            </TouchableOpacity>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={[StyleSheet.absoluteFillObject, styles.sheetBackdrop]} activeOpacity={1} onPress={() => setDetailGame(null)} />
+        {detailGame && (() => {
+          const bgSrc = detailGame.bgKey === 'baseball' ? require('../public/ballpark.jpg')
+            : detailGame.bgKey === 'hockey' ? require('../public/hockey.jpg') : null;
+          const matchParts = detailGame.matchup.split(' ');
+          const ourAbbr = matchParts[0];
+          const oppAbbr = matchParts[2];
+          const accentRGB = detailGame.accent === ACC.sabres ? '96,165,250' : '167,139,250';
+          const rows = [
+            { icon: 'calendar-outline', label: 'Date', value: [detailGame.dateLabel, detailGame.time].filter(Boolean).join(' · ') },
+            { icon: 'location-outline',  label: 'Venue', value: detailGame.venue },
+            { icon: 'tv-outline',        label: 'Broadcast', value: detailGame.broadcast },
+            { icon: 'baseball-outline',  label: 'Our pitcher', value: detailGame.probablePitcher },
+            { icon: 'baseball-outline',  label: 'Their pitcher', value: detailGame.oppProbablePitcher },
+          ].filter(r => r.value) as { icon: string; label: string; value: string }[];
 
-            {/* Sport label */}
-            <Text style={[styles.sheetSport, { color: detailGame.accent }]}>{detailGame.sport}</Text>
+          return (
+            <ImageBackground
+              source={bgSrc ?? undefined}
+              style={styles.sheetCard}
+              imageStyle={{ opacity: 0.1, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+              resizeMode="cover"
+            >
+              {/* Accent gradient wash */}
+              <LinearGradient
+                colors={[`rgba(${accentRGB},0.18)`, 'transparent']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
+                style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 24, borderTopRightRadius: 24 }]}
+                pointerEvents="none"
+              />
 
-            {/* Logos + matchup */}
-            <View style={styles.sheetMatchupRow}>
-              {detailGame.ourLogoUrl ? (
-                <Image source={{ uri: detailGame.ourLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
-              ) : <View style={styles.sheetLogo} />}
-              <View style={styles.sheetVsBlock}>
+              <View style={styles.sheetHandle} />
+              <TouchableOpacity onPress={() => setDetailGame(null)} style={styles.sheetClose}>
+                <Ionicons name="close" size={18} color="rgba(255,255,255,0.45)" />
+              </TouchableOpacity>
+
+              <Text style={[styles.sheetSport, { color: detailGame.accent }]}>{detailGame.sport}</Text>
+
+              {/* Team logos */}
+              <View style={styles.sheetMatchupRow}>
+                <View style={styles.sheetTeamBlock}>
+                  {detailGame.ourLogoUrl
+                    ? <Image source={{ uri: detailGame.ourLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
+                    : <View style={styles.sheetLogo} />}
+                  <Text style={styles.sheetTeamAbbr}>{ourAbbr}</Text>
+                  {detailGame.record ? <Text style={styles.sheetRecord}>{detailGame.record}</Text> : null}
+                </View>
+
                 <Text style={styles.sheetVs}>{detailGame.isHome ? 'vs' : '@'}</Text>
-                {detailGame.record ? <Text style={styles.sheetRecord}>{detailGame.record}</Text> : null}
+
+                <View style={styles.sheetTeamBlock}>
+                  {detailGame.oppLogoUrl
+                    ? <Image source={{ uri: detailGame.oppLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
+                    : <View style={styles.sheetLogo} />}
+                  <Text style={styles.sheetTeamAbbr}>{oppAbbr}</Text>
+                </View>
               </View>
-              {detailGame.oppLogoUrl ? (
-                <Image source={{ uri: detailGame.oppLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
-              ) : <View style={styles.sheetLogo} />}
-            </View>
 
-            {detailGame.opponentName ? (
-              <Text style={styles.sheetOppName}>{detailGame.isHome ? 'vs ' : '@ '}{detailGame.opponentName}</Text>
-            ) : null}
+              {detailGame.opponentName ? (
+                <Text style={styles.sheetOppName}>
+                  {detailGame.isHome ? 'vs ' : '@ '}{detailGame.opponentName}
+                </Text>
+              ) : null}
 
-            <View style={styles.sheetDivider} />
+              {rows.length > 0 && <View style={styles.sheetDivider} />}
 
-            {/* Detail rows */}
-            {[
-              { label: 'Date', value: detailGame.dateLabel && detailGame.time ? `${detailGame.dateLabel} · ${detailGame.time}` : detailGame.dateLabel || detailGame.time },
-              { label: 'Venue', value: detailGame.venue },
-              { label: 'Broadcast', value: detailGame.broadcast },
-              { label: 'Starting pitcher', value: detailGame.probablePitcher },
-              { label: 'Opp. pitcher', value: detailGame.oppProbablePitcher },
-            ].filter(r => r.value).map(r => (
-              <View key={r.label} style={styles.sheetRow}>
-                <Text style={styles.sheetRowLabel}>{r.label}</Text>
-                <Text style={styles.sheetRowValue}>{r.value}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+              {rows.map(r => (
+                <View key={r.label} style={styles.sheetRow}>
+                  <Ionicons name={r.icon as any} size={14} color="rgba(255,255,255,0.3)" style={{ marginTop: 1, width: 18 }} />
+                  <Text style={styles.sheetRowLabel}>{r.label}</Text>
+                  <Text style={styles.sheetRowValue}>{r.value}</Text>
+                </View>
+              ))}
+            </ImageBackground>
+          );
+        })()}
+        </View>
       </Modal>
 
     </ThemedBackground>
@@ -1756,24 +1788,24 @@ const styles = StyleSheet.create({
   mlbCommunityPick: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', marginTop: 1 },
 
   // Game detail bottom sheet
-  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheetBackdrop: { backgroundColor: 'rgba(0,0,0,0.65)' },
   sheetCard: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#0a1628', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: 'rgba(8,16,32,0.96)', borderTopLeftRadius: 24, borderTopRightRadius: 24,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-    padding: 24, paddingBottom: 48,
+    paddingHorizontal: 24, paddingBottom: 52, overflow: 'hidden',
   },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 20 },
-  sheetClose: { position: 'absolute', top: 20, right: 20, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
-  sheetSport: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 14 },
-  sheetMatchupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 8 },
-  sheetLogo: { width: 60, height: 60 },
-  sheetVsBlock: { alignItems: 'center', gap: 4 },
-  sheetVs: { fontFamily: 'Syne', fontSize: 13, color: 'rgba(255,255,255,0.4)' },
-  sheetRecord: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
-  sheetOppName: { fontFamily: 'Editorial', fontSize: 18, color: '#fff', textAlign: 'center', marginBottom: 16 },
-  sheetDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 16 },
-  sheetRow: { flexDirection: 'row', gap: 12, paddingVertical: 7 },
-  sheetRowLabel: { fontFamily: 'DMSans_600SemiBold', fontSize: 11, color: 'rgba(255,255,255,0.35)', minWidth: 110, flexShrink: 0 },
-  sheetRowValue: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.75)', flex: 1, lineHeight: 17 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginTop: 12, marginBottom: 20 },
+  sheetClose: { position: 'absolute', top: 16, right: 20, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  sheetSport: { fontFamily: 'DMSans_600SemiBold', fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 20 },
+  sheetMatchupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 10 },
+  sheetTeamBlock: { alignItems: 'center', gap: 6, flex: 1 },
+  sheetLogo: { width: 72, height: 72 },
+  sheetTeamAbbr: { fontFamily: 'DMSans_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5 },
+  sheetVs: { fontFamily: 'DMSans_700Bold', fontSize: 20, color: 'rgba(255,255,255,0.25)', marginBottom: 28 },
+  sheetRecord: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
+  sheetOppName: { fontFamily: 'Editorial', fontSize: 20, color: '#fff', textAlign: 'center', marginBottom: 20, lineHeight: 26 },
+  sheetDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 12 },
+  sheetRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
+  sheetRowLabel: { fontFamily: 'DMSans_600SemiBold', fontSize: 11, color: 'rgba(255,255,255,0.35)', width: 100, flexShrink: 0 },
+  sheetRowValue: { fontFamily: 'DMSans_500Medium', fontSize: 12, color: 'rgba(255,255,255,0.8)', flex: 1, lineHeight: 17 },
 });
