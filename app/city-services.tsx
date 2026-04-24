@@ -66,9 +66,6 @@ function ServiceCard({ service }: { service: CityService }) {
       <View style={[svc.stripe, { backgroundColor: service.badgeColor }]} />
       <TouchableOpacity activeOpacity={0.85} onPress={() => setExpanded(e => !e)}>
         <View style={svc.cardTop}>
-          <View style={[svc.iconWrap, { backgroundColor: `rgba(${rgb},0.15)` }]}>
-            <Ionicons name={service.icon as any} size={16} color={service.badgeColor} />
-          </View>
           <View style={{ flex: 1 }}>
             <Text style={svc.title}>{service.title}</Text>
             <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]}>{service.summary}</Text>
@@ -137,15 +134,14 @@ function ServiceCard({ service }: { service: CityService }) {
 const svc = StyleSheet.create({
   card: {
     backgroundColor: dark.surface,
-    borderWidth: 1, borderColor: dark.border,
-    borderRadius: 16, overflow: 'hidden', marginBottom: 8,
+    borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
   },
   stripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, zIndex: 10 },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  iconWrap: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  title: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.1 },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 20, paddingVertical: 14 },
+  title: { fontFamily: 'Editorial', fontSize: 16, fontWeight: '700', color: '#fff', lineHeight: 21 },
   summary: { fontFamily: 'Outfit', fontSize: 10, marginTop: 2, lineHeight: 14 },
-  expanded: { borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
+  expanded: { borderTopWidth: 1, paddingHorizontal: 20, paddingVertical: 12, gap: 12 },
   detailGrid: { gap: 8 },
   detailRow: { flexDirection: 'row', gap: 12 },
   detailLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', minWidth: 80, flexShrink: 0, lineHeight: 16 },
@@ -249,7 +245,7 @@ const cs = StyleSheet.create({
   chipTextActive: { color: dark.category.city },
 
   content: { paddingBottom: 48 },
-  list: { paddingHorizontal: 16 },
+  list: { paddingHorizontal: 0 },
   emptyText: { fontFamily: 'Outfit', fontSize: 14, color: dark.text.subtle, textAlign: 'center', marginTop: 32 },
   footer: { fontFamily: 'Outfit', fontSize: 11, color: '#475569', textAlign: 'center', marginTop: 24, paddingHorizontal: 16 },
 });
