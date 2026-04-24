@@ -479,13 +479,13 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     </Text>
                     {/* Source + time */}
                     <Text style={styles.heroBannerMeta} numberOfLines={1}>
-                      {topStory.source ? `${topStory.source} · ` : ''}{relativeTime(topStory.pubDate)}
+                      {relativeTime(topStory.pubDate)}
                     </Text>
                   </View>
                   {/* Body */}
                   <View style={styles.heroBody}>
                     <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
-                    <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'}</Text>
+                    <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'} · {relativeTime(topStory.pubDate)}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   todayCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   categoryIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  todayCardTitle: { fontFamily: 'Syne', fontSize: 17, fontWeight: '700', color: dark.text.primary, lineHeight: 22, marginBottom: 4 },
+  todayCardTitle: { fontFamily: 'Editorial', fontSize: 18, color: dark.text.primary, lineHeight: 23, marginBottom: 4 },
   todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted },
   todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginBottom: 2 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', marginTop: 2 },
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
   },
   heroBadgeText: { fontFamily: 'DMSans_700Bold', fontSize: 10, letterSpacing: 0.8 },
   heroBody: { padding: 14 },
-  heroTitle: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: dark.text.primary, lineHeight: 22, letterSpacing: -0.2 },
+  heroTitle: { fontFamily: 'Editorial', fontSize: 17, color: dark.text.primary, lineHeight: 23 },
   heroMeta: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 6 },
 
   // Event card
@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
   eventDateNum: { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fff', lineHeight: 28, marginTop: 2 },
   eventTime: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 4 },
   eventBody: { flex: 1, paddingRight: 14, paddingVertical: 14, justifyContent: 'center' },
-  eventTitle: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: dark.text.primary, lineHeight: 20, letterSpacing: -0.1 },
+  eventTitle: { fontFamily: 'Editorial', fontSize: 16, color: dark.text.primary, lineHeight: 21 },
   eventVenue: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 4 },
   eventCategory: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: 6 },
 
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   liveChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   liveLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', color: '#fb7185', letterSpacing: 1 },
   epNumber: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', color: dark.text.subtle, letterSpacing: 0.5 },
-  mediaTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: dark.text.primary, lineHeight: 18 },
+  mediaTitle: { fontFamily: 'Editorial', fontSize: 14, color: dark.text.primary, lineHeight: 19 },
   mediaSub: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 2 },
   playBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
