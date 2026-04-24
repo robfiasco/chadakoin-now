@@ -22,15 +22,6 @@ import {
   DMSans_700Bold,
   DMSans_800ExtraBold,
 } from '@expo-google-fonts/dm-sans';
-import {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
-import {
-  Sora_600SemiBold,
-  Sora_700Bold,
-} from '@expo-google-fonts/sora';
 
 // Screens imported as components so PagerView can render them natively
 import HomeScreen from './index';
@@ -178,17 +169,10 @@ export default function RootLayout() {
     DMSans_600SemiBold,
     DMSans_700Bold,
     DMSans_800ExtraBold,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    SpaceGrotesk_700Bold,
-    Sora_600SemiBold,
-    Sora_700Bold,
-    // 'Syne' alias → Space Grotesk Bold (display headers)
-    // 'Outfit' alias → DM Sans (body text, labels)
-    // 'Editorial' alias → Sora Bold (editorial headlines)
-    Syne: SpaceGrotesk_700Bold,
-    Outfit: DMSans_500Medium,
-    Editorial: Sora_700Bold,
+    // All three aliases point to DM Sans — single typeface throughout the app
+    Syne: DMSans_700Bold,        // display headers, UI chrome
+    Outfit: DMSans_500Medium,    // body text, labels, meta
+    Editorial: DMSans_800ExtraBold, // article headlines, hero titles
   });
 
   useEffect(() => {
