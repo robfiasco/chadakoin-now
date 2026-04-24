@@ -602,14 +602,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       {/* Settings overlay */}
       {settingsOpen && (
         <View style={styles.overlay}>
-          <SettingsScreen />
-          <TouchableOpacity
-            onPress={() => setSettingsOpen(false)}
-            activeOpacity={0.7}
-            style={styles.overlayClose}
-          >
-            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
-          </TouchableOpacity>
+          <SettingsScreen onClose={() => setSettingsOpen(false)} />
         </View>
       )}
 

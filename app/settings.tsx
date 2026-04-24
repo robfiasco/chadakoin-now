@@ -30,7 +30,7 @@ const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
   { id: 'terms',    label: 'Terms of use',   icon: 'document-text-outline' },
 ];
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const { theme, themeId, setThemeId } = useTheme();
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -63,8 +63,15 @@ export default function SettingsScreen() {
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={[styles.subhead, { color: theme.acc55 }]}>Chadakoin Now</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={[styles.subhead, { color: theme.acc55 }]}>Chadakoin Now</Text>
+        </View>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -240,7 +247,8 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header:  { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40 },
+  header:  { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, flexDirection: 'row', alignItems: 'flex-start' },
+  closeBtn: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: 6, marginTop: 4 },
   title:   { fontFamily: 'DMSans_700Bold', fontSize: 28, color: '#fff', letterSpacing: -0.5, lineHeight: 36 },
   subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4, letterSpacing: 1 },
   content: { padding: 16, paddingTop: 4, paddingBottom: 48, gap: 12 },
