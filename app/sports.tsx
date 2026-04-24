@@ -910,6 +910,7 @@ export default function SportsScreen() {
           subtitle="NJCAA · Jamestown Community College"
           defaultOpen={false}
           glassWeb={glassWeb}
+          bgImage={Platform.OS === 'web' ? { uri: '/jcc.jpg' } : require('../public/jcc.jpg')}
           glanceRow={
             loading ? (
               <SkeletonPulse width="60%" height={14} borderRadius={4} accRGB="52,211,153" />
