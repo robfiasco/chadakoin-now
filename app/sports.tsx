@@ -24,7 +24,7 @@ interface NextUpItem {
   // Detail sheet extras
   venue?: string; broadcast?: string;
   probablePitcher?: string; oppProbablePitcher?: string;
-  record?: string; opponentName?: string; isHome?: boolean;
+  record?: string; oppRecord?: string; opponentName?: string; isHome?: boolean;
 }
 interface GameResult {
   date: string; status: 'final' | 'live' | 'upcoming';
@@ -48,6 +48,7 @@ interface MLBNextGame {
   date: string; gameTime?: string | null; opponent: string;
   opponentAbbr?: string; opponentId?: number; isHome: boolean;
   probablePitcher?: string | null; oppProbablePitcher?: string | null;
+  venue?: string | null; oppRecord?: string | null;
 }
 interface MLBTeam {
   id: number; name: string; abbr: string; record?: string;
@@ -194,7 +195,9 @@ function parseGame(event: any): GameResult | null {
       date: event.date, status,
       opponentAbbr: them.team?.abbreviation ?? '???',
       opponentName: them.team?.displayName ?? 'Opponent',
-      opponentLogo: them.team?.logo ?? '',
+      opponentLogo: them.team?.abbreviation
+        ? `https://a.espncdn.com/i/teamlogos/nhl/500/${them.team.abbreviation.toLowerCase()}.png`
+        : (them.team?.logo ?? ''),
       ourScore: us.score ?? '—', theirScore: them.score ?? '—',
       isHome: us.homeAway === 'home',
       won: status === 'final' ? (us.winner === true) : null,
@@ -275,7 +278,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
 
     const results = await Promise.all(MLB_TEAMS.map(async t => {
       try {
-        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team,probablePitcher,linescore`;
+        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
         const [res, statsRes] = await Promise.all([
           fetch(scheduleUrl),
           fetch(`https://statsapi.mlb.com/api/v1/teams/${t.id}/stats?stats=season&group=hitting,pitching&season=${year}`),
@@ -328,14 +331,17 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
               const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
               // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
+              const oppRec = them?.team?.record;
               nextGame = {
                 date: dateObj.date, gameTime: g.gameDate ?? null,
                 opponent: them?.team?.name ?? '???',
                 opponentAbbr: them?.team?.abbreviation ?? '',
                 opponentId: them?.team?.id,
                 isHome: weAreHome,
-                probablePitcher: probUs?.lastName ?? null,
-                oppProbablePitcher: probThem?.lastName ?? null,
+                probablePitcher: probUs?.fullName ?? probUs?.lastName ?? null,
+                oppProbablePitcher: probThem?.fullName ?? probThem?.lastName ?? null,
+                venue: g.venue?.name ?? null,
+                oppRecord: oppRec ? `${oppRec.wins}-${oppRec.losses}` : null,
               };
             }
           }
@@ -709,9 +715,11 @@ export default function SportsScreen() {
             ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
             oppLogoUrl: oppAbbrRaw ? `https://a.espncdn.com/i/teamlogos/mlb/500/${oppAbbrRaw.toLowerCase()}.png` : undefined,
             bgKey: 'baseball',
-            record: team.record, opponentName: ng.opponent, isHome: ng.isHome,
+            record: team.record, oppRecord: ng.oppRecord || undefined,
+            opponentName: ng.opponent, isHome: ng.isHome,
             probablePitcher: ng.probablePitcher || undefined,
             oppProbablePitcher: ng.oppProbablePitcher || undefined,
+            venue: ng.venue || undefined,
           });
         }
       }
@@ -1528,14 +1536,9 @@ export default function SportsScreen() {
         </View>
       </Modal>
 
-      {/* ── Game Detail Sheet ───────────────────────────────── */}
-      <Modal
-        visible={!!detailGame}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDetailGame(null)}
-      >
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* ── Game Detail Sheet — in-tree overlay so it stays inside the app container on web ── */}
+      {!!detailGame && (
+        <View style={styles.sheetOverlay}>
           <TouchableOpacity style={[StyleSheet.absoluteFillObject, styles.sheetBackdrop]} activeOpacity={1} onPress={() => setDetailGame(null)} />
         {detailGame && (() => {
           const bgSrc = detailGame.bgKey === 'baseball' ? require('../public/ballpark.jpg')
@@ -1591,6 +1594,7 @@ export default function SportsScreen() {
                     ? <Image source={{ uri: detailGame.oppLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
                     : <View style={styles.sheetLogo} />}
                   <Text style={styles.sheetTeamAbbr}>{oppAbbr}</Text>
+                  {detailGame.oppRecord ? <Text style={styles.sheetRecord}>{detailGame.oppRecord}</Text> : null}
                 </View>
               </View>
 
@@ -1613,7 +1617,7 @@ export default function SportsScreen() {
           );
         })()}
         </View>
-      </Modal>
+      )}
 
     </ThemedBackground>
   );
@@ -1787,7 +1791,8 @@ const styles = StyleSheet.create({
   mlbStreakBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
   mlbCommunityPick: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', marginTop: 1 },
 
-  // Game detail bottom sheet
+  // Game detail bottom sheet — in-tree overlay (not Modal) so it respects app container on web
+  sheetOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', zIndex: 500 },
   sheetBackdrop: { backgroundColor: 'rgba(0,0,0,0.65)' },
   sheetCard: {
     backgroundColor: 'rgba(8,16,32,0.96)', borderTopLeftRadius: 24, borderTopRightRadius: 24,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,21 +14,24 @@ type FilterOption = 'all' | ServiceStatus;
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
   active: 'OPEN NOW',
+  imminent: 'STARTS MAY 1',
   'coming-up': 'COMING UP',
   'year-round': 'YEAR ROUND',
 };
 
 const STATUS_COLORS: Record<ServiceStatus, string> = {
   active: dark.category.recycling,    // emerald
+  imminent: '#f97316',                // orange — urgent but not red
   'coming-up': dark.category.film,    // amber
   'year-round': dark.category.city,   // cyan
 };
 
 function StatusPill({ status }: { status: ServiceStatus }) {
   const color = STATUS_COLORS[status];
+  const pulse = status === 'active' || status === 'imminent';
   return (
     <View style={[pill.wrap, { borderColor: `${color}40`, backgroundColor: `${color}18` }]}>
-      {status === 'active' && <PulsingDot color={color} size={6} />}
+      {pulse && <PulsingDot color={color} size={6} />}
       <Text style={[pill.text, { color }]}>{STATUS_LABELS[status]}</Text>
     </View>
   );
@@ -125,6 +128,23 @@ function ServiceCard({ service }: { service: CityService }) {
               <Text style={svc.tipText}>{service.tip}</Text>
             </View>
           )}
+          {service.links && service.links.length > 0 && (
+            <View style={svc.linksBlock}>
+              <Text style={[svc.linksHeader, { color: `rgba(${rgb},0.45)` }]}>MAPS & DOCUMENTS</Text>
+              {service.links.map(link => (
+                <TouchableOpacity
+                  key={link.url}
+                  style={[svc.linkRow, { borderColor: `rgba(${rgb},0.15)`, backgroundColor: `rgba(${rgb},0.06)` }]}
+                  activeOpacity={0.7}
+                  onPress={() => Linking.openURL(link.url)}
+                >
+                  <Ionicons name="map-outline" size={13} color={`rgba(${rgb},0.7)`} style={{ marginTop: 1 }} />
+                  <Text style={[svc.linkText, { color: `rgba(${rgb},0.85)` }]}>{link.label}</Text>
+                  <Ionicons name="open-outline" size={12} color={`rgba(${rgb},0.4)`} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -159,6 +179,11 @@ const svc = StyleSheet.create({
   scheduleAreas: { fontFamily: 'DMSans_500Medium', fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
   scheduleWarnRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   scheduleWarnText: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: '#f59e0b', lineHeight: 15 },
+
+  linksBlock: { gap: 6 },
+  linksHeader: { fontFamily: 'DMSans_600SemiBold', fontSize: 9, letterSpacing: 1.5, marginBottom: 2 },
+  linkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  linkText: { fontFamily: 'DMSans_500Medium', fontSize: 12, flex: 1, lineHeight: 17 },
 });
 
 const FILTERS: { id: FilterOption; label: string }[] = [
@@ -174,7 +199,12 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
 
-  const filtered = CITY_SERVICES.filter(s => filter === 'all' || s.status === filter);
+  const filtered = CITY_SERVICES.filter(s =>
+    filter === 'all' ||
+    s.status === filter ||
+    // "coming-up" filter chip also catches imminent items
+    (filter === 'coming-up' && s.status === 'imminent')
+  );
 
   return (
     <ThemedBackground>

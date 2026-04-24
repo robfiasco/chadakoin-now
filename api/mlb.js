@@ -56,7 +56,7 @@ async function fetchTeamGames(teamId) {
   const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
   const fmt   = d => d.toISOString().split('T')[0];
-  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team,probablePitcher,linescore`;
+  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
 
   const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) return { games: [], nextGame: null, liveGame: null };
@@ -104,6 +104,7 @@ async function fetchTeamGames(teamId) {
         const them = weAreHome ? g.teams?.away : g.teams?.home;
         const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
         const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
+        const oppRec   = them?.team?.record;
         nextGame = {
           date:               dateObj.date,
           gameTime:           g.gameDate ?? null,
@@ -111,8 +112,10 @@ async function fetchTeamGames(teamId) {
           opponentAbbr:       them?.team?.abbreviation ?? '',
           opponentId:         them?.team?.id,
           isHome:             weAreHome,
-          probablePitcher:    probUs?.lastName   ?? null,
-          oppProbablePitcher: probThem?.lastName ?? null,
+          probablePitcher:    probUs?.fullName  ?? probUs?.lastName  ?? null,
+          oppProbablePitcher: probThem?.fullName ?? probThem?.lastName ?? null,
+          venue:              g.venue?.name ?? null,
+          oppRecord:          oppRec ? `${oppRec.wins}-${oppRec.losses}` : null,
         };
       }
     }

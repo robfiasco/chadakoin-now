@@ -173,15 +173,12 @@ function HeroCard({ item }: { item: NewsItem }) {
           {category.toUpperCase()}
         </Text>
 
-        {/* Row: TOP STORY pill left · source/time right */}
+        {/* Row: TOP STORY pill only — source/time shown in body */}
         <View style={hero.headerTop}>
           <View style={[hero.topBadge, { borderColor: `${bar}50`, backgroundColor: `${bar}14` }]}>
             <View style={[hero.badgeDot, { backgroundColor: bar }]} />
             <Text style={[hero.topBadgeText, { color: bar }]}>TOP STORY</Text>
           </View>
-          <Text style={hero.headerMeta} numberOfLines={1}>
-            {item.source ? `${item.source} · ` : ''}{relativeTime(item.pubDate)}
-          </Text>
         </View>
       </View>
 
@@ -388,13 +385,8 @@ export default function NewsScreen() {
           </View>
         ) : (
           <>
-            {/* Top story as a compact row under its own section header */}
-            {hero && (
-              <View style={{ marginBottom: 8 }}>
-                <SectionHeader label="Top Story" />
-                <NewsRow item={hero} />
-              </View>
-            )}
+            {/* Hero banner — no duplicate source/time in header */}
+            {hero && <HeroCard item={hero} />}
 
             {/* Bucketed sections */}
             {buckets.map(bucket => (

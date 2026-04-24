@@ -10,7 +10,7 @@ export interface ScheduleEntry {
   warn?: string;  // optional warning note
 }
 
-export type ServiceStatus = 'active' | 'coming-up' | 'year-round';
+export type ServiceStatus = 'active' | 'imminent' | 'coming-up' | 'year-round';
 
 export interface CityService {
   id: string;
@@ -24,6 +24,7 @@ export interface CityService {
   details: ServiceDetail[];
   schedule?: ScheduleEntry[];
   tip?: string;
+  links?: { label: string; url: string }[];
 }
 
 export const CITY_SERVICES: CityService[] = [
@@ -53,7 +54,7 @@ export const CITY_SERVICES: CityService[] = [
     title: 'Water Main Flushing',
     badge: 'MAY 1–13',
     badgeColor: '#38bdf8',
-    status: 'coming-up',
+    status: 'imminent',
     summary: 'BPU Spring 2026 · May 1–13\nExpand to find your area',
     details: [
       { label: 'Hours',      value: '8:00 AM – 4:30 PM (Mon–Fri)' },
@@ -72,6 +73,10 @@ export const CITY_SERVICES: CityService[] = [
       { date: 'May 13',   day: 'Wed',     areas: 'SE Jamestown — Barrows, Sciota, Virginia Blvd, Collins' },
     ],
     tip: 'Before your flush day: set aside water for drinking/cooking, and check the tap before doing laundry — discolored water can stain clothes. Never add discolored water to your hot water tank. If laundry is affected, don\'t dry it — rewash with rust remover (free at BPU Customer Service, 661-1660). Discoloration clears in 12–24 hours.',
+    links: [
+      { label: 'Map 1 — Falconer, E. Ellicott, Jamestown, W. Ellicott, Celoron', url: 'https://www.jamestownnybpu.gov/DocumentCenter/View/3976/BPU-Spring-2026-Water-Main-Flushing-1' },
+      { label: 'Map 2 — Celoron, W. Ellicott, Lakewood, Busti, N. Harmony', url: 'https://www.jamestownnybpu.gov/DocumentCenter/View/3978/BPU-Spring-2026-Water-Main-Flushing-2' },
+    ],
   },
   {
     id: 'bulktrash',
