@@ -606,6 +606,8 @@ export default function SportsScreen() {
   const [nextUpIdx, setNextUpIdx] = useState(0);
   const [showSkunksSchedule, setShowSkunksSchedule] = useState(false);
   const [detailGame, setDetailGame] = useState<NextUpItem | null>(null);
+  const [sheetCarouselIdx, setSheetCarouselIdx] = useState(0);
+  const sheetScrollRef = useRef<any>(null);
   const { width: winWidth } = useWindowDimensions();
   const cardWidth = winWidth - 32; // 16px padding each side
 
@@ -879,7 +881,13 @@ export default function SportsScreen() {
                         </View>
                       </View>
                     );
-                    const handlePress = () => !nextUp.isLive && setDetailGame(nextUp);
+                    const handlePress = () => {
+                      if (nextUp.isLive) return;
+                      const nonLive = nextUpItems.filter(g => !g.isLive);
+                      const si = nonLive.findIndex(g => g.ts === nextUp.ts);
+                      setSheetCarouselIdx(si >= 0 ? si : 0);
+                      setDetailGame(nextUp);
+                    };
                     if (Platform.OS === 'web' && bgUri) {
                       return (
                         <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
@@ -1277,8 +1285,8 @@ export default function SportsScreen() {
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
               <LinearGradient
-                colors={['rgba(203,213,225,0.18)', 'rgba(15,23,42,0.0)']}
-                start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }}
+                colors={['rgba(100,116,139,0.35)', 'rgba(203,213,225,0.55)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, justifyContent: 'space-between', flex: 1 }}
               >
                 {(data?.mlb ?? []).map(t => (
@@ -1536,88 +1544,114 @@ export default function SportsScreen() {
         </View>
       </Modal>
 
-      {/* ── Game Detail Sheet — in-tree overlay so it stays inside the app container on web ── */}
-      {!!detailGame && (
-        <View style={styles.sheetOverlay}>
-          <TouchableOpacity style={[StyleSheet.absoluteFillObject, styles.sheetBackdrop]} activeOpacity={1} onPress={() => setDetailGame(null)} />
-        {detailGame && (() => {
-          const bgSrc = detailGame.bgKey === 'baseball' ? require('../public/ballpark.jpg')
-            : detailGame.bgKey === 'hockey' ? require('../public/hockey.jpg') : null;
-          const matchParts = detailGame.matchup.split(' ');
-          const ourAbbr = matchParts[0];
-          const oppAbbr = matchParts[2];
-          const accentRGB = detailGame.accent === ACC.sabres ? '96,165,250' : '167,139,250';
-          const rows = [
-            { icon: 'calendar-outline', label: 'Date', value: [detailGame.dateLabel, detailGame.time].filter(Boolean).join(' · ') },
-            { icon: 'location-outline',  label: 'Venue', value: detailGame.venue },
-            { icon: 'tv-outline',        label: 'Broadcast', value: detailGame.broadcast },
-            { icon: 'baseball-outline',  label: 'Our pitcher', value: detailGame.probablePitcher },
-            { icon: 'baseball-outline',  label: 'Their pitcher', value: detailGame.oppProbablePitcher },
-          ].filter(r => r.value) as { icon: string; label: string; value: string }[];
-
-          return (
+      {/* ── Game Detail Sheet — carousel, in-tree overlay ── */}
+      {!!detailGame && (() => {
+        const sheetItems = nextUpItems.filter(g => !g.isLive);
+        const currentGame = sheetItems[sheetCarouselIdx] ?? sheetItems[0];
+        const bgSrc = currentGame?.bgKey === 'baseball' ? require('../public/ballpark.jpg')
+          : currentGame?.bgKey === 'hockey' ? require('../public/hockey.jpg') : null;
+        return (
+          <View style={styles.sheetOverlay}>
+            <TouchableOpacity style={[StyleSheet.absoluteFillObject, styles.sheetBackdrop]} activeOpacity={1} onPress={() => setDetailGame(null)} />
             <ImageBackground
               source={bgSrc ?? undefined}
               style={styles.sheetCard}
               imageStyle={{ opacity: 0.1, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
               resizeMode="cover"
             >
-              {/* Accent gradient wash */}
-              <LinearGradient
-                colors={[`rgba(${accentRGB},0.18)`, 'transparent']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
-                style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 24, borderTopRightRadius: 24 }]}
-                pointerEvents="none"
-              />
-
               <View style={styles.sheetHandle} />
               <TouchableOpacity onPress={() => setDetailGame(null)} style={styles.sheetClose}>
                 <Ionicons name="close" size={18} color="rgba(255,255,255,0.45)" />
               </TouchableOpacity>
 
-              <Text style={[styles.sheetSport, { color: detailGame.accent }]}>{detailGame.sport}</Text>
+              {/* Carousel pages */}
+              <ScrollView
+                ref={sheetScrollRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                contentOffset={{ x: sheetCarouselIdx * winWidth, y: 0 }}
+                onMomentumScrollEnd={e => setSheetCarouselIdx(Math.round(e.nativeEvent.contentOffset.x / winWidth))}
+                style={{ marginHorizontal: -24 }}
+              >
+                {sheetItems.map((game, i) => {
+                  const matchParts = game.matchup.split(' ');
+                  const ourAbbr = matchParts[0];
+                  const oppAbbr = matchParts[2];
+                  const accentRGB = game.accent === ACC.sabres ? '96,165,250' : '167,139,250';
+                  const homePitcher = game.isHome ? game.probablePitcher : game.oppProbablePitcher;
+                  const awayPitcher = game.isHome ? game.oppProbablePitcher : game.probablePitcher;
+                  const rows = [
+                    { icon: 'calendar-outline', label: 'Date',          value: [game.dateLabel, game.time].filter(Boolean).join(' · ') },
+                    { icon: 'location-outline',  label: 'Venue',         value: game.venue },
+                    { icon: 'tv-outline',        label: 'Broadcast',     value: game.broadcast },
+                    { icon: 'baseball-outline',  label: 'Home pitcher',  value: homePitcher },
+                    { icon: 'baseball-outline',  label: 'Away pitcher',  value: awayPitcher },
+                  ].filter(r => r.value) as { icon: string; label: string; value: string }[];
 
-              {/* Team logos */}
-              <View style={styles.sheetMatchupRow}>
-                <View style={styles.sheetTeamBlock}>
-                  {detailGame.ourLogoUrl
-                    ? <Image source={{ uri: detailGame.ourLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
-                    : <View style={styles.sheetLogo} />}
-                  <Text style={styles.sheetTeamAbbr}>{ourAbbr}</Text>
-                  {detailGame.record ? <Text style={styles.sheetRecord}>{detailGame.record}</Text> : null}
+                  return (
+                    <View key={i} style={{ width: winWidth, paddingHorizontal: 24, paddingBottom: 4 }}>
+                      {/* Accent gradient wash */}
+                      <LinearGradient
+                        colors={[`rgba(${accentRGB},0.18)`, 'transparent']}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
+                        style={StyleSheet.absoluteFill}
+                        pointerEvents="none"
+                      />
+
+                      <Text style={[styles.sheetSport, { color: game.accent }]}>{game.sport}</Text>
+
+                      {/* Team logos */}
+                      <View style={styles.sheetMatchupRow}>
+                        <View style={styles.sheetTeamBlock}>
+                          {game.ourLogoUrl
+                            ? <Image source={{ uri: game.ourLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
+                            : <View style={styles.sheetLogo} />}
+                          <Text style={styles.sheetTeamAbbr}>{ourAbbr}</Text>
+                          {game.record ? <Text style={styles.sheetRecord}>{game.record}</Text> : null}
+                        </View>
+                        <Text style={styles.sheetVs}>{game.isHome ? 'vs' : '@'}</Text>
+                        <View style={styles.sheetTeamBlock}>
+                          {game.oppLogoUrl
+                            ? <Image source={{ uri: game.oppLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
+                            : <View style={styles.sheetLogo} />}
+                          <Text style={styles.sheetTeamAbbr}>{oppAbbr}</Text>
+                          {game.oppRecord ? <Text style={styles.sheetRecord}>{game.oppRecord}</Text> : null}
+                        </View>
+                      </View>
+
+                      {game.opponentName ? (
+                        <Text style={styles.sheetOppName}>
+                          {game.isHome ? 'vs ' : '@ '}{game.opponentName}
+                        </Text>
+                      ) : null}
+
+                      {rows.length > 0 && <View style={styles.sheetDivider} />}
+
+                      {rows.map(r => (
+                        <View key={r.label} style={styles.sheetRow}>
+                          <Ionicons name={r.icon as any} size={14} color="rgba(255,255,255,0.3)" style={{ marginTop: 1, width: 18 }} />
+                          <Text style={styles.sheetRowLabel}>{r.label}</Text>
+                          <Text style={styles.sheetRowValue}>{r.value}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Dots — only shown when multiple games */}
+              {sheetItems.length > 1 && (
+                <View style={styles.sheetDots}>
+                  {sheetItems.map((_, i) => (
+                    <View key={i} style={[styles.sheetDot, i === sheetCarouselIdx && styles.sheetDotActive]} />
+                  ))}
                 </View>
-
-                <Text style={styles.sheetVs}>{detailGame.isHome ? 'vs' : '@'}</Text>
-
-                <View style={styles.sheetTeamBlock}>
-                  {detailGame.oppLogoUrl
-                    ? <Image source={{ uri: detailGame.oppLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
-                    : <View style={styles.sheetLogo} />}
-                  <Text style={styles.sheetTeamAbbr}>{oppAbbr}</Text>
-                  {detailGame.oppRecord ? <Text style={styles.sheetRecord}>{detailGame.oppRecord}</Text> : null}
-                </View>
-              </View>
-
-              {detailGame.opponentName ? (
-                <Text style={styles.sheetOppName}>
-                  {detailGame.isHome ? 'vs ' : '@ '}{detailGame.opponentName}
-                </Text>
-              ) : null}
-
-              {rows.length > 0 && <View style={styles.sheetDivider} />}
-
-              {rows.map(r => (
-                <View key={r.label} style={styles.sheetRow}>
-                  <Ionicons name={r.icon as any} size={14} color="rgba(255,255,255,0.3)" style={{ marginTop: 1, width: 18 }} />
-                  <Text style={styles.sheetRowLabel}>{r.label}</Text>
-                  <Text style={styles.sheetRowValue}>{r.value}</Text>
-                </View>
-              ))}
+              )}
             </ImageBackground>
-          );
-        })()}
-        </View>
-      )}
+          </View>
+        );
+      })()}
 
     </ThemedBackground>
   );
@@ -1797,7 +1831,7 @@ const styles = StyleSheet.create({
   sheetCard: {
     backgroundColor: 'rgba(8,16,32,0.96)', borderTopLeftRadius: 24, borderTopRightRadius: 24,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 24, paddingBottom: 52, overflow: 'hidden',
+    paddingHorizontal: 24, paddingBottom: 40, overflow: 'hidden',
   },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginTop: 12, marginBottom: 20 },
   sheetClose: { position: 'absolute', top: 16, right: 20, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
@@ -1813,4 +1847,8 @@ const styles = StyleSheet.create({
   sheetRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
   sheetRowLabel: { fontFamily: 'DMSans_600SemiBold', fontSize: 11, color: 'rgba(255,255,255,0.35)', width: 100, flexShrink: 0 },
   sheetRowValue: { fontFamily: 'DMSans_500Medium', fontSize: 12, color: 'rgba(255,255,255,0.8)', flex: 1, lineHeight: 17 },
+
+  sheetDots: { flexDirection: 'row', justifyContent: 'center', gap: 5, paddingTop: 14, paddingBottom: 4 },
+  sheetDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.18)' },
+  sheetDotActive: { backgroundColor: 'rgba(255,255,255,0.65)', width: 14 },
 });
