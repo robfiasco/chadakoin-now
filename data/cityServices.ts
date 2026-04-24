@@ -54,7 +54,7 @@ export const CITY_SERVICES: CityService[] = [
     badge: 'MAY 1–13',
     badgeColor: '#38bdf8',
     status: 'coming-up',
-    summary: 'BPU Spring 2026 · May 1–13 · Check your area',
+    summary: 'BPU Spring 2026 · May 1–13\nExpand to find your area',
     details: [
       { label: 'Hours',      value: '8:00 AM – 4:30 PM (Mon–Fri)' },
       { label: 'Hotline',    value: '716-661-1613 · Leave address + cross streets' },
@@ -81,7 +81,7 @@ export const CITY_SERVICES: CityService[] = [
     badge: 'DATE TBD',
     badgeColor: '#a78bfa',
     status: 'coming-up',
-    summary: 'Amnesty Day · City residents only · Free drop-off',
+    summary: 'Amnesty Day · City residents only\nFree drop-off',
     details: [
       { label: '2026 Date',    value: 'Not yet announced — check back' },
       { label: 'Last held at', value: 'Jackson-Taylor Park, Lafayette St lot' },
