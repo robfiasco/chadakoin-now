@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
 import { CivicDataProvider, useCivic } from '../lib/CivicDataContext';
+import { RadioProvider } from '../lib/RadioContext';
 import { AppLoadingScreen } from '../components/AppLoadingScreen';
 import { onboardingResetRef } from '../lib/onboardingReset';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -185,7 +186,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <CivicDataProvider>
-          <AppLayout />
+          <RadioProvider>
+            <AppLayout />
+          </RadioProvider>
         </CivicDataProvider>
       </ThemeProvider>
     </SafeAreaProvider>

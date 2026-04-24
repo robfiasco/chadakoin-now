@@ -15,7 +15,7 @@ import { useCivic } from '../lib/CivicDataContext';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { openLink } from '../lib/openLink';
-import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { useRadio } from '../lib/RadioContext';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
 import RecyclingScreen from './recycling';
@@ -158,32 +158,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [cityServicesOpen, setCityServicesOpen] = useState(false);
   const [recyclingOpen, setRecyclingOpen] = useState(false);
   const [parkingOpen, setParkingOpen] = useState(false);
-  const [radioPlaying, setRadioPlaying] = useState(false);
-  const [radioLoading, setRadioLoading] = useState(false);
+  const { radioPlaying, radioLoading, toggleRadio } = useRadio();
   const [cdirExpanded, setCdirExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
   const civic = useCivic();
-
-  async function toggleRadio() {
-    if (radioLoading) return;
-    if (radioPlaying) {
-      radioPlayer.pause();
-      setRadioPlaying(false);
-    } else {
-      setRadioLoading(true);
-      try {
-        await setAudioModeAsync({ playsInSilentMode: true });
-        radioPlayer.play();
-        setRadioPlaying(true);
-      } catch {
-        setRadioPlaying(false);
-        WebBrowser.openBrowserAsync('https://radio.chadakoindigital.com').catch(() => {});
-      } finally {
-        setRadioLoading(false);
-      }
-    }
-  }
 
   const dateBadge = getDateBadge();
 
