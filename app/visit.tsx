@@ -131,19 +131,6 @@ const ALSO_IN_JAMESTOWN: AlsoEntry[] = [
     caveats: ['Chain', 'Free parking'],
     lat: 42.11996, lng: -79.24420,
   },
-  {
-    name: 'Chautauqua Harbor Hotel',
-    detail: 'Stay · Celoron · 5 min drive',
-    note: "Nicest hotel in the area. Lakeside views and marina on-site. Not walkable to downtown — you'll need a car.",
-    caveats: ['Not walkable', 'Celoron'],
-    lat: 42.11021, lng: -79.28518,
-  },
-  {
-    name: 'Airbnb & VRBO',
-    detail: 'Stay · Various locations',
-    note: "Short-term rentals throughout Jamestown and the Chautauqua Lake area. Good option for groups or longer stays.",
-    caveats: ['Prices vary'],
-  },
 ];
 
 // ─── Parks & History ──────────────────────────────────────────────
