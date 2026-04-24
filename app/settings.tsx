@@ -173,6 +173,23 @@ export default function SettingsScreen() {
           ))}
         </View>
 
+        {/* ── Made in Jamestown ──────────────────────────── */}
+        <View style={[styles.card, styles.madeCard, { borderColor: dark.border }]}>
+          <Text style={[styles.madeTitle, { color: theme.acc }]}>Made in Jamestown</Text>
+          <Text style={styles.madeBody}>
+            Jamestown didn't have an app like this. I built one.
+          </Text>
+          <Text style={styles.madeBody}>
+            Every summer, visitors come through Chautauqua County. I want them to easily find the best spots, know what's happening, and leave telling their friends. That's good for all of us.
+          </Text>
+          <Text style={styles.madeBody}>
+            For residents, great local info already exists — it's just scattered. The local paper runs $26–$27/month. A lot of businesses are Facebook-only, which means if you're not on it, you might never know what they have to offer.
+          </Text>
+          <Text style={styles.madeBody}>
+            Chadakoin Now is free. Local news, sports scores, city services, events, and more — one place, no subscription required.
+          </Text>
+        </View>
+
         {/* ── Feature CTA ────────────────────────────────── */}
         <FeatureYourBusiness onContact={() => { setFeedbackType('business'); setFeedbackOpen(true); }} />
 
@@ -256,6 +273,10 @@ const styles = StyleSheet.create({
   ctaRow:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
   ctaTitle:{ fontFamily: 'Syne', fontSize: 15, fontWeight: '700', marginBottom: 3 },
   ctaSub:  { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
+
+  madeCard:  { padding: 20, gap: 12 },
+  madeTitle: { fontFamily: 'Editorial', fontSize: 20, lineHeight: 26, marginBottom: 2 },
+  madeBody:  { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 },
 
   footer:  { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 8, color: 'rgba(255,255,255,0.15)' },
   sources: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 6, color: 'rgba(255,255,255,0.1)', lineHeight: 16 },
