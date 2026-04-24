@@ -359,60 +359,58 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           {/* Recycling card */}
           {/* @ts-ignore */}
           <TouchableOpacity style={[styles.todayCard, glassWeb]} onPress={() => setRecyclingOpen(true)} activeOpacity={0.75}>
-            <View style={styles.todayCardTop}>
-              <View style={[styles.categoryIcon, { backgroundColor: 'rgba(52,211,153,0.1)' }]}>
-                <Ionicons name="sync-outline" size={14} color={dark.category.recycling} />
-              </View>
-              <Text style={[styles.todayCategoryLabel, { color: dark.category.recycling }]}>Recycling</Text>
+            <View style={[styles.categoryIcon, { backgroundColor: 'rgba(52,211,153,0.1)' }]}>
+              <Ionicons name="sync-outline" size={14} color={dark.category.recycling} />
             </View>
-            {civic.loading ? (
-              <>
-                <SkeletonPulse width="80%" height={20} borderRadius={4} accRGB="52,211,153" style={{ marginBottom: 6 }} />
-                <SkeletonPulse width="60%" height={12} borderRadius={4} accRGB="52,211,153" />
-              </>
-            ) : (
-              <>
-                <Text style={styles.todayCardTitle} numberOfLines={2}>
-                  {recyclingName === '—' ? 'No pickup' : recyclingName}
-                </Text>
-                {recycling.thisWeek.exclusions ? (
-                  <Text style={styles.todayCardExclusion} numberOfLines={1}>
-                    No {recycling.thisWeek.exclusions}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.todayCategoryLabel, { color: dark.category.recycling }]}>Recycling</Text>
+              {civic.loading ? (
+                <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="52,211,153" />
+              ) : (
+                <>
+                  <Text style={styles.todayCardTitle} numberOfLines={1}>
+                    {recyclingName === '—' ? 'No pickup' : recyclingName}
                   </Text>
-                ) : (
-                  <Text style={styles.todayCardSub}>Pickup this week</Text>
-                )}
-                <Text style={styles.todayCardMeta}>{recycling.thisWeek.dateRange || '—'}</Text>
-              </>
+                  {recycling.thisWeek.exclusions ? (
+                    <Text style={styles.todayCardExclusion} numberOfLines={1}>No {recycling.thisWeek.exclusions}</Text>
+                  ) : null}
+                </>
+              )}
+            </View>
+            {!civic.loading && (
+              <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>{recycling.thisWeek.dateRange || '—'}</Text>
             )}
+            <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
           </TouchableOpacity>
 
           {/* Parking card */}
           {/* @ts-ignore */}
           <TouchableOpacity style={[styles.todayCard, glassWeb]} onPress={() => setParkingOpen(true)} activeOpacity={0.75}>
-            <View style={styles.todayCardTop}>
-              <View style={[styles.categoryIcon, { backgroundColor: 'rgba(34,211,238,0.1)' }]}>
-                <Ionicons name="car-outline" size={14} color={dark.category.parking} />
-              </View>
-              <Text style={[styles.todayCategoryLabel, { color: dark.category.parking }]}>Parking</Text>
+            <View style={[styles.categoryIcon, { backgroundColor: 'rgba(34,211,238,0.1)' }]}>
+              <Ionicons name="car-outline" size={14} color={dark.category.parking} />
             </View>
-            {civic.loading ? (
-              <>
-                <SkeletonPulse width="80%" height={20} borderRadius={4} accRGB="34,211,238" style={{ marginBottom: 6 }} />
-                <SkeletonPulse width="60%" height={12} borderRadius={4} accRGB="34,211,238" />
-              </>
-            ) : (
-              <>
-                <Text style={styles.todayCardTitle}>
-                  {parking.side === 'EVEN' ? 'Even Side' : parking.side === 'ODD' ? 'Odd Side' : '—'}
-                </Text>
-                <Text style={styles.todayCardSub}>
-                  {parking.side === 'EVEN' ? 'Park even-numbered' : parking.side === 'ODD' ? 'Park odd-numbered' : 'Check sign'}
-                </Text>
-                <Text style={styles.todayCardMeta}>
-                  {parking.mode === 'daily' ? 'Switches daily' : 'Same all month'}
-                  {getParkingModeNote() ? ` · ${getParkingModeNote()}` : ''}
-                </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.todayCategoryLabel, { color: dark.category.parking }]}>Parking</Text>
+              {civic.loading ? (
+                <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="34,211,238" />
+              ) : (
+                <>
+                  <Text style={styles.todayCardTitle} numberOfLines={1}>
+                    {parking.side === 'EVEN' ? 'Even Side' : parking.side === 'ODD' ? 'Odd Side' : '—'}
+                  </Text>
+                  <Text style={styles.todayCardSub} numberOfLines={1}>
+                    {parking.side === 'EVEN' ? 'Park even-numbered' : parking.side === 'ODD' ? 'Park odd-numbered' : 'Check sign'}
+                  </Text>
+                </>
+              )}
+            </View>
+            {!civic.loading && (
+              <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
+                {parking.mode === 'daily' ? 'Daily' : 'All month'}
+                {getParkingModeNote() ? `\n${getParkingModeNote()}` : ''}
+              </Text>
+            )}
+            <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
               </>
             )}
           </TouchableOpacity>
@@ -762,12 +760,12 @@ const styles = StyleSheet.create({
   forecastLow: { fontFamily: 'Outfit', fontSize: 11, color: '#475569' },
 
   // Today in Jamestown grid
-  todayGrid: { flexDirection: 'row', gap: 12 },
-  todayCard: { flex: 1, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, padding: 14 },
+  todayGrid: { flexDirection: 'column', gap: 8 },
+  todayCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 12 },
   todayCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  categoryIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  todayCardTitle: { fontFamily: 'Editorial', fontSize: 18, color: dark.text.primary, lineHeight: 23, marginBottom: 4 },
+  categoryIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 1 },
+  todayCardTitle: { fontFamily: 'Editorial', fontSize: 16, color: dark.text.primary, lineHeight: 20 },
   todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted },
   todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginBottom: 2 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', marginTop: 2 },
