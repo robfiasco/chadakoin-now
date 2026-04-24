@@ -157,8 +157,8 @@ function AppLayout() {
         />
       )}
 
-      {/* Onboarding overlay — null while checking storage (avoids flash) */}
-      {showOnboarding === true && (
+      {/* Onboarding overlay — waits for loading screen to finish first */}
+      {!showLoading && showOnboarding === true && (
         <View style={[StyleSheet.absoluteFillObject, { zIndex: 1000 }]}>
           <OnboardingScreen onDone={handleOnboardingDone} />
         </View>
