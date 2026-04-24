@@ -104,7 +104,7 @@ async function fetchTeamGames(teamId) {
         const them = weAreHome ? g.teams?.away : g.teams?.home;
         const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
         const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
-        const oppRec   = them?.team?.record;
+        const oppRec   = them?.leagueRecord;
         nextGame = {
           date:               dateObj.date,
           gameTime:           g.gameDate ?? null,

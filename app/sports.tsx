@@ -25,6 +25,7 @@ interface NextUpItem {
   venue?: string; broadcast?: string;
   probablePitcher?: string; oppProbablePitcher?: string;
   record?: string; oppRecord?: string; opponentName?: string; isHome?: boolean;
+  seriesLabel?: string; // e.g. "Round 1 · Best of 7"
 }
 interface GameResult {
   date: string; status: 'final' | 'live' | 'upcoming';
@@ -331,7 +332,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
               const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
               // Use gameDate for exact time; fall back to noon to avoid floating day games to end of day
-              const oppRec = them?.team?.record;
+              const oppRec = them?.leagueRecord;
               nextGame = {
                 date: dateObj.date, gameTime: g.gameDate ?? null,
                 opponent: them?.team?.name ?? '???',
@@ -676,7 +677,17 @@ export default function SportsScreen() {
           ourLogoUrl: SABRES_LOGO, oppLogoUrl: data.nextGame.opponentLogo || undefined,
           bgKey: 'hockey',
           venue: data.nextGame.venue, broadcast: data.nextGame.broadcast || undefined,
-          record: data.record, opponentName: data.nextGame.opponentName,
+          // In playoffs, show series record under logos instead of season record
+          record: data.playoffSeries
+            ? `${data.playoffSeries.bufWins}–${data.playoffSeries.oppWins} series`
+            : data.record,
+          oppRecord: data.playoffSeries
+            ? `${data.playoffSeries.oppWins}–${data.playoffSeries.bufWins} series`
+            : undefined,
+          seriesLabel: data.playoffSeries
+            ? `${data.playoffSeries.roundLabel.replace(/-/g, ' ')} · First to ${data.playoffSeries.neededToWin}`
+            : undefined,
+          opponentName: data.nextGame.opponentName,
           isHome: data.nextGame.isHome,
         });
       }
@@ -1582,7 +1593,8 @@ export default function SportsScreen() {
                   const homePitcher = game.isHome ? game.probablePitcher : game.oppProbablePitcher;
                   const awayPitcher = game.isHome ? game.oppProbablePitcher : game.probablePitcher;
                   const rows = [
-                    { icon: 'calendar-outline', label: 'Date',          value: [game.dateLabel, game.time].filter(Boolean).join(' · ') },
+                    { icon: 'trophy-outline',    label: 'Playoffs',      value: game.seriesLabel },
+                    { icon: 'calendar-outline',  label: 'Date',          value: [game.dateLabel, game.time].filter(Boolean).join(' · ') },
                     { icon: 'location-outline',  label: 'Venue',         value: game.venue },
                     { icon: 'tv-outline',        label: 'Broadcast',     value: game.broadcast },
                     { icon: 'baseball-outline',  label: 'Home pitcher',  value: homePitcher },
