@@ -27,6 +27,24 @@ export default function ParkingScreen() {
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
     : {};
 
+  // Compute next switch label — monthly: "May 1 — Odd side" / daily: "Tomorrow — Even side"
+  const nextSwitchLabel = (() => {
+    const now = new Date();
+    if (parking.mode === 'monthly') {
+      const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const nextMonthNum = next.getMonth() + 1; // 1-based
+      const nextSide = nextMonthNum % 2 === 0 ? 'Even' : 'Odd';
+      const monthName = next.toLocaleDateString('en-US', { month: 'long' });
+      return `${monthName} 1 — ${nextSide} side`;
+    }
+    // Daily mode: flips tomorrow
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    const tomorrowDay = tomorrow.getDate();
+    const nextSide = tomorrowDay % 2 === 0 ? 'Even' : 'Odd';
+    return `Tomorrow — ${nextSide} side`;
+  })();
+
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.header}>
@@ -75,14 +93,14 @@ export default function ParkingScreen() {
           {/* @ts-ignore */}
           <View style={[styles.halfCard, glassWeb]}>
             <Ionicons name={parking.mode === 'daily' ? 'snow-outline' : 'sunny-outline'} size={18} color={ACC} />
-            <Text style={styles.halfLabel}>MODE</Text>
-            <Text style={styles.halfValue}>{parking.mode === 'daily' ? 'Daily (Nov–Mar)' : 'Monthly (Apr–Oct)'}</Text>
+            <Text style={styles.halfLabel}>Schedule</Text>
+            <Text style={styles.halfValue}>{parking.mode === 'daily' ? 'Alternates daily' : 'Alternates monthly'}</Text>
           </View>
           {/* @ts-ignore */}
           <View style={[styles.halfCard, glassWeb]}>
             <Ionicons name="time-outline" size={18} color={ACC} />
-            <Text style={styles.halfLabel}>NEXT SWITCH</Text>
-            <Text style={styles.halfValue}>{parking.mode === 'daily' ? 'Daily at 10:00 AM' : '1st of next month'}</Text>
+            <Text style={styles.halfLabel}>Next change</Text>
+            <Text style={styles.halfValue}>{nextSwitchLabel}</Text>
           </View>
         </View>
 
@@ -113,15 +131,19 @@ export default function ParkingScreen() {
           </View>
         ))}
 
-        {/* Exceptions */}
-        <Text style={styles.sectionLabel}>EXCEPTIONS</Text>
-        {/* @ts-ignore */}
-        <View style={[styles.exceptionCard, glassWeb]}>
-          <Ionicons name="alert-circle-outline" size={18} color="#f59e0b" />
-          <Text style={styles.exceptionText}>
-            Snow emergency routes override alternate-side rules. Check alerts.
-          </Text>
-        </View>
+        {/* Exceptions — only relevant during daily (winter) switching */}
+        {parking.mode === 'daily' && (
+          <>
+            <Text style={styles.sectionLabel}>EXCEPTIONS</Text>
+            {/* @ts-ignore */}
+            <View style={[styles.exceptionCard, glassWeb]}>
+              <Ionicons name="alert-circle-outline" size={18} color="#f59e0b" />
+              <Text style={styles.exceptionText}>
+                Snow emergency routes override alternate-side rules. Check alerts.
+              </Text>
+            </View>
+          </>
+        )}
 
         <Text style={styles.updatedLine}>
           {civic.lastUpdated
