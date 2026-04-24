@@ -148,17 +148,11 @@ function FeaturedCard({ event }: { event: EventItem }) {
           <>
             <Image
               source={{ uri: event.imageUrl }}
-              style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.45 }, { translateY: 10 }] }]}
+              style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
               resizeMode="cover"
             />
-            {/* Dark gradient overlay so pills remain readable over photos */}
             <LinearGradient
-              colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.15)', 'transparent'] as any}
-              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.7)'] as any}
+              colors={['rgba(0,0,0,0.15)', 'transparent', 'rgba(0,0,0,0.65)'] as any}
               start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
@@ -212,7 +206,7 @@ const feat = StyleSheet.create({
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
     borderRadius: 18, overflow: 'hidden', marginBottom: 12,
   },
-  header: { height: 160, justifyContent: 'space-between', padding: 14 },
+  header: { height: 200, justifyContent: 'space-between', padding: 14 },
   bgIcon: { position: 'absolute', right: -14, bottom: -14 },
   topRow: { flexDirection: 'row', gap: 6, alignSelf: 'flex-end' },
   pill:   {
