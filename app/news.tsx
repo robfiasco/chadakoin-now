@@ -388,8 +388,13 @@ export default function NewsScreen() {
           </View>
         ) : (
           <>
-            {/* Hero */}
-            {hero && <HeroCard item={hero} />}
+            {/* Top story as a compact row under its own section header */}
+            {hero && (
+              <View style={{ marginBottom: 8 }}>
+                <SectionHeader label="Top Story" />
+                <NewsRow item={hero} />
+              </View>
+            )}
 
             {/* Bucketed sections */}
             {buckets.map(bucket => (
