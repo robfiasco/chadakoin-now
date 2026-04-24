@@ -640,7 +640,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         {/* @ts-ignore */}
         <View style={[styles.card, glassWeb]}>
           <View style={styles.factRow}>
-            <View style={[styles.categoryIcon, { backgroundColor: 'rgba(251,191,36,0.1)', marginTop: 2 }]}>
+            <View style={[{ width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }, { backgroundColor: 'rgba(251,191,36,0.1)', marginTop: 2 }]}>
               <Ionicons name="book-outline" size={14} color="#fbbf24" />
             </View>
             <View style={{ flex: 1 }}>

@@ -15,6 +15,17 @@ import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+interface NextUpItem {
+  ts: number; sport: string; emoji: string; matchup: string;
+  dateLabel: string; time?: string;
+  gradStart: string; gradEnd: string; accent: string;
+  ourLogoUrl?: string; oppLogoUrl?: string;
+  isLive?: boolean; bgKey?: 'hockey' | 'baseball';
+  // Detail sheet extras
+  venue?: string; broadcast?: string;
+  probablePitcher?: string; oppProbablePitcher?: string;
+  record?: string; opponentName?: string; isHome?: boolean;
+}
 interface GameResult {
   date: string; status: 'final' | 'live' | 'upcoming';
   opponentAbbr: string; opponentName: string; opponentLogo: string;
@@ -588,6 +599,7 @@ export default function SportsScreen() {
   }
   const [nextUpIdx, setNextUpIdx] = useState(0);
   const [showSkunksSchedule, setShowSkunksSchedule] = useState(false);
+  const [detailGame, setDetailGame] = useState<NextUpItem | null>(null);
   const { width: winWidth } = useWindowDimensions();
   const cardWidth = winWidth - 32; // 16px padding each side
 
@@ -623,8 +635,7 @@ export default function SportsScreen() {
   // All upcoming games sorted by time — powers the Next Up carousel
   const nextUpItems = useMemo(() => {
     if (!data) return [];
-    type C = { ts: number; sport: string; emoji: string; matchup: string; dateLabel: string; time?: string; gradStart: string; gradEnd: string; accent: string; ourLogoUrl?: string; oppLogoUrl?: string; isLive?: boolean; bgKey?: 'hockey' | 'baseball'; };
-    const candidates: C[] = [];
+    const candidates: NextUpItem[] = [];
     const seenGamePairs = new Set<string>(); // dedup games where both teams are tracked
     const now = new Date();
     const today = new Date(); today.setHours(0,0,0,0);
@@ -656,6 +667,9 @@ export default function SportsScreen() {
           accent: ACC.sabres, gradStart: 'rgba(96,165,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
           ourLogoUrl: SABRES_LOGO, oppLogoUrl: data.nextGame.opponentLogo || undefined,
           bgKey: 'hockey',
+          venue: data.nextGame.venue, broadcast: data.nextGame.broadcast || undefined,
+          record: data.record, opponentName: data.nextGame.opponentName,
+          isHome: data.nextGame.isHome,
         });
       }
     }
@@ -695,6 +709,9 @@ export default function SportsScreen() {
             ourLogoUrl: `https://a.espncdn.com/i/teamlogos/mlb/500/${team.abbr.toLowerCase()}.png`,
             oppLogoUrl: oppAbbrRaw ? `https://a.espncdn.com/i/teamlogos/mlb/500/${oppAbbrRaw.toLowerCase()}.png` : undefined,
             bgKey: 'baseball',
+            record: team.record, opponentName: ng.opponent, isHome: ng.isHome,
+            probablePitcher: ng.probablePitcher || undefined,
+            oppProbablePitcher: ng.oppProbablePitcher || undefined,
           });
         }
       }
@@ -848,35 +865,43 @@ export default function SportsScreen() {
                               </>
                             )}
                           </View>
+                          {!nextUp.isLive && (
+                            <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>Tap for details</Text>
+                          )}
                         </View>
                       </View>
                     );
+                    const handlePress = () => !nextUp.isLive && setDetailGame(nextUp);
                     if (Platform.OS === 'web' && bgUri) {
                       return (
-                        // @ts-ignore
-                        <View key={idx} style={[styles.nextUpCard, { width: cardWidth, backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 1 }]}>
-                          {/* dark overlay so text stays legible */}
-                          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: `rgba(6,14,24,${1 - bgOpacity})`, borderRadius: 16 }]} pointerEvents="none" />
-                          {cardContent}
-                        </View>
+                        <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
+                          {/* @ts-ignore */}
+                          <View style={[styles.nextUpCard, { width: cardWidth, backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 1 }]}>
+                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: `rgba(6,14,24,${1 - bgOpacity})`, borderRadius: 16 }]} pointerEvents="none" />
+                            {cardContent}
+                          </View>
+                        </TouchableOpacity>
                       );
                     }
                     // @ts-ignore
                     return bgSourceNative ? (
-                      <ImageBackground
-                        key={idx}
-                        source={bgSourceNative}
-                        style={[styles.nextUpCard, { width: cardWidth }]}
-                        imageStyle={{ borderRadius: 16, opacity: bgOpacity }}
-                        resizeMode="cover"
-                      >
-                        {cardContent}
-                      </ImageBackground>
+                      <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
+                        <ImageBackground
+                          source={bgSourceNative}
+                          style={[styles.nextUpCard, { width: cardWidth }]}
+                          imageStyle={{ borderRadius: 16, opacity: bgOpacity }}
+                          resizeMode="cover"
+                        >
+                          {cardContent}
+                        </ImageBackground>
+                      </TouchableOpacity>
                     ) : (
-                      // @ts-ignore
-                      <View key={idx} style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
-                        {cardContent}
-                      </View>
+                      <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
+                        {/* @ts-ignore */}
+                        <View style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
+                          {cardContent}
+                        </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
@@ -1503,6 +1528,61 @@ export default function SportsScreen() {
         </View>
       </Modal>
 
+      {/* ── Game Detail Sheet ───────────────────────────────── */}
+      <Modal
+        visible={!!detailGame}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailGame(null)}
+      >
+        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setDetailGame(null)} />
+        {detailGame && (
+          <View style={styles.sheetCard}>
+            <View style={styles.sheetHandle} />
+            <TouchableOpacity onPress={() => setDetailGame(null)} style={styles.sheetClose}>
+              <Ionicons name="close" size={18} color="rgba(255,255,255,0.4)" />
+            </TouchableOpacity>
+
+            {/* Sport label */}
+            <Text style={[styles.sheetSport, { color: detailGame.accent }]}>{detailGame.sport}</Text>
+
+            {/* Logos + matchup */}
+            <View style={styles.sheetMatchupRow}>
+              {detailGame.ourLogoUrl ? (
+                <Image source={{ uri: detailGame.ourLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
+              ) : <View style={styles.sheetLogo} />}
+              <View style={styles.sheetVsBlock}>
+                <Text style={styles.sheetVs}>{detailGame.isHome ? 'vs' : '@'}</Text>
+                {detailGame.record ? <Text style={styles.sheetRecord}>{detailGame.record}</Text> : null}
+              </View>
+              {detailGame.oppLogoUrl ? (
+                <Image source={{ uri: detailGame.oppLogoUrl }} style={styles.sheetLogo} resizeMode="contain" />
+              ) : <View style={styles.sheetLogo} />}
+            </View>
+
+            {detailGame.opponentName ? (
+              <Text style={styles.sheetOppName}>{detailGame.isHome ? 'vs ' : '@ '}{detailGame.opponentName}</Text>
+            ) : null}
+
+            <View style={styles.sheetDivider} />
+
+            {/* Detail rows */}
+            {[
+              { label: 'Date', value: detailGame.dateLabel && detailGame.time ? `${detailGame.dateLabel} · ${detailGame.time}` : detailGame.dateLabel || detailGame.time },
+              { label: 'Venue', value: detailGame.venue },
+              { label: 'Broadcast', value: detailGame.broadcast },
+              { label: 'Starting pitcher', value: detailGame.probablePitcher },
+              { label: 'Opp. pitcher', value: detailGame.oppProbablePitcher },
+            ].filter(r => r.value).map(r => (
+              <View key={r.label} style={styles.sheetRow}>
+                <Text style={styles.sheetRowLabel}>{r.label}</Text>
+                <Text style={styles.sheetRowValue}>{r.value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </Modal>
+
     </ThemedBackground>
   );
 }
@@ -1674,4 +1754,26 @@ const styles = StyleSheet.create({
   mlbStreakBadge: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   mlbStreakBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
   mlbCommunityPick: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', marginTop: 1 },
+
+  // Game detail bottom sheet
+  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheetCard: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: '#0a1628', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    padding: 24, paddingBottom: 48,
+  },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 20 },
+  sheetClose: { position: 'absolute', top: 20, right: 20, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
+  sheetSport: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 14 },
+  sheetMatchupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 8 },
+  sheetLogo: { width: 60, height: 60 },
+  sheetVsBlock: { alignItems: 'center', gap: 4 },
+  sheetVs: { fontFamily: 'Syne', fontSize: 13, color: 'rgba(255,255,255,0.4)' },
+  sheetRecord: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
+  sheetOppName: { fontFamily: 'Editorial', fontSize: 18, color: '#fff', textAlign: 'center', marginBottom: 16 },
+  sheetDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 16 },
+  sheetRow: { flexDirection: 'row', gap: 12, paddingVertical: 7 },
+  sheetRowLabel: { fontFamily: 'DMSans_600SemiBold', fontSize: 11, color: 'rgba(255,255,255,0.35)', minWidth: 110, flexShrink: 0 },
+  sheetRowValue: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.75)', flex: 1, lineHeight: 17 },
 });
