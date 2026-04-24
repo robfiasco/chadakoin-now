@@ -28,8 +28,9 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 import {
-  DMSerifDisplay_400Regular,
-} from '@expo-google-fonts/dm-serif-display';
+  Sora_600SemiBold,
+  Sora_700Bold,
+} from '@expo-google-fonts/sora';
 
 // Screens imported as components so PagerView can render them natively
 import HomeScreen from './index';
@@ -180,12 +181,14 @@ export default function RootLayout() {
     SpaceGrotesk_500Medium,
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
+    Sora_600SemiBold,
+    Sora_700Bold,
     // 'Syne' alias → Space Grotesk Bold (display headers)
     // 'Outfit' alias → DM Sans (body text, labels)
-    // 'Editorial' alias → DM Serif Display (editorial headlines)
+    // 'Editorial' alias → Sora Bold (editorial headlines)
     Syne: SpaceGrotesk_700Bold,
     Outfit: DMSans_400Regular,
-    Editorial: DMSerifDisplay_400Regular,
+    Editorial: Sora_700Bold,
   });
 
   useEffect(() => {
