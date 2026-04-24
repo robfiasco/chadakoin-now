@@ -1146,7 +1146,7 @@ export default function SportsScreen() {
                     // @ts-ignore
                     <View style={[innerCard, { flex: 1, padding: 12 }]}>
                       <Text style={[styles.innerLabel, { color: dark.text.subtle }]}>Last Game</Text>
-                      <Text style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: '800', color: '#fff', marginTop: 6 }}>
+                      <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: 14, color: '#fff', marginTop: 6 }}>
                         BUF {data.recentGame.ourScore} · {data.recentGame.opponentAbbr} {data.recentGame.theirScore}
                       </Text>
                       <Text style={{ fontFamily: 'Outfit', fontSize: 11, marginTop: 4, color: data.recentGame.won === true ? ACC.jcc : data.recentGame.won === false ? '#fb7185' : dark.text.subtle }}>
@@ -1161,7 +1161,7 @@ export default function SportsScreen() {
                         <PulsingDot color={ACC.sabres} size={6} />
                         <Text style={[styles.innerLabel, { color: ACC.sabres }]}>Live Now</Text>
                       </View>
-                      <Text style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: '800', color: '#fff', marginTop: 6 }}>
+                      <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: 14, color: '#fff', marginTop: 6 }}>
                         BUF {data.liveGame.ourScore} · {data.liveGame.opponentAbbr} {data.liveGame.theirScore}
                       </Text>
                       <Text style={{ fontFamily: 'Outfit', fontSize: 11, marginTop: 4, color: dark.text.muted }}>
@@ -1176,7 +1176,7 @@ export default function SportsScreen() {
                     // @ts-ignore
                     <View style={[innerCard, { flex: 1, padding: 12, borderColor: `${ACC.sabres}40` }]}>
                       <Text style={[styles.innerLabel, { color: ACC.sabres }]}>Next Game</Text>
-                      <Text style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: '800', color: '#fff', marginTop: 6 }}>
+                      <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: 14, color: '#fff', marginTop: 6 }}>
                         {data.nextGame.isHome ? 'vs' : '@'} {data.nextGame.opponentAbbr}
                       </Text>
                       <Text style={{ fontFamily: 'Outfit', fontSize: 11, marginTop: 4, color: dark.text.muted }}>
