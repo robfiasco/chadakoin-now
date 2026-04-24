@@ -20,6 +20,7 @@ export interface CityService {
   badgeColor: string;  // hex — drives stripe + gradient
   status: ServiceStatus;
   summary: string;
+  defaultExpanded?: boolean;
   details: ServiceDetail[];
   schedule?: ScheduleEntry[];
   tip?: string;
@@ -33,6 +34,7 @@ export const CITY_SERVICES: CityService[] = [
     badge: 'OPEN NOW',
     badgeColor: '#4DD9AC',
     status: 'active',
+    defaultExpanded: true,
     summary: '1001 Monroe St · Sat Apr 11–Nov 14 · Wed May 13–Sep 30',
     details: [
       { label: 'Location',   value: '1001 Monroe St' },
@@ -96,7 +98,7 @@ export const CITY_SERVICES: CityService[] = [
     badge: 'FALL 2026',
     badgeColor: '#C9A84C',
     status: 'coming-up',
-    summary: 'Curbside pickup · October – November · Two phases',
+    summary: 'Curbside pickup · October – November\nTwo phases',
     details: [
       { label: '2026 Dates', value: 'Not yet announced — typically late October' },
       { label: 'Phase 1',    value: 'Foote Ave, Martin Rd, Linwood Ave area' },

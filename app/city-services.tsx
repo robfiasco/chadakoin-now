@@ -47,7 +47,7 @@ function hexToRgb(hex: string): string {
 }
 
 function ServiceCard({ service }: { service: CityService }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(service.defaultExpanded ?? false);
   const rgb = hexToRgb(service.badgeColor);
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
@@ -140,7 +140,8 @@ const svc = StyleSheet.create({
   stripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, zIndex: 10 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 20, paddingVertical: 14 },
   title: { fontFamily: 'Editorial', fontSize: 16, fontWeight: '700', color: '#fff', lineHeight: 21 },
-  summary: { fontFamily: 'DMSans_500Medium', fontSize: 11, marginTop: 3, lineHeight: 16, color: 'rgba(255,255,255,0.55)' },
+  // @ts-ignore — hyphens is web-only but React Native ignores unknown props safely
+  summary: { fontFamily: 'DMSans_500Medium', fontSize: 11, marginTop: 3, lineHeight: 16, color: 'rgba(255,255,255,0.55)', hyphens: 'none' },
   expanded: { borderTopWidth: 1, paddingHorizontal: 20, paddingVertical: 14, gap: 12 },
   detailGrid: { gap: 10 },
   detailRow: { flexDirection: 'row', gap: 12 },

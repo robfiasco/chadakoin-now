@@ -187,7 +187,7 @@ export default function RootLayout() {
     // 'Outfit' alias → DM Sans (body text, labels)
     // 'Editorial' alias → Sora Bold (editorial headlines)
     Syne: SpaceGrotesk_700Bold,
-    Outfit: DMSans_400Regular,
+    Outfit: DMSans_500Medium,
     Editorial: Sora_700Bold,
   });
 
