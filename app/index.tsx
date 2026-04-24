@@ -196,7 +196,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <WaterTitle />
-            <Text style={styles.appCity}>Jamestown, NY</Text>
+            <Text style={[styles.appCity, { color: theme.acc }]}>Jamestown, NY</Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.dateBadge}>
