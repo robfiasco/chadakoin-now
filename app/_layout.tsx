@@ -8,7 +8,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
 import { CivicDataProvider, useCivic } from '../lib/CivicDataContext';
-import { RadioProvider } from '../lib/RadioContext';
+import { RadioProvider, useRadio } from '../lib/RadioContext';
+import { Image } from 'react-native';
 import { AppLoadingScreen } from '../components/AppLoadingScreen';
 import { onboardingResetRef } from '../lib/onboardingReset';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +43,39 @@ const TABS: { key: string; label: string; active: IoniconName; inactive: Ionicon
   { key: 'events', label: 'Events', active: 'calendar',    inactive: 'calendar-outline'    },
   { key: 'visit',  label: 'Visit',  active: 'map',         inactive: 'map-outline'         },
 ];
+
+function NowPlayingBar() {
+  const { radioPlaying, nowPlaying, toggleRadio } = useRadio();
+  if (!radioPlaying) return null;
+  return (
+    <TouchableOpacity
+      onPress={toggleRadio}
+      activeOpacity={0.85}
+      style={styles.nowPlayingBar}
+    >
+      {nowPlaying?.artwork ? (
+        <Image
+          source={{ uri: nowPlaying.artwork }}
+          style={styles.nowPlayingArt}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.nowPlayingArt, { alignItems: 'center', justifyContent: 'center' }]}>
+          <Ionicons name="radio" size={14} color="rgba(255,255,255,0.6)" />
+        </View>
+      )}
+      <View style={{ flex: 1, gap: 1 }}>
+        <Text style={styles.nowPlayingTitle} numberOfLines={1}>
+          {nowPlaying?.title ?? 'CDIR'}
+        </Text>
+        {nowPlaying?.artist ? (
+          <Text style={styles.nowPlayingArtist} numberOfLines={1}>{nowPlaying.artist}</Text>
+        ) : null}
+      </View>
+      <Ionicons name="stop-circle" size={22} color="rgba(255,255,255,0.55)" />
+    </TouchableOpacity>
+  );
+}
 
 function AppLayout() {
   const { theme } = useTheme();
@@ -91,6 +125,9 @@ function AppLayout() {
       </PagerView>
 
       <View>
+        {/* Now-playing banner — appears above the tab bar when CDIR is active */}
+        <NowPlayingBar />
+
         {/* Gradient fade above the tab bar */}
         <LinearGradient
           colors={['transparent', theme.tabBarBg ?? 'rgba(0,5,15,0.97)']}
@@ -196,6 +233,23 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  nowPlayingBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 14, paddingVertical: 8,
+    backgroundColor: 'rgba(6,14,24,0.97)',
+    borderTopWidth: 1, borderTopColor: 'rgba(34,211,238,0.18)',
+  },
+  nowPlayingArt: {
+    width: 36, height: 36, borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  nowPlayingTitle: {
+    fontFamily: 'DMSans_600SemiBold', fontSize: 13, color: '#fff',
+  },
+  nowPlayingArtist: {
+    fontFamily: 'DMSans_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.45)',
+  },
+
   tabGradient: {
     position: 'absolute',
     top: -32,

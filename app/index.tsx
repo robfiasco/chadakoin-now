@@ -24,34 +24,6 @@ import { AddToHomeScreen } from '../components/AddToHomeScreen';
 import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
 
-interface NowPlaying {
-  title: string;
-  artist: string;
-  album?: string;
-  artwork?: string;
-}
-
-async function fetchNowPlaying(): Promise<NowPlaying | null> {
-  try {
-    const url = Platform.OS === 'web'
-      ? '/api/cdir'
-      : 'https://radio.chadakoindigital.com/now.json';
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return {
-      title:   data.title   ?? '',
-      artist:  data.artist  ?? '',
-      album:   data.album   ?? '',
-      artwork: data.artwork?.startsWith('http')
-        ? data.artwork
-        : data.artwork
-          ? `https://radio.chadakoindigital.com${data.artwork}`
-          : undefined,
-    };
-  } catch { return null; }
-}
-
 function getDateBadge() {
   const d = new Date();
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -153,12 +125,11 @@ function eventCategoryColor(category: string): string {
 export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (index: number) => void }) {
   const { theme } = useTheme();
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cityServicesOpen, setCityServicesOpen] = useState(false);
   const [recyclingOpen, setRecyclingOpen] = useState(false);
   const [parkingOpen, setParkingOpen] = useState(false);
-  const { radioPlaying, radioLoading, toggleRadio } = useRadio();
+  const { radioPlaying, radioLoading, nowPlaying, toggleRadio } = useRadio();
   const [cdirExpanded, setCdirExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const civic = useCivic();
@@ -191,19 +162,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     setRefreshing(true);
     await Promise.all([
       fetchWeather().then(setWeather).catch(() => {}),
-      fetchNowPlaying().then(setNowPlaying).catch(() => {}),
       civic.refresh(),
     ]);
     setRefreshing(false);
   }
-
-  useEffect(() => {
-    fetchNowPlaying().then(setNowPlaying).catch(() => {});
-    const id = setInterval(() => {
-      fetchNowPlaying().then(setNowPlaying).catch(() => {});
-    }, 30000);
-    return () => clearInterval(id);
-  }, []);
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
