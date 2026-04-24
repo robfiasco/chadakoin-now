@@ -411,8 +411,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               </Text>
             )}
             <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
-              </>
-            )}
           </TouchableOpacity>
         </View>
 
