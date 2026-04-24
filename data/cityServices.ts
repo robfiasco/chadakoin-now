@@ -58,7 +58,6 @@ export const CITY_SERVICES: CityService[] = [
     details: [
       { label: 'Hours',      value: '8:00 AM – 4:30 PM (Mon–Fri)' },
       { label: 'Hotline',    value: '716-661-1613 · Leave address + cross streets' },
-      { label: 'Heads up',   value: 'BPU calls residents 2–5 days before their flush day' },
     ],
     schedule: [
       { date: 'May 1',    day: 'Fri',     areas: 'Falconer — Pre-flush (Aldren, Mapleshade, Ralph, Valmeere)', warn: 'Starts 1 PM' },
