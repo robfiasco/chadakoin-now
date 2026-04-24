@@ -44,9 +44,9 @@ const TABS: { key: string; label: string; active: IoniconName; inactive: Ionicon
   { key: 'visit',  label: 'Visit',  active: 'map',         inactive: 'map-outline'         },
 ];
 
-function NowPlayingBar() {
+function NowPlayingBar({ activePage }: { activePage: number }) {
   const { radioPlaying, nowPlaying, toggleRadio } = useRadio();
-  if (!radioPlaying) return null;
+  if (!radioPlaying || activePage === 0) return null;
   return (
     <TouchableOpacity
       onPress={toggleRadio}
@@ -125,8 +125,8 @@ function AppLayout() {
       </PagerView>
 
       <View>
-        {/* Now-playing banner — appears above the tab bar when CDIR is active */}
-        <NowPlayingBar />
+        {/* Now-playing banner — appears above the tab bar when CDIR is active (not on Home) */}
+        <NowPlayingBar activePage={activePage} />
 
         {/* Gradient fade above the tab bar */}
         <LinearGradient
