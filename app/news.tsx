@@ -336,9 +336,7 @@ export default function NewsScreen() {
   const filtered = news
     .filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff);
 
-  const hero  = filtered[0] ?? null;
-  const rest  = filtered.slice(1);
-  const buckets = bucketItems(rest);
+  const buckets = bucketItems(filtered);
 
   return (
     <ThemedBackground>
@@ -385,10 +383,6 @@ export default function NewsScreen() {
           </View>
         ) : (
           <>
-            {/* Hero banner — no duplicate source/time in header */}
-            {hero && <HeroCard item={hero} />}
-
-            {/* Bucketed sections */}
             {buckets.map(bucket => (
               <View key={bucket.label} style={{ marginBottom: 8 }}>
                 <SectionHeader label={bucket.label} />
@@ -396,11 +390,6 @@ export default function NewsScreen() {
                   <NewsRow key={i} item={item} />
                 ))}
               </View>
-            ))}
-
-            {/* Fallback: no bucketed items (all news is the hero) */}
-            {buckets.length === 0 && rest.length > 0 && rest.map((item, i) => (
-              <NewsRow key={i} item={item} />
             ))}
           </>
         )}

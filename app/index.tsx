@@ -351,7 +351,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
 
         {recycling.holidayDelay && (
-          {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
+          // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
           <View style={[styles.delayBanner, glassWeb]}>
             <Ionicons name="warning-outline" size={14} color="#f59e0b" />
             <Text style={styles.delayText}>Holiday this week — pickup may shift by one day.</Text>
@@ -380,7 +380,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </View>
 
             {civic.loading ? (
-              {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
+              // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
               <View style={[styles.card, glassWeb, { gap: 10 }]}>
                 <SkeletonPulse width="100%" height={80} borderRadius={8} accRGB={theme.accRGB} />
                 <SkeletonPulse width="90%" height={18} borderRadius={4} accRGB={theme.accRGB} />
@@ -433,7 +433,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </View>
 
             {civic.loading ? (
-              {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
+              // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
               <View style={[styles.card, glassWeb, { gap: 10 }]}>
                 <SkeletonPulse width="70%" height={18} borderRadius={4} accRGB={theme.accRGB} />
                 <SkeletonPulse width="45%" height={12} borderRadius={4} accRGB={theme.accRGB} />

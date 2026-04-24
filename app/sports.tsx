@@ -1496,15 +1496,22 @@ export default function SportsScreen() {
         onRequestClose={() => setShowSkunksSchedule(false)}
       >
         <View style={schedModal.container}>
-          <View style={schedModal.header}>
-            <View style={schedModal.headerLeft}>
-              <Text style={schedModal.headerTitle}>Tarp Skunks</Text>
-              <Text style={schedModal.headerSub}>2026 Schedule · PGCBL</Text>
+          <SafeAreaView edges={['top']}>
+            <View style={schedModal.header}>
+              <View style={schedModal.headerLeft}>
+                <Text style={schedModal.headerTitle}>Tarp Skunks</Text>
+                <Text style={schedModal.headerSub}>2026 Schedule · PGCBL</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowSkunksSchedule(false)}
+                activeOpacity={0.7}
+                style={schedModal.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close" size={22} color="rgba(255,255,255,0.8)" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => setShowSkunksSchedule(false)} activeOpacity={0.7} style={schedModal.closeBtn}>
-              <Ionicons name="close" size={20} color="rgba(255,255,255,0.7)" />
-            </TouchableOpacity>
-          </View>
+          </SafeAreaView>
 
           <ScrollView contentContainerStyle={schedModal.list} showsVerticalScrollIndicator={false}>
             {SKUNKS_SCHEDULE.map((g, i) => {
