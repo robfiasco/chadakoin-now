@@ -159,7 +159,6 @@ export default async function handler(req, res) {
       }));
 
     const games = schedJson.games ?? [];
-    const now = new Date();
 
     const past = games
       .filter(g => g.gameState === 'FINAL' || g.gameState === 'OFF')
@@ -170,6 +169,27 @@ export default async function handler(req, res) {
       .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
 
     const live = games.filter(g => g.gameState === 'LIVE' || g.gameState === 'CRIT');
+    const liveGameRaw = live[0] ?? null;
+
+    // Fetch period/clock for live game from gamecenter endpoint
+    let liveDetails = null;
+    if (liveGameRaw?.id) {
+      try {
+        const lgRes = await fetch(
+          `https://api-web.nhle.com/v1/gamecenter/${liveGameRaw.id}/landing`,
+          { signal: controller.signal }
+        );
+        if (lgRes.ok) {
+          const lg = await lgRes.json();
+          liveDetails = {
+            period:          lg.periodDescriptor?.number       ?? 1,
+            periodType:      lg.periodDescriptor?.periodType   ?? 'REG',
+            timeRemaining:   lg.clock?.timeRemaining           ?? '',
+            inIntermission:  lg.clock?.inIntermission          ?? false,
+          };
+        }
+      } catch {}
+    }
 
     // Sabres record from standings
     let record = '';
@@ -212,18 +232,26 @@ export default async function handler(req, res) {
       };
     }
 
+    const liveGame = liveGameRaw
+      ? { ...parseGame(liveGameRaw), ...(liveDetails ?? {}) }
+      : null;
+
     const result = {
       record,
       standing,
+      liveGame,
       recentGame:    parseGame(past[0]),
-      nextGame:      parseGame(live[0] ?? upcoming[0]),
+      nextGame:      parseGame(upcoming[0]),   // next scheduled game only — never the live one
       topScorers,
       jcc:           jccResults,
       playoffSeries: playoffSeries ?? null,
       news: [],
     };
 
-    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60');
+    // Tighter cache during live games so scores refresh quickly
+    const cacheMaxAge = liveGame ? 30 : 120;
+    const cacheSwr    = liveGame ? 15 : 60;
+    res.setHeader('Cache-Control', `public, s-maxage=${cacheMaxAge}, stale-while-revalidate=${cacheSwr}`);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json(result);
 

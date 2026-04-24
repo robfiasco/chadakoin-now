@@ -20,6 +20,8 @@ interface GameResult {
   opponentAbbr: string; opponentName: string; opponentLogo: string;
   ourScore: string; theirScore: string; isHome: boolean;
   won: boolean | null; venue: string; broadcast: string;
+  // Live game extras (populated when status === 'live')
+  period?: number; periodType?: string; timeRemaining?: string; inIntermission?: boolean;
 }
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
 interface JCCResult   { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
@@ -61,7 +63,7 @@ interface PlayoffSeries {
 interface SabresData {
   record: string; standing: string; points?: number;
   wins?: number; losses?: number; otLosses?: number;
-  recentGame?: GameResult; nextGame?: GameResult;
+  recentGame?: GameResult; nextGame?: GameResult; liveGame?: GameResult | null;
   topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[];
   playoffSeries?: PlayoffSeries | null;
   news: any[];
@@ -435,7 +437,7 @@ async function fetchSabres(): Promise<SabresData> {
     const jcc: JCCData = rawJcc && typeof rawJcc === 'object' && !Array.isArray(rawJcc)
       ? rawJcc
       : { results: [], upcoming: [], records: {} };
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, playoffSeries: json.playoffSeries ?? null, news: [] };
+    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, playoffSeries: json.playoffSeries ?? null, news: [] };
   }
   const [schedRes, standRes, statsRes, jcc, mlb, playoffSeries] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
@@ -474,7 +476,9 @@ async function fetchSabres(): Promise<SabresData> {
       points: p.points ?? 0,
       headshot: p.headshot ?? '',
     }));
-  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, topScorers, jcc, mlb, playoffSeries, news: [] };
+  const liveGames: any[] = games.filter((g: any) => g.gameState === 'LIVE' || g.gameState === 'CRIT');
+  const liveGame: GameResult | null = liveGames[0] ? (parseNHLGame(liveGames[0]) ?? null) : null;
+  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, liveGame, topScorers, jcc, mlb, playoffSeries, news: [] };
 }
 
 function ordinal(n: number): string {
@@ -569,6 +573,7 @@ export default function SportsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMlbAbbr, setExpandedMlbAbbr] = useState<string | null>(null);
   const [pinnedMlbAbbr, setPinnedMlbAbbr] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load pinned team on mount
   useEffect(() => {
@@ -594,6 +599,21 @@ export default function SportsScreen() {
     fetchSabres().then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  // Auto-poll every 60s when any live game is in progress
+  const hasLive = !!(data?.liveGame?.status === 'live' || data?.mlb?.some(t => t.liveGame));
+  useEffect(() => {
+    if (hasLive) {
+      if (!pollRef.current) {
+        pollRef.current = setInterval(() => {
+          fetchSabres().then(setData).catch(() => {});
+        }, 60_000);
+      }
+    } else {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    }
+  }, [hasLive]);
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
   async function onRefresh() {
     setRefreshing(true);
     try { const d = await fetchSabres(); setData(d); } catch {}
@@ -610,7 +630,23 @@ export default function SportsScreen() {
     const today = new Date(); today.setHours(0,0,0,0);
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
 
-    if (data.nextGame) {
+    if (data.liveGame?.status === 'live') {
+      const lg = data.liveGame;
+      const periodLabel = lg.inIntermission
+        ? `INT after ${ordinal(lg.period ?? 1)}`
+        : lg.periodType === 'OT' ? `OT${lg.timeRemaining ? ` · ${lg.timeRemaining}` : ''}`
+        : `${ordinal(lg.period ?? 1)} · ${lg.timeRemaining ?? 'Live'}`;
+      candidates.push({
+        ts: Date.now(),
+        sport: 'Buffalo Sabres · NHL', emoji: '🏒',
+        matchup: `BUF ${lg.isHome ? 'vs' : '@'} ${lg.opponentAbbr}`,
+        dateLabel: periodLabel,
+        time: `${lg.ourScore}–${lg.theirScore}`,
+        accent: ACC.sabres, gradStart: 'rgba(96,165,250,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
+        ourLogoUrl: SABRES_LOGO, oppLogoUrl: lg.opponentLogo || undefined,
+        isLive: true, bgKey: 'hockey',
+      });
+    } else if (data.nextGame) {
       const d = new Date(data.nextGame.date);
       if (d > now) {
         candidates.push({
@@ -1103,8 +1139,8 @@ export default function SportsScreen() {
             </View>
           ) : (
             <>
-              {/* Last / Next 2-col grid */}
-              {(data?.recentGame || data?.nextGame) && (
+              {/* Last / Live / Next 2-col grid */}
+              {(data?.recentGame || data?.liveGame?.status === 'live' || data?.nextGame) && (
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   {data?.recentGame && (
                     // @ts-ignore
@@ -1118,7 +1154,25 @@ export default function SportsScreen() {
                       </Text>
                     </View>
                   )}
-                  {data?.nextGame && (
+                  {data?.liveGame?.status === 'live' ? (
+                    // @ts-ignore
+                    <View style={[innerCard, { flex: 1, padding: 12, borderColor: `${ACC.sabres}55` }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <PulsingDot color={ACC.sabres} size={6} />
+                        <Text style={[styles.innerLabel, { color: ACC.sabres }]}>Live Now</Text>
+                      </View>
+                      <Text style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: '800', color: '#fff', marginTop: 6 }}>
+                        BUF {data.liveGame.ourScore} · {data.liveGame.opponentAbbr} {data.liveGame.theirScore}
+                      </Text>
+                      <Text style={{ fontFamily: 'Outfit', fontSize: 11, marginTop: 4, color: dark.text.muted }}>
+                        {data.liveGame.inIntermission
+                          ? `Intermission · after ${ordinal(data.liveGame.period ?? 1)}`
+                          : data.liveGame.periodType === 'OT'
+                          ? `Overtime${data.liveGame.timeRemaining ? ` · ${data.liveGame.timeRemaining}` : ''}`
+                          : `${ordinal(data.liveGame.period ?? 1)} Period${data.liveGame.timeRemaining ? ` · ${data.liveGame.timeRemaining}` : ''}`}
+                      </Text>
+                    </View>
+                  ) : data?.nextGame ? (
                     // @ts-ignore
                     <View style={[innerCard, { flex: 1, padding: 12, borderColor: `${ACC.sabres}40` }]}>
                       <Text style={[styles.innerLabel, { color: ACC.sabres }]}>Next Game</Text>
@@ -1130,7 +1184,7 @@ export default function SportsScreen() {
                         {' · '}{new Date(data.nextGame.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               )}
 
