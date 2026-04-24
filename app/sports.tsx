@@ -1017,6 +1017,7 @@ export default function SportsScreen() {
           subtitle="PGCBL · Diethrick Park"
           defaultOpen={false}
           glassWeb={glassWeb}
+          bgImage={Platform.OS === 'web' ? { uri: '/tspark.jpg' } : require('../public/tspark.jpg')}
           glanceRow={
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={[styles.glanceText, { color: dark.text.muted }]}>Season opens</Text>
@@ -1575,7 +1576,7 @@ const styles = StyleSheet.create({
   nextUpDots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 8 },
   nextUpDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
   nextUpDotActive: { backgroundColor: 'rgba(255,255,255,0.7)', width: 14 },
-  nextUpMatchup: { fontFamily: 'Syne', fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+  nextUpMatchup: { fontFamily: 'DMSans_800ExtraBold', fontSize: 16, color: '#fff', letterSpacing: -0.3 },
 
   // Team cards
   teamCard: {
