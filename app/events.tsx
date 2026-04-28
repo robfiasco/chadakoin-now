@@ -142,6 +142,7 @@ interface SponsoredShow {
   displayTime: string;  // "10 PM"
   image: string;
   link?: string;
+  youtubeLink?: string;
   mapLink?: string;
   venueLink?: string;
 }
@@ -159,6 +160,7 @@ const SPONSORED_SHOWS: SponsoredShow[] = [
     displayTime: '10 PM',
     image: '/wsc.jpg',
     link: 'https://wespeakcanadian.bandcamp.com/album/promo-2020',
+    youtubeLink: 'https://www.youtube.com/@wespeakcanadian7951',
     mapLink: 'https://maps.google.com/?q=Shawbucks+110+W+4th+St+Jamestown+NY',
   },
 ];
@@ -222,16 +224,29 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
           )}
         </View>
 
-        {/* CTA */}
-        {show.link && (
-          <TouchableOpacity
-            onPress={() => openLink(show.link!)}
-            activeOpacity={0.75}
-            style={[sp.ctaBtn, { backgroundColor: `${red}18`, borderColor: `${red}44` }]}
-          >
-            <Text style={[sp.ctaText, { color: red }]}>Listen on Bandcamp →</Text>
-          </TouchableOpacity>
-        )}
+        {/* CTAs */}
+        <View style={sp.ctaRow}>
+          {show.link && (
+            <TouchableOpacity
+              onPress={() => openLink(show.link!)}
+              activeOpacity={0.75}
+              style={[sp.ctaBtn, { backgroundColor: `${red}18`, borderColor: `${red}44`, flex: 1 }]}
+            >
+              <Ionicons name="musical-notes-outline" size={13} color={red} />
+              <Text style={[sp.ctaText, { color: red }]}>Bandcamp</Text>
+            </TouchableOpacity>
+          )}
+          {show.youtubeLink && (
+            <TouchableOpacity
+              onPress={() => openLink(show.youtubeLink!)}
+              activeOpacity={0.75}
+              style={[sp.ctaBtn, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', flex: 1 }]}
+            >
+              <Ionicons name="logo-youtube" size={13} color="rgba(255,255,255,0.55)" />
+              <Text style={[sp.ctaText, { color: 'rgba(255,255,255,0.55)' }]}>YouTube</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -256,7 +271,8 @@ const sp = StyleSheet.create({
   venue:      { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)', flex: 1 },
   mapBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(204,20,20,0.35)', backgroundColor: 'rgba(204,20,20,0.1)' },
   mapBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
-  ctaBtn:     { borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  ctaRow:     { flexDirection: 'row', gap: 8 },
+  ctaBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 10 },
   ctaText:    { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
 });
 
