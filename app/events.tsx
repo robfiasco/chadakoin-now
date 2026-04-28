@@ -129,6 +129,20 @@ function groupByDay(events: EventItem[]): DayGroup[] {
   });
 }
 
+// ── Canadian flag gradient helper ────────────────────────────────
+// Interpolates each character's color: red on edges, white in center
+function flagCharColor(pos: number, total: number, accentHex: string): string {
+  const r1 = parseInt(accentHex.slice(1, 3), 16);
+  const g1 = parseInt(accentHex.slice(3, 5), 16);
+  const b1 = parseInt(accentHex.slice(5, 7), 16);
+  const t    = pos / Math.max(total - 1, 1);           // 0 → 1 across the word
+  const dist = Math.abs(t - 0.5) * 2;                  // 1 at edges (red), 0 at center (white)
+  const r = Math.round(0xff + (r1 - 0xff) * dist);
+  const g = Math.round(0xff + (g1 - 0xff) * dist);
+  const b = Math.round(0xff + (b1 - 0xff) * dist);
+  return `rgb(${r},${g},${b})`;
+}
+
 // ── Sponsored event card ─────────────────────────────────────────
 interface SponsoredShow {
   id: string;
@@ -187,15 +201,19 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
           <Text style={[sp.featPillText, { color: red }]}>FEATURED SHOW</Text>
         </View>
 
-        {/* Band name — bottom of photo with Canadian flag gradient */}
-        <LinearGradient
-          colors={[`${red}44`, 'rgba(255,255,255,0.12)', `${red}44`] as any}
-          start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-          style={sp.nameBlock}
-        >
-          <Text style={sp.nameLine1}>{show.line1}</Text>
-          <Text style={sp.nameLine2}>{show.line2}</Text>
-        </LinearGradient>
+        {/* Band name — bottom of photo, each character flag-gradient colored */}
+        <View style={sp.nameBlock}>
+          <Text style={sp.nameLine1}>
+            {show.line1.split('').map((char, i, arr) => (
+              <Text key={i} style={{ color: flagCharColor(i, arr.length, show.accentColor) }}>{char}</Text>
+            ))}
+          </Text>
+          <Text style={sp.nameLine2}>
+            {show.line2.split('').map((char, i, arr) => (
+              <Text key={i} style={{ color: flagCharColor(i, arr.length, show.accentColor) }}>{char}</Text>
+            ))}
+          </Text>
+        </View>
       </View>
 
       {/* Body */}
