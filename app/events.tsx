@@ -492,7 +492,7 @@ export default function EventsScreen() {
   const { theme } = useTheme();
   const civic = useCivic();
   const { events, loading } = civic;
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('weekend');
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [refreshing, setRefreshing] = useState(false);
 
   async function onRefresh() {
