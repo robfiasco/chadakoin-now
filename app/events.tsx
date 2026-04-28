@@ -195,12 +195,6 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
           style={[StyleSheet.absoluteFill, { top: '25%' }]}
         />
 
-        {/* Featured pill — top left */}
-        <View style={[sp.featPill, { backgroundColor: `${red}22`, borderColor: `${red}55` }]}>
-          <Ionicons name="star" size={8} color={red} />
-          <Text style={[sp.featPillText, { color: red }]}>FEATURED SHOW</Text>
-        </View>
-
         {/* Band name — bottom of photo, each character flag-gradient colored */}
         <View style={sp.nameBlock}>
           <Text style={sp.nameLine1}>
@@ -614,16 +608,29 @@ export default function EventsScreen() {
           />
         }
       >
+        {/* Sponsored shows — always pinned at top, filter-independent */}
+        {activeSponsored.length > 0 && (
+          <>
+            <View style={styles.sectionRow}>
+              <Ionicons name="star-outline" size={12} color={theme.acc} />
+              <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured</Text>
+            </View>
+            {activeSponsored.map(show => <SponsoredCard key={show.id} show={show} />)}
+          </>
+        )}
+
         {loading ? (
           <>
-            {/* Featured skeleton */}
-            <View style={sk.featCard}>
-              <SkeletonPulse width="100%" height={160} borderRadius={0} accRGB={theme.accRGB} />
-              <View style={{ padding: 16, gap: 8 }}>
-                <SkeletonPulse width="80%" height={19} borderRadius={5} accRGB={theme.accRGB} />
-                <SkeletonPulse width="50%" height={12} borderRadius={4} accRGB={theme.accRGB} />
+            {/* Featured skeleton — only when no sponsored show */}
+            {activeSponsored.length === 0 && (
+              <View style={sk.featCard}>
+                <SkeletonPulse width="100%" height={160} borderRadius={0} accRGB={theme.accRGB} />
+                <View style={{ padding: 16, gap: 8 }}>
+                  <SkeletonPulse width="80%" height={19} borderRadius={5} accRGB={theme.accRGB} />
+                  <SkeletonPulse width="50%" height={12} borderRadius={4} accRGB={theme.accRGB} />
+                </View>
               </View>
-            </View>
+            )}
             {[1, 2, 3].map(i => (
               <View key={i} style={sk.rowCard}>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -649,16 +656,8 @@ export default function EventsScreen() {
           </View>
         ) : (
           <>
-            {/* Sponsored show OR Featured — sponsored takes the featured slot */}
-            {activeSponsored.length > 0 ? (
-              <>
-                <View style={styles.sectionRow}>
-                  <Ionicons name="star-outline" size={12} color={theme.acc} />
-                  <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured</Text>
-                </View>
-                {activeSponsored.map(show => <SponsoredCard key={show.id} show={show} />)}
-              </>
-            ) : featuredEvent ? (
+            {/* Featured event — only when no sponsored show is active */}
+            {activeSponsored.length === 0 && featuredEvent && (
               <>
                 <View style={styles.sectionRow}>
                   <Ionicons name="star-outline" size={12} color={theme.acc} />
@@ -666,7 +665,7 @@ export default function EventsScreen() {
                 </View>
                 <FeaturedCard event={featuredEvent} />
               </>
-            ) : null}
+            )}
 
             {/* Day groups */}
             {dayGroups.map(group => (
