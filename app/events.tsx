@@ -67,7 +67,7 @@ function formatFeaturedDate(iso: string): { date: string; time: string } {
 }
 
 // ── Filter helpers ────────────────────────────────────────────────
-type FilterKey = 'weekend' | 'week' | string; // string = month name
+type FilterKey = 'all' | 'weekend' | 'week' | string; // string = month name
 
 function getWeekendRange(): [Date, Date] {
   const today = new Date();
@@ -129,11 +129,141 @@ function groupByDay(events: EventItem[]): DayGroup[] {
   });
 }
 
+// ── Sponsored event card ─────────────────────────────────────────
+interface SponsoredShow {
+  id: string;
+  line1: string;        // "WE SPEAK"
+  line2: string;        // "CANADIAN"
+  accentColor: string;  // brand red
+  venue: string;
+  location: string;
+  date: string;         // ISO — used to auto-hide after show passes
+  displayDate: string;  // "SAT MAY 30"
+  displayTime: string;  // "10 PM"
+  image: string;
+  link?: string;
+  mapLink?: string;
+  venueLink?: string;
+}
+
+const SPONSORED_SHOWS: SponsoredShow[] = [
+  {
+    id: 'wsc-shawbucks-0530',
+    line1: 'WE SPEAK',
+    line2: 'CANADIAN',
+    accentColor: '#cc1414',
+    venue: 'Shawbucks',
+    location: 'Jamestown, NY',
+    date: '2026-05-30T22:00:00',
+    displayDate: 'SAT MAY 30',
+    displayTime: '10 PM',
+    image: '/wsc.jpg',
+    link: 'https://wespeakcanadian.bandcamp.com/album/promo-2020',
+    mapLink: 'https://maps.google.com/?q=Shawbucks+110+W+4th+St+Jamestown+NY',
+  },
+];
+
+function SponsoredCard({ show }: { show: SponsoredShow }) {
+  const red = show.accentColor;
+  return (
+    <View style={sp.card}>
+      {/* Photo + gradient */}
+      <View style={sp.photoWrap}>
+        <Image source={{ uri: show.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        {/* Bottom fade — heavy so logo text reads */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.72)', 'rgba(0,0,0,0.95)'] as any}
+          start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+          style={[StyleSheet.absoluteFill, { top: '25%' }]}
+        />
+
+        {/* Featured pill — top left */}
+        <View style={[sp.featPill, { backgroundColor: `${red}22`, borderColor: `${red}55` }]}>
+          <Ionicons name="star" size={8} color={red} />
+          <Text style={[sp.featPillText, { color: red }]}>FEATURED SHOW</Text>
+        </View>
+
+        {/* Band name — bottom of photo with maple leaf */}
+        <View style={sp.nameBlock}>
+          <Text style={sp.nameLine1}>{show.line1}</Text>
+          {/* Canadian flag treatment: red bar · leaf · red bar */}
+          <View style={sp.flagRow}>
+            <View style={[sp.flagBar, { backgroundColor: red }]} />
+            <Text style={[sp.maple, { color: red }]}>🍁</Text>
+            <View style={[sp.flagBar, { backgroundColor: red }]} />
+          </View>
+          <Text style={[sp.nameLine2, { color: red }]}>{show.line2}</Text>
+        </View>
+      </View>
+
+      {/* Body */}
+      <View style={sp.body}>
+        {/* Date + time row */}
+        <View style={sp.metaRow}>
+          <View style={sp.pill}>
+            <Ionicons name="calendar-outline" size={10} color="rgba(255,255,255,0.5)" />
+            <Text style={sp.pillText}>{show.displayDate}</Text>
+          </View>
+          <View style={sp.pill}>
+            <Ionicons name="time-outline" size={10} color="rgba(255,255,255,0.5)" />
+            <Text style={sp.pillText}>{show.displayTime}</Text>
+          </View>
+        </View>
+
+        {/* Venue row with map link */}
+        <View style={sp.venueRow}>
+          <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.4)" />
+          <Text style={sp.venue}>{show.venue} · {show.location}</Text>
+          {show.mapLink && (
+            <TouchableOpacity onPress={() => openLink(show.mapLink!)} activeOpacity={0.7} style={sp.mapBtn}>
+              <Ionicons name="navigate-outline" size={12} color={red} />
+              <Text style={[sp.mapBtnText, { color: red }]}>Map</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* CTA */}
+        {show.link && (
+          <TouchableOpacity
+            onPress={() => openLink(show.link!)}
+            activeOpacity={0.75}
+            style={[sp.ctaBtn, { backgroundColor: `${red}18`, borderColor: `${red}44` }]}
+          >
+            <Text style={[sp.ctaText, { color: red }]}>Listen on Bandcamp →</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const sp = StyleSheet.create({
+  card:       { backgroundColor: dark.surface, borderWidth: 1, borderColor: 'rgba(204,20,20,0.25)', borderRadius: 18, overflow: 'hidden', marginBottom: 12 },
+  photoWrap:  { height: 240, position: 'relative', justifyContent: 'flex-end' },
+  featPill:   { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  featPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
+  nameBlock:  { paddingHorizontal: 16, paddingBottom: 14, gap: 2 },
+  nameLine1:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', color: '#ffffff', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
+  nameLine2:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
+  flagRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 },
+  flagBar:    { flex: 1, height: 2, borderRadius: 1, opacity: 0.6 },
+  maple:      { fontSize: 14, lineHeight: 18 },
+  body:       { padding: 14, gap: 10 },
+  metaRow:    { flexDirection: 'row', gap: 6 },
+  pill:       { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6 },
+  pillText:   { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.8 },
+  venueRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  venue:      { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)', flex: 1 },
+  mapBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(204,20,20,0.35)', backgroundColor: 'rgba(204,20,20,0.1)' },
+  mapBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  ctaBtn:     { borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  ctaText:    { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
+});
+
 // ── Featured event card ───────────────────────────────────────────
 function FeaturedCard({ event }: { event: EventItem }) {
   const { theme } = useTheme();
   const color = categoryColor(event.category);
-  const icon  = categoryIcon(event.category);
   const { date, time } = formatFeaturedDate(event.startDate);
 
   return (
@@ -142,10 +272,10 @@ function FeaturedCard({ event }: { event: EventItem }) {
       activeOpacity={0.75}
       style={feat.card}
     >
-      {/* Gradient header */}
-      <View style={feat.header}>
-        {event.imageUrl ? (
-          <>
+      {event.imageUrl ? (
+        <>
+          {/* Image header — tall version */}
+          <View style={feat.header}>
             <Image
               source={{ uri: event.imageUrl }}
               style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
@@ -156,47 +286,61 @@ function FeaturedCard({ event }: { event: EventItem }) {
               start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-          </>
-        ) : (
-          <>
+            <View style={feat.topRow}>
+              <View style={feat.pill}>
+                <Text style={feat.pillText}>{date}</Text>
+              </View>
+              {time ? (
+                <View style={feat.pill}>
+                  <Text style={feat.pillText}>{time}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={[feat.catPill, { backgroundColor: `${color}22`, borderColor: `${color}44` }]}>
+              <View style={[feat.catDot, { backgroundColor: color }]} />
+              <Text style={[feat.catText, { color }]}>{event.category.toUpperCase()}</Text>
+            </View>
+          </View>
+          <View style={feat.body}>
+            <Text style={feat.title} numberOfLines={2}>{event.title}</Text>
+            {event.location ? (
+              <View style={feat.venueRow}>
+                <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
+                <Text style={feat.venue} numberOfLines={1}>{event.location}</Text>
+              </View>
+            ) : null}
+          </View>
+        </>
+      ) : (
+        <>
+          {/* No-image banner — compact, like Top Story card */}
+          <View style={feat.banner}>
             <LinearGradient
-              colors={[`${color}44`, `${color}18`, 'transparent'] as any}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              colors={['rgba(12,22,48,0.98)', 'rgba(6,12,30,0.99)'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={StyleSheet.absoluteFill}
             />
-            <Ionicons name={icon} size={100} color={`${color}10`} style={feat.bgIcon} />
-          </>
-        )}
-
-        {/* Date + time pills */}
-        <View style={feat.topRow}>
-          <View style={feat.pill}>
-            <Text style={feat.pillText}>{date}</Text>
+            <View style={[feat.accentBar, { backgroundColor: color }]} />
+            <Text style={feat.watermark}>{event.category.toUpperCase()}</Text>
+            <Text style={feat.bannerMeta}>
+              {date}{time ? `  ·  ${time}` : ''}
+            </Text>
           </View>
-          {time ? (
-            <View style={feat.pill}>
-              <Text style={feat.pillText}>{time}</Text>
+          <View style={feat.body}>
+            <Text style={feat.title} numberOfLines={2}>{event.title}</Text>
+            {event.location ? (
+              <View style={feat.venueRow}>
+                <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
+                <Text style={feat.venue} numberOfLines={1}>{event.location}</Text>
+              </View>
+            ) : null}
+            <View style={[feat.catPill, { backgroundColor: `${color}22`, borderColor: `${color}44`, marginTop: 4 }]}>
+              <View style={[feat.catDot, { backgroundColor: color }]} />
+              <Text style={[feat.catText, { color }]}>{event.category.toUpperCase()}</Text>
             </View>
-          ) : null}
-        </View>
-
-        {/* Category pill */}
-        <View style={[feat.catPill, { backgroundColor: `${color}22`, borderColor: `${color}44` }]}>
-          <View style={[feat.catDot, { backgroundColor: color }]} />
-          <Text style={[feat.catText, { color }]}>{event.category.toUpperCase()}</Text>
-        </View>
-      </View>
-
-      {/* Body */}
-      <View style={feat.body}>
-        <Text style={feat.title} numberOfLines={2}>{event.title}</Text>
-        {event.location ? (
-          <View style={feat.venueRow}>
-            <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
-            <Text style={feat.venue} numberOfLines={1}>{event.location}</Text>
           </View>
-        ) : null}
-      </View>
+        </>
+      )}
     </TouchableOpacity>
   );
 }
@@ -207,7 +351,13 @@ const feat = StyleSheet.create({
     borderRadius: 18, overflow: 'hidden', marginBottom: 12,
   },
   header: { height: 200, justifyContent: 'space-between', padding: 14 },
-  bgIcon: { position: 'absolute', right: -14, bottom: -14 },
+  banner: { height: 96, justifyContent: 'center', paddingHorizontal: 18, position: 'relative', overflow: 'hidden' },
+  accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+  watermark: {
+    position: 'absolute', right: 0, bottom: -8,
+    fontFamily: 'Syne', fontSize: 48, letterSpacing: 3, opacity: 0.06, color: '#fff', textAlign: 'right',
+  },
+  bannerMeta: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.3 },
   topRow: { flexDirection: 'row', gap: 6, alignSelf: 'flex-end' },
   pill:   {
     backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
@@ -329,6 +479,7 @@ export default function EventsScreen() {
   const eventMonths = useMemo(() => new Set(upcoming.map(e => getEventMonth(e.startDate))), [upcoming]);
 
   const FILTERS: { key: FilterKey; label: string }[] = [
+    { key: 'all',     label: 'All'          },
     { key: 'weekend', label: 'This Weekend' },
     { key: 'week',    label: 'This Week'    },
     ...monthFilters,
@@ -337,7 +488,9 @@ export default function EventsScreen() {
   const filtered = useMemo(() => {
     function getForFilter(key: FilterKey): EventItem[] {
       let result: EventItem[];
-      if (key === 'weekend') {
+      if (key === 'all') {
+        result = [...upcoming];
+      } else if (key === 'weekend') {
         const [fri, sun] = getWeekendRange();
         result = upcoming.filter(e => { const d = new Date(e.startDate); return d >= fri && d <= sun; });
       } else if (key === 'week') {
@@ -372,6 +525,10 @@ export default function EventsScreen() {
   const restEvents    = filtered.slice(1);
   const dayGroups     = groupByDay(restEvents);
 
+  // Sponsored shows — show above everything if the event hasn't passed
+  const now2 = new Date();
+  const activeSponsored = SPONSORED_SHOWS.filter(s => new Date(s.date) > now2);
+
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.safe}>
@@ -387,7 +544,7 @@ export default function EventsScreen() {
         >
           {FILTERS.map(f => {
             const active = f.key === activeFilter;
-            const hasEvents = f.key === 'weekend' || f.key === 'week' || eventMonths.has(f.key);
+            const hasEvents = f.key === 'all' || f.key === 'weekend' || f.key === 'week' || eventMonths.has(f.key);
             return (
               <TouchableOpacity
                 key={f.key}
@@ -456,6 +613,9 @@ export default function EventsScreen() {
           </View>
         ) : (
           <>
+            {/* Sponsored shows — always at top */}
+            {activeSponsored.map(show => <SponsoredCard key={show.id} show={show} />)}
+
             {/* Featured */}
             {featuredEvent && (
               <>
