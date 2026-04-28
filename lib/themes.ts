@@ -1,4 +1,4 @@
-export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent' | 'aldos' | 'swede' | 'lake';
+export type ThemeId = 'green' | 'solar' | 'dahlstrom' | 'violet' | 'crescent' | 'aldos' | 'swede' | 'lake' | 'niteline';
 
 export interface Theme {
   id: ThemeId;
@@ -198,6 +198,26 @@ export const THEMES: Theme[] = [
     orb2: 'rgba(200,223,240,0.07)',
     warmWarn: { bg: 'rgba(200,223,240,0.08)', text: '#c8dff0', borderColor: 'rgba(200,223,240,0.2)' },
     tabBarBg: 'rgba(4,7,12,0.97)',
+  },
+  {
+    id: 'niteline',
+    label: 'Nite-line',
+    sub: 'Southwestern New York\'s entertainment weekly',
+    description: 'Named for Nite-Line Magazine, Jamestown\'s local entertainment weekly that covered the nightlife, music, and regional events of Southwestern New York and Northwestern Pennsylvania for decades. Published by Frank Smeragliuolo out of 192 Falconer St. Pure black and white — ink on newsprint.',
+    swatchColor: '#ffffff',
+    bg: '#000000',
+    acc: '#ffffff',
+    acc55: 'rgba(255,255,255,0.55)',
+    acc45: 'rgba(255,255,255,0.45)',
+    accRGB: '255,255,255',
+    acc2: '#e0e0e0',
+    acc2RGB: '224,224,224',
+    acc3: '#a0a0a0',
+    acc3RGB: '160,160,160',
+    orb1: 'rgba(255,255,255,0.04)',
+    orb2: 'rgba(255,255,255,0.02)',
+    warmWarn: { bg: 'rgba(255,220,80,0.12)', text: '#ffe066', borderColor: 'rgba(255,220,80,0.3)' },
+    tabBarBg: 'rgba(0,0,0,0.98)',
   },
 ];
 
