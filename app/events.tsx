@@ -141,6 +141,7 @@ interface SponsoredShow {
   displayDate: string;  // "SAT MAY 30"
   displayTime: string;  // "10 PM"
   image: string;
+  bio?: string;
   link?: string;
   youtubeLink?: string;
   mapLink?: string;
@@ -159,6 +160,7 @@ const SPONSORED_SHOWS: SponsoredShow[] = [
     displayDate: 'SAT MAY 30',
     displayTime: '10 PM',
     image: '/wsc.jpg',
+    bio: 'Six-piece pop cover band from Jamestown with a hard rock edge. Metalhead musicians, powerhouse vocals, and a setlist that\'ll surprise you — Dua Lipa and Rihanna hits played like they were meant to be loud.',
     link: 'https://wespeakcanadian.bandcamp.com/album/promo-2020',
     youtubeLink: 'https://www.youtube.com/@wespeakcanadian7951',
     mapLink: 'https://maps.google.com/?q=Shawbucks+110+W+4th+St+Jamestown+NY',
@@ -185,17 +187,15 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
           <Text style={[sp.featPillText, { color: red }]}>FEATURED SHOW</Text>
         </View>
 
-        {/* Band name — bottom of photo with maple leaf */}
-        <View style={sp.nameBlock}>
+        {/* Band name — bottom of photo with Canadian flag gradient */}
+        <LinearGradient
+          colors={[`${red}44`, 'rgba(255,255,255,0.12)', `${red}44`] as any}
+          start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+          style={sp.nameBlock}
+        >
           <Text style={sp.nameLine1}>{show.line1}</Text>
-          {/* Canadian flag treatment: red bar · leaf · red bar */}
-          <View style={sp.flagRow}>
-            <View style={[sp.flagBar, { backgroundColor: red }]} />
-            <Text style={[sp.maple, { color: red }]}>🍁</Text>
-            <View style={[sp.flagBar, { backgroundColor: red }]} />
-          </View>
-          <Text style={[sp.nameLine2, { color: red }]}>{show.line2}</Text>
-        </View>
+          <Text style={sp.nameLine2}>{show.line2}</Text>
+        </LinearGradient>
       </View>
 
       {/* Body */}
@@ -223,6 +223,9 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Bio */}
+        {show.bio && <Text style={sp.bio}>{show.bio}</Text>}
 
         {/* CTAs */}
         <View style={sp.ctaRow}>
@@ -259,10 +262,7 @@ const sp = StyleSheet.create({
   featPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
   nameBlock:  { paddingHorizontal: 16, paddingBottom: 14, gap: 2 },
   nameLine1:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', color: '#ffffff', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
-  nameLine2:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
-  flagRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 },
-  flagBar:    { flex: 1, height: 2, borderRadius: 1, opacity: 0.6 },
-  maple:      { fontSize: 14, lineHeight: 18 },
+  nameLine2:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', color: '#ffffff', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
   body:       { padding: 14, gap: 10 },
   metaRow:    { flexDirection: 'row', gap: 6 },
   pill:       { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6 },
@@ -271,6 +271,7 @@ const sp = StyleSheet.create({
   venue:      { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)', flex: 1 },
   mapBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(204,20,20,0.35)', backgroundColor: 'rgba(204,20,20,0.1)' },
   mapBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  bio:        { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 20 },
   ctaRow:     { flexDirection: 'row', gap: 8 },
   ctaBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 10 },
   ctaText:    { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
