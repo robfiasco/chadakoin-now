@@ -125,6 +125,7 @@ function eventCategoryColor(category: string): string {
 export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (index: number) => void }) {
   const { theme } = useTheme();
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [gasPrice, setGasPrice] = useState<{ regional: string | null; national: string | null; diff: number | null; period: string | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cityServicesOpen, setCityServicesOpen] = useState(false);
   const [recyclingOpen, setRecyclingOpen] = useState(false);
@@ -154,6 +155,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
+    fetch('/api/gas').then(r => r.json()).then(setGasPrice).catch(() => {});
   }, []);
 
   async function onRefresh() {
@@ -175,7 +177,20 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     a.title.toLowerCase().includes('snow emergency')
   );
 
-  const topStory: NewsItem | null = civic.news.length > 0 ? civic.news[0] : null;
+  // School delays/closings — scan news for delay keywords, show within school-year months (Sep–Jun)
+  const schoolMonth = (() => { const m = new Date().getMonth() + 1; return m >= 9 || m <= 6; })();
+  const DELAY_PATTERN = /\b(delay|delayed|closing|closed|cancel|cancellation|2.hour|school)\b/i;
+  const schoolAlert = schoolMonth
+    ? civic.news.find(n => DELAY_PATTERN.test(n.title) && /\b(school|district|jamestown|chautauqua)\b/i.test(n.title))
+    : null;
+
+  const topStoryCandidate = civic.news.length > 0 ? civic.news[0] : null;
+  const TOP_STORY_MAX_AGE_MS = 36 * 60 * 60 * 1000; // hide if older than 36h
+  const topStory: NewsItem | null =
+    topStoryCandidate && topStoryCandidate.pubDate &&
+    Date.now() - new Date(topStoryCandidate.pubDate).getTime() < TOP_STORY_MAX_AGE_MS
+      ? topStoryCandidate
+      : null;
   const weekendEvent = getThisWeekendEvent(civic.events);
 
   // Simplify recycling material name — strip parenthetical, shorten known long names
@@ -199,9 +214,9 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             <Text style={[styles.appCity, { color: theme.acc }]}>Jamestown, NY</Text>
           </View>
           <View style={styles.headerRight}>
-            <View style={styles.dateBadge}>
-              <LiveDot color={dark.category.city} />
-              <Text style={styles.dateBadgeText}>{dateBadge}</Text>
+            <View style={[styles.dateBadge, { backgroundColor: `rgba(${theme.accRGB},0.1)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+              <LiveDot color={theme.acc} />
+              <Text style={[styles.dateBadgeText, { color: theme.acc }]}>{dateBadge}</Text>
             </View>
             <TouchableOpacity
               onPress={() => setSettingsOpen(true)}
@@ -229,6 +244,21 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
       )}
 
+      {schoolAlert && (
+        <TouchableOpacity
+          style={styles.schoolBanner}
+          activeOpacity={0.85}
+          onPress={() => schoolAlert.link && openLink(schoolAlert.link)}
+        >
+          <Ionicons name="school-outline" size={18} color="#fff" />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.schoolBannerTitle}>School Alert</Text>
+            <Text style={styles.schoolBannerBody} numberOfLines={2}>{schoolAlert.title}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" />
+        </TouchableOpacity>
+      )}
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -237,8 +267,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={dark.category.city}
-            colors={[dark.category.city]}
+            tintColor={theme.acc}
+            colors={[theme.acc]}
           />
         }
       >
@@ -286,7 +316,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Today in Jamestown</Text>
+          <Text style={[styles.sectionLabel, { color: theme.acc }]}>Today in Jamestown</Text>
         </View>
 
         <View style={styles.todayGrid}>
@@ -306,7 +336,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                       {recyclingName === '—' ? 'No pickup' : recyclingName}
                     </Text>
                     {recycling.thisWeek.exclusions ? (
-                      <Text style={styles.todayCardExclusion}>No {recycling.thisWeek.exclusions}</Text>
+                      <Text style={[styles.todayCardExclusion, { color: theme.warmWarn.text }]}>No {recycling.thisWeek.exclusions}</Text>
                     ) : null}
                   </>
                 )}
@@ -370,7 +400,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         {(civic.loading || topStory) && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>Top Story</Text>
+              <Text style={[styles.sectionLabel, { color: theme.acc }]}>Top Story</Text>
               {onNavigateToTab && (
                 <TouchableOpacity onPress={() => onNavigateToTab(2)} activeOpacity={0.7} style={styles.sectionLinkRow}>
                   <Text style={styles.sectionLink}>All news</Text>
@@ -423,7 +453,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         {(civic.loading || weekendEvent) && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>This Weekend</Text>
+              <Text style={[styles.sectionLabel, { color: theme.acc }]}>This Weekend</Text>
               {onNavigateToTab && (
                 <TouchableOpacity onPress={() => onNavigateToTab(3)} activeOpacity={0.7} style={styles.sectionLinkRow}>
                   <Text style={styles.sectionLink}>All events</Text>
@@ -469,13 +499,13 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         )}
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>From Jamestown</Text>
+          <Text style={[styles.sectionLabel, { color: theme.acc }]}>From Jamestown</Text>
         </View>
 
         {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
         <View style={[styles.cdirCard, {
-          backgroundColor: radioPlaying ? 'rgba(34,211,238,0.1)' : dark.surface,
-          borderColor: radioPlaying ? 'rgba(34,211,238,0.3)' : dark.border,
+          backgroundColor: radioPlaying ? `rgba(${theme.accRGB},0.1)` : dark.surface,
+          borderColor: radioPlaying ? `rgba(${theme.accRGB},0.3)` : dark.border,
         }, glassWeb]}>
           <View style={styles.cdirRow}>
             <View style={styles.cdirArtCol}>
@@ -484,11 +514,11 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 activeOpacity={0.8}
                 accessibilityLabel="Open CDIR website"
               >
-                <View style={[styles.mediaArt, { backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.15)' }]}>
+                <View style={[styles.mediaArt, { backgroundColor: `rgba(${theme.accRGB},0.1)`, borderColor: `rgba(${theme.accRGB},0.15)` }]}>
                   {nowPlaying?.artwork ? (
                     <Image source={{ uri: nowPlaying.artwork }} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
                   ) : (
-                    <Ionicons name="radio-outline" size={22} color={dark.category.city} />
+                    <Ionicons name="radio-outline" size={22} color={theme.acc} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -500,7 +530,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
             <View style={{ flex: 1 }}>
               <View style={styles.mediaLabelRow}>
-                <Text style={[styles.mediaLabel, { color: dark.category.city }]} numberOfLines={1}>CDIR</Text>
+                <Text style={[styles.mediaLabel, { color: theme.acc }]} numberOfLines={1}>CDIR</Text>
                 <TouchableOpacity onPress={() => setCdirExpanded(v => !v)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name={cdirExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="rgba(255,255,255,0.35)" />
                 </TouchableOpacity>
@@ -518,7 +548,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             <TouchableOpacity
               onPress={toggleRadio}
               activeOpacity={0.7}
-              style={[styles.playBtn, { backgroundColor: dark.category.city, alignSelf: 'center' }]}
+              style={[styles.playBtn, { backgroundColor: theme.acc, alignSelf: 'center' }]}
               accessibilityLabel={radioPlaying ? 'Stop radio' : 'Play CDIR radio'}
             >
               {radioLoading
@@ -542,15 +572,34 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 activeOpacity={0.7}
                 style={styles.cdirExpandedLink}
               >
-                <Text style={[styles.cdirExpandedLinkText, { color: dark.category.city }]}>radio.chadakoindigital.com</Text>
-                <Ionicons name="arrow-forward" size={11} color={dark.category.city} />
+                <Text style={[styles.cdirExpandedLinkText, { color: theme.acc }]}>radio.chadakoindigital.com</Text>
+                <Ionicons name="arrow-forward" size={11} color={theme.acc} />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
+        {/* Gas Prices */}
+        {gasPrice?.regional && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionLabel, { color: theme.acc }]}>Gas Prices</Text>
+            </View>
+            {/* @ts-ignore */}
+            <View style={[styles.card, glassWeb, { gap: 10 }]}>
+              <Text style={[styles.gasPriceValue, { color: theme.acc }]}>{gasPrice.regional}<Text style={styles.gasPriceUnit}> /gal</Text></Text>
+              <Text style={styles.gasPriceLabel}>Central Atlantic avg</Text>
+              <View style={styles.gasPriceDivider} />
+              <TouchableOpacity onPress={() => openLink('https://www.gasbuddy.com/home?search=Jamestown%2C+NY&fuel=1')} activeOpacity={0.7}>
+                <Text style={[styles.gasPriceCta, { color: theme.acc }]}>Find cheapest stations near you →</Text>
+              </TouchableOpacity>
+              <Text style={styles.gasPriceMeta}>EIA weekly data</Text>
+            </View>
+          </>
+        )}
+
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Did You Know?</Text>
+          <Text style={[styles.sectionLabel, { color: theme.acc }]}>Did You Know?</Text>
         </View>
 
         {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
@@ -637,6 +686,14 @@ const styles = StyleSheet.create({
   snowBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
   snowBannerLink: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#ff6680' },
 
+  schoolBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(234,179,8,0.15)', borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(234,179,8,0.3)', paddingHorizontal: 18, paddingVertical: 14,
+  },
+  schoolBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fde047' },
+  schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
+
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 8, paddingBottom: 48 },
 
@@ -664,7 +721,7 @@ const styles = StyleSheet.create({
   todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
   todayCardTitle: { fontFamily: 'Editorial', fontSize: 16, color: dark.text.primary, lineHeight: 21 },
   todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 1 },
-  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, color: '#fb923c', marginTop: 1 },
+  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', textAlign: 'right' },
 
   delayBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: 10, marginTop: 8 },
@@ -737,6 +794,16 @@ const styles = StyleSheet.create({
   factRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   factText: { fontFamily: 'Outfit', fontSize: 13, color: dark.text.primary, lineHeight: 20 },
   factMeta: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 8 },
+
+  gasPriceRow:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  gasPriceDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)' },
+  gasPriceValue:   { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fb923c' },
+  gasPriceUnit:    { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.35)' },
+  gasPriceLabel:   { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 },
+  gasPricePill:    { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  gasPricePillText:{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', textAlign: 'right' },
+  gasPriceCta:     { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700', color: '#fb923c' },
+  gasPriceMeta:    { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.2)' },
 
   updatedLine: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', color: '#475569', marginTop: 24 },
 
