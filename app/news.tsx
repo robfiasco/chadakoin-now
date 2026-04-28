@@ -109,10 +109,23 @@ function relativeTime(pubDate: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-type Bucket = { label: string; items: NewsItem[] };
+// Routine arrest/charge stories — buried in Police Blotter, not the main feed.
+// High-impact crime (shootings, fatal crashes, major investigations) stays in main feed.
+const BLOTTER_PATTERN = /\b(arrested|charged with|faces .{0,20}charge|possession of|dwi|dui|trespass|harassment|petit larceny|shoplifting|disorderly|unlawful|appearance ticket|arraigned|probation violation)\b/i;
+const MAJOR_CRIME_PATTERN = /\b(shot|shooting|killed|fatal|homicide|murder|stabbing|missing person|amber alert|manhunt|major investigation|sex crime|child|assault)\b/i;
+
+function isBlotter(item: NewsItem): boolean {
+  const t = item.title + ' ' + (item.excerpt ?? '');
+  return BLOTTER_PATTERN.test(t) && !MAJOR_CRIME_PATTERN.test(t);
+}
+
+type Bucket = { label: string; items: NewsItem[]; isBlotter?: boolean };
 
 function bucketItems(items: NewsItem[]): Bucket[] {
   const now = Date.now();
+
+  const mainItems   = items.filter(i => !isBlotter(i));
+  const blotterItems = items.filter(isBlotter);
 
   // Week starts Sunday — anything published before this Sunday is "Last Week"
   const sunday = new Date();
@@ -126,15 +139,20 @@ function bucketItems(items: NewsItem[]): Bucket[] {
     { label: 'This Week',     items: [] },
     { label: 'Last Week',     items: [] },
   ];
-  for (const item of items) {
+  for (const item of mainItems) {
     const pubMs = new Date(item.pubDate || '').getTime();
     const hrs = (now - pubMs) / 3_600_000;
-    if (hrs < 3)            bins[0].items.push(item);
-    else if (hrs < 24)      bins[1].items.push(item);
+    if (hrs < 3)                   bins[0].items.push(item);
+    else if (hrs < 24)             bins[1].items.push(item);
     else if (pubMs >= weekStartMs) bins[2].items.push(item);
-    else                    bins[3].items.push(item);
+    else                           bins[3].items.push(item);
   }
-  return bins.filter(b => b.items.length > 0);
+
+  const result = bins.filter(b => b.items.length > 0);
+  if (blotterItems.length > 0) {
+    result.push({ label: 'Police Blotter', items: blotterItems, isBlotter: true });
+  }
+  return result;
 }
 
 // ── Hero card ─────────────────────────────────────────────────────
@@ -252,32 +270,73 @@ const hero = StyleSheet.create({
 
 // ── Compact news row ──────────────────────────────────────────────
 function NewsRow({ item }: { item: NewsItem }) {
+  const { theme } = useTheme();
   const category = deriveCategory(item.title, item.source ?? '');
   const color = CATEGORY_COLORS[category] ?? 'rgba(255,255,255,0.4)';
+  const isWJTN = item.source === 'WJTN';
+  const [expanded, setExpanded] = useState(false);
+
+  const meta = (
+    <View style={row.meta}>
+      {item.source ? <Text style={row.source}>{item.source}</Text> : null}
+      {item.source ? <Text style={row.dot}>·</Text> : null}
+      <Text style={row.time}>{relativeTime(item.pubDate)}</Text>
+      <Text style={row.dot}>·</Text>
+      <Text style={[row.category, { color }]}>{category}</Text>
+    </View>
+  );
+
+  if (isWJTN) {
+    return (
+      <View style={row.card}>
+        <View style={[row.bar, { backgroundColor: color }]} />
+        <View style={row.inner}>
+          <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.72}>
+            <View style={row.topRow}>
+              <Text style={row.title}>{item.title}</Text>
+              <Ionicons
+                name={expanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color="rgba(255,255,255,0.3)"
+                style={{ marginTop: 2 }}
+              />
+            </View>
+            {meta}
+          </TouchableOpacity>
+
+          {expanded && (
+            <View style={row.expandBody}>
+              <Text style={row.bodyText}>{item.excerpt}</Text>
+              <TouchableOpacity
+                onPress={() => openLink(item.link)}
+                activeOpacity={0.7}
+                style={[row.sourceLink, { borderColor: `rgba(${theme.accRGB},0.25)` }]}
+              >
+                <Text style={[row.sourceLinkText, { color: theme.acc }]}>Read at source →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <TouchableOpacity
-      onPress={() => openLink(item.link)}
-      activeOpacity={0.72}
-      style={row.card}
-    >
-      <View style={row.topRow}>
-        <Text style={row.title} numberOfLines={2}>{item.title}</Text>
-        <TouchableOpacity
-          onPress={() => shareItem(item)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.7}
-          style={row.shareBtn}
-        >
-          <Ionicons name="share-social-outline" size={14} color="rgba(255,255,255,0.25)" />
-        </TouchableOpacity>
-      </View>
-      <View style={row.meta}>
-        {item.source ? <Text style={row.source}>{item.source}</Text> : null}
-        {item.source ? <Text style={row.dot}>·</Text> : null}
-        <Text style={row.time}>{relativeTime(item.pubDate)}</Text>
-        <Text style={row.dot}>·</Text>
-        <Text style={[row.category, { color }]}>{category}</Text>
+    <TouchableOpacity onPress={() => openLink(item.link)} activeOpacity={0.72} style={row.card}>
+      <View style={[row.bar, { backgroundColor: color }]} />
+      <View style={row.inner}>
+        <View style={row.topRow}>
+          <Text style={row.title}>{item.title}</Text>
+          <TouchableOpacity
+            onPress={() => shareItem(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+            style={row.shareBtn}
+          >
+            <Ionicons name="share-social-outline" size={14} color="rgba(255,255,255,0.25)" />
+          </TouchableOpacity>
+        </View>
+        {meta}
       </View>
     </TouchableOpacity>
   );
@@ -286,8 +345,10 @@ function NewsRow({ item }: { item: NewsItem }) {
 const row = StyleSheet.create({
   card:     {
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
-    borderRadius: 14, padding: 14, marginBottom: 6,
+    borderRadius: 14, overflow: 'hidden', flexDirection: 'row', marginBottom: 6,
   },
+  bar:      { width: 3, flexShrink: 0 },
+  inner:    { flex: 1, padding: 14 },
   topRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
   title:    { flex: 1, fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.2, lineHeight: 21 },
   shareBtn: { paddingTop: 2 },
@@ -295,17 +356,24 @@ const row = StyleSheet.create({
   source:   { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
   dot:      { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
   time:     { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
-  category: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  category:      { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  expandBody:    { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)', gap: 12 },
+  bodyText:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 20 },
+  sourceLink:    { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  sourceLinkText:{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
 });
 
 // ── Section header ────────────────────────────────────────────────
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({ label, blotter }: { label: string; blotter?: boolean }) {
   const { theme } = useTheme();
+  const color = blotter ? 'rgba(255,255,255,0.3)' : theme.acc;
+  const gradColor = blotter ? 'rgba(255,255,255,0.08)' : `rgba(${theme.accRGB},0.25)`;
   return (
     <View style={sec.row}>
-      <Text style={[sec.label, { color: theme.acc }]}>{label.toUpperCase()}</Text>
+      {blotter && <Ionicons name="shield-outline" size={10} color={color} style={{ marginRight: 2 }} />}
+      <Text style={[sec.label, { color }]}>{label.toUpperCase()}</Text>
       <LinearGradient
-        colors={[`rgba(${theme.accRGB},0.25)`, 'transparent'] as any}
+        colors={[gradColor, 'transparent'] as any}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         style={sec.line}
       />
@@ -341,7 +409,7 @@ export default function NewsScreen() {
   return (
     <ThemedBackground>
       <SafeAreaView edges={['top']} style={styles.safe}>
-        <Text style={styles.title}>Local <Text style={{ color: '#22d3ee' }}>News</Text></Text>
+        <Text style={styles.title}>Local <Text style={{ color: theme.acc }}>News</Text></Text>
         <Text style={[styles.subtitle, { color: theme.acc }]}>Jamestown, NY</Text>
 
       </SafeAreaView>
@@ -383,12 +451,14 @@ export default function NewsScreen() {
           </View>
         ) : (
           <>
-            {buckets.map(bucket => (
+            {buckets.map((bucket, bi) => (
               <View key={bucket.label} style={{ marginBottom: 8 }}>
-                <SectionHeader label={bucket.label} />
-                {bucket.items.map((item, i) => (
-                  <NewsRow key={i} item={item} />
-                ))}
+                <SectionHeader label={bucket.label} blotter={bucket.isBlotter} />
+                {bucket.items.map((item, i) =>
+                  bi === 0 && i === 0 && !bucket.isBlotter
+                    ? <HeroCard key={i} item={item} />
+                    : <NewsRow key={i} item={item} />
+                )}
               </View>
             ))}
           </>
