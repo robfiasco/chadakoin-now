@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  Image, TextInput, Linking,
+  Image, TextInput, Linking, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,33 +18,99 @@ function openMaps(query: string) {
   openLink(`https://maps.google.com/?q=${encodeURIComponent(query)}`);
 }
 
-type FilterCat = 'all' | 'eat' | 'stay' | 'do' | 'see' | 'cannabis';
+type FilterCat = 'all' | 'eat' | 'drink' | 'stay' | 'explore' | 'cannabis';
 
 const FILTERS: { key: FilterCat; label: string }[] = [
   { key: 'all',      label: 'All'      },
   { key: 'eat',      label: 'Eat'      },
+  { key: 'drink',    label: 'Drink'    },
   { key: 'stay',     label: 'Stay'     },
-  { key: 'do',       label: 'Do'       },
-  { key: 'see',      label: 'See'      },
+  { key: 'explore',  label: 'Explore'  },
   { key: 'cannabis', label: '🌿 21+'   },
 ];
 
 // Per-category accent colors — consistent across all themes
 const CAT_COLOR: Record<string, string> = {
   eat:      '#fbbf24',  // amber
+  drink:    '#f97316',  // orange
   stay:     '#60a5fa',  // blue
-  do:       '#2dd4bf',  // teal
-  see:      '#a78bfa',  // purple
+  explore:  '#a78bfa',  // purple
   cannabis: '#34d399',  // green
 };
 
+// ─── Open Now logic ───────────────────────────────────────────────
+const DAY_MAP: Record<string, number> = {
+  sun: 0, sunday: 0, saturdays: 6, sat: 6, saturday: 6,
+  fri: 5, friday: 5, thu: 4, thursday: 4,
+  wed: 3, wednesday: 3, tue: 2, tuesday: 2, mon: 1, monday: 1,
+};
+
+function parseTimeMins(str: string, hint?: 'am' | 'pm'): number {
+  const m = str.match(/(\d+)(?::(\d+))?\s*(am|pm)?/i);
+  if (!m) return -1;
+  let h = parseInt(m[1]);
+  const mins = m[2] ? parseInt(m[2]) : 0;
+  const mer = (m[3]?.toLowerCase() ?? hint) as 'am' | 'pm' | undefined;
+  if (mer === 'pm' && h !== 12) h += 12;
+  if (mer === 'am' && h === 12) h = 0;
+  return h * 60 + mins;
+}
+
+function daysInRange(str: string): number[] {
+  const s = str.trim().toLowerCase();
+  if (s === 'daily') return [0,1,2,3,4,5,6];
+  const parts = s.split(/[–\-]/);
+  if (parts.length === 2) {
+    const a = DAY_MAP[parts[0].trim()]; const b = DAY_MAP[parts[1].trim()];
+    if (a === undefined || b === undefined) return [];
+    const out: number[] = []; let d = a;
+    while (d !== b) { out.push(d); d = (d + 1) % 7; }
+    out.push(b); return out;
+  }
+  const single = DAY_MAP[s]; return single !== undefined ? [single] : [];
+}
+
+function isOpenNow(hours?: string): boolean | null {
+  if (!hours) return null;
+  if (/24.hour|24\/7|always/i.test(hours)) return true;
+  if (/check website|day.of.show|varies|call/i.test(hours)) return null;
+
+  const now = new Date();
+  const dow = now.getDay();
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  // "Closes Xpm" shorthand
+  const cl = hours.match(/closes?\s+(\d+(?::\d+)?\s*(?:am|pm)?)/i);
+  if (cl) { const t = parseTimeMins(cl[1]); return t > 0 && cur < t; }
+
+  const segments = hours.split(/·/).map(s => s.trim()).filter(Boolean);
+  let todayCovered = false;
+
+  for (const seg of segments) {
+    if (/closed/i.test(seg)) continue;
+    // Match: <days> <open>–<close>
+    const m = seg.match(/^([A-Za-z–\-]+(?:\s*[A-Za-z–\-]+)*)\s+(\d[\d:]*\s*(?:am|pm)?)\s*[–\-]\s*(\d[\d:]*\s*(?:am|pm)?)/i);
+    if (!m) continue;
+    const days = daysInRange(m[1]);
+    if (!days.includes(dow)) continue;
+    todayCovered = true;
+    const closeMer = /pm/i.test(m[3]) ? 'pm' : /am/i.test(m[3]) ? 'am' : undefined;
+    const open  = parseTimeMins(m[2], closeMer === 'pm' && !/am|pm/i.test(m[2]) ? 'pm' : undefined);
+    const close = parseTimeMins(m[3]);
+    if (open < 0 || close < 0) continue;
+    if (cur >= open && cur < close) return true;
+  }
+
+  return todayCovered ? false : null;
+}
+
 function mapCategory(place: Place): FilterCat {
   const cats = place.categories;
-  if (cats.includes('stay'))     return 'stay';
-  if (cats.includes('arts'))     return 'see';
-  if (cats.includes('activity')) return 'do';
-  if (cats.includes('cannabis')) return 'cannabis';
-  return 'eat'; // coffee, food, drinks
+  if (cats.includes('stay'))                          return 'stay';
+  if (cats.includes('cannabis'))                      return 'cannabis';
+  if (cats.includes('arts') || cats.includes('activity')) return 'explore';
+  if (cats.includes('drinks')) return 'drink';
+  return 'eat'; // food, coffee, mixed eat+drink
 }
 
 // ─── Local Favorites (Editor's Picks) ────────────────────────────
@@ -72,7 +138,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: true,
     quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
     lat: 42.09711, lng: -79.24081,
-    image: '/Brazil-%20Lab.jpg',
+    image: Platform.OS === 'web' ? '/Brazil-%20Lab.jpg' : undefined,
   },
   {
     name: "Honest John's Pizzeria",
@@ -83,19 +149,19 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: true,
     quote: "Jamestown has no shortage of great pizza and wings, and Honest John's holds its own. The subs are solid too if you're in that mood.",
     lat: 42.11282, lng: -79.21690,
-    image: '/honest%20johns.jpg',
+    image: Platform.OS === 'web' ? '/honest%20johns.jpg' : undefined,
     imageAnchor: 'top',
   },
   {
     name: 'National Comedy Center',
-    category: 'see',
-    detail: 'See · Wed–Sun, 10am–5pm',
+    category: 'explore',
+    detail: 'Explore · Wed–Sun, 10am–5pm',
     website: 'https://comedycenter.org',
     rgb: '155,109,255',
     visited: true,
     quote: "I've been three times and would go back. Comedy is my thing, so take that for what it's worth — but this is genuinely the best museum I've ever been to. If you visit Jamestown and skip it, you made a mistake.",
     lat: 42.09467, lng: -79.24365,
-    image: '/comedy_center.jpg',
+    image: Platform.OS === 'web' ? '/comedy_center.jpg' : undefined,
   },
 ];
 
@@ -484,6 +550,7 @@ export default function VisitScreen() {
   const { theme } = useTheme();
   const [active, setActive] = useState<FilterCat>('all');
   const [search, setSearch] = useState('');
+  const [openNow, setOpenNow] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const q = search.trim().toLowerCase();
@@ -494,13 +561,14 @@ export default function VisitScreen() {
     [active]
   );
 
-  // Places — filtered by category + search, exclude Editor's Picks IDs
+  // Places — filtered by category + search + open now, exclude Editor's Picks IDs
   const browsePlaces = useMemo(() => {
     return PLACES
       .filter(p => !EDITOR_PICKS_IDS.has(p.id))
       .map(p => ({ ...p, _cat: mapCategory(p) }))
       .filter(p => {
         if (active !== 'all' && p._cat !== active) return false;
+        if (openNow && isOpenNow(p.hours) === false) return false;
         if (q) {
           return (
             p.name.toLowerCase().includes(q) ||
@@ -517,7 +585,7 @@ export default function VisitScreen() {
         const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
         return featDiff !== 0 ? featDiff : a.name.localeCompare(b.name);
       });
-  }, [active, q]);
+  }, [active, q, openNow]);
 
   // Also in Jamestown — only for stay/all
   const showAlso = active === 'all' || active === 'stay';
@@ -529,7 +597,7 @@ export default function VisitScreen() {
   );
 
   // Parks — only for do/all
-  const showParks = active === 'all' || active === 'do';
+  const showParks = active === 'all' || active === 'explore';
   const filteredParks = useMemo(() =>
     !showParks ? [] : q
       ? PARKS.filter(p => p.name.toLowerCase().includes(q) || p.address.toLowerCase().includes(q))
@@ -544,8 +612,8 @@ export default function VisitScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Visit <Text style={{ color: '#22d3ee' }}>Jamestown</Text></Text>
-            <Text style={[styles.subtitle, { color: theme.acc }]}>Jamestown, NY</Text>
+            <Text style={styles.title}>Visit <Text style={{ color: theme.acc }}>Jamestown</Text></Text>
+            <Text style={[styles.subtitle, { color: `rgba(${theme.accRGB},0.55)` }]}>Places to eat, drink, stay & explore</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -560,22 +628,32 @@ export default function VisitScreen() {
           </>
         )}
 
-        {/* ── Search bar ──────────────────────────────────── */}
-        <View style={[styles.searchWrap, { borderColor: dark.border, marginTop: 8 }]}>
-          <Ionicons name="search-outline" size={15} color="rgba(255,255,255,0.3)" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search places…"
-            placeholderTextColor="rgba(255,255,255,0.25)"
-            style={styles.searchInput}
-            clearButtonMode="while-editing"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-              <Ionicons name="close-circle" size={15} color="rgba(255,255,255,0.3)" />
-            </TouchableOpacity>
-          )}
+        {/* ── Search bar + Open Now toggle ────────────────── */}
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+          <View style={[styles.searchWrap, { borderColor: dark.border, flex: 1 }]}>
+            <Ionicons name="search-outline" size={15} color="rgba(255,255,255,0.3)" />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search places…"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              style={styles.searchInput}
+              clearButtonMode="while-editing"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+                <Ionicons name="close-circle" size={15} color="rgba(255,255,255,0.3)" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            onPress={() => setOpenNow(v => !v)}
+            activeOpacity={0.75}
+            style={[styles.openNowBtn, openNow && { backgroundColor: 'rgba(52,211,153,0.15)', borderColor: 'rgba(52,211,153,0.4)' }]}
+          >
+            <Ionicons name="time-outline" size={14} color={openNow ? '#34d399' : 'rgba(255,255,255,0.35)'} />
+            <Text style={[styles.openNowText, openNow && { color: '#34d399' }]}>Open</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Filter chips ────────────────────────────────── */}
@@ -702,6 +780,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: dark.surface, borderWidth: 1, borderRadius: 12,
     paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12,
+  },
+  openNowBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
+    borderRadius: 12, paddingHorizontal: 12, marginBottom: 12,
+  },
+  openNowText: {
+    fontFamily: 'Outfit', fontSize: 12, fontWeight: '600',
+    color: 'rgba(255,255,255,0.35)',
   },
   searchInput: {
     flex: 1, fontFamily: 'Outfit', fontSize: 14, color: '#fff',

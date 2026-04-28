@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Image,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Image, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -173,7 +173,7 @@ const SPONSORED_SHOWS: SponsoredShow[] = [
     date: '2026-05-30T22:00:00',
     displayDate: 'SAT MAY 30',
     displayTime: '10 PM',
-    image: '/wsc.jpg',
+    image: Platform.OS === 'web' ? '/wsc.jpg' : undefined,
     bio: 'Six-piece pop cover band from Jamestown with a hard rock edge. Metalhead musicians, powerhouse vocals, and a setlist that\'ll surprise you — Dua Lipa and Rihanna hits played like they were meant to be loud.',
     link: 'https://wespeakcanadian.bandcamp.com/album/promo-2020',
     youtubeLink: 'https://www.youtube.com/@wespeakcanadian7951',

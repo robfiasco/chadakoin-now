@@ -1,5 +1,18 @@
-// Receives feedback form submissions and forwards to rob@robfiasco.dev via Resend.
+// Receives feedback form submissions and forwards to rob@chadakoindigital.com via Resend.
 // Set RESEND_API_KEY in Vercel environment variables.
+
+// 5 submissions per IP per 15 minutes
+const rateLimitMap = new Map();
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const limit = 5;
+  const entry = rateLimitMap.get(ip) ?? { count: 0, start: now };
+  if (now - entry.start > windowMs) { entry.count = 0; entry.start = now; }
+  entry.count++;
+  rateLimitMap.set(ip, entry);
+  return entry.count > limit;
+}
 
 const TYPE_LABELS = {
   general:    'General feedback',
@@ -12,6 +25,11 @@ const TYPE_LABELS = {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? 'unknown';
+  if (checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Too many submissions. Try again later.' });
   }
 
   const { type, message, replyTo, appVersion, timestamp } = req.body ?? {};
@@ -43,8 +61,8 @@ export default async function handler(req, res) {
   ].join('\n');
 
   const emailPayload = {
-    from:    'Chadakoin Now <onboarding@resend.dev>',
-    to:      ['robfiasco@gmail.com'],
+    from:    'Chadakoin Now <feedback@chadakoindigital.com>',
+    to:      ['rob@chadakoindigital.com'],
     subject,
     text:    textBody,
     ...(replyTo ? { reply_to: replyTo } : {}),
