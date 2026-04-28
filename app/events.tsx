@@ -538,13 +538,14 @@ export default function EventsScreen() {
     return primary;
   }, [upcoming, activeFilter]);
 
-  const featuredEvent = filtered[0] ?? null;
-  const restEvents    = filtered.slice(1);
-  const dayGroups     = groupByDay(restEvents);
-
-  // Sponsored shows — show above everything if the event hasn't passed
+  // Sponsored shows — show in place of Featured if active
   const now2 = new Date();
   const activeSponsored = SPONSORED_SHOWS.filter(s => new Date(s.date) > now2);
+
+  const featuredEvent = filtered[0] ?? null;
+  // When a sponsored show is in the featured slot, don't skip the first regular event
+  const restEvents = activeSponsored.length > 0 ? filtered : filtered.slice(1);
+  const dayGroups  = groupByDay(restEvents);
 
   return (
     <ThemedBackground>
@@ -630,11 +631,16 @@ export default function EventsScreen() {
           </View>
         ) : (
           <>
-            {/* Sponsored shows — always at top */}
-            {activeSponsored.map(show => <SponsoredCard key={show.id} show={show} />)}
-
-            {/* Featured */}
-            {featuredEvent && (
+            {/* Sponsored show OR Featured — sponsored takes the featured slot */}
+            {activeSponsored.length > 0 ? (
+              <>
+                <View style={styles.sectionRow}>
+                  <Ionicons name="star-outline" size={12} color={theme.acc} />
+                  <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured</Text>
+                </View>
+                {activeSponsored.map(show => <SponsoredCard key={show.id} show={show} />)}
+              </>
+            ) : featuredEvent ? (
               <>
                 <View style={styles.sectionRow}>
                   <Ionicons name="star-outline" size={12} color={theme.acc} />
@@ -642,7 +648,7 @@ export default function EventsScreen() {
                 </View>
                 <FeaturedCard event={featuredEvent} />
               </>
-            )}
+            ) : null}
 
             {/* Day groups */}
             {dayGroups.map(group => (
