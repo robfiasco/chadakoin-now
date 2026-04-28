@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { XMLParser } from 'fast-xml-parser';
+import { fetchSourceHealth } from './useSourceHealth';
 
 export interface RecyclingWeek {
   material: string;
@@ -95,6 +96,8 @@ const FEEDS = {
   wgrzSouthernTier: 'https://www.wgrz.com/feeds/syndication/rss/news/local/southern-tier',
   spectrumWNY:     'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
   wnyNewsNow:      'https://wnynewsnow.com/category/jamestown/feed/',
+  // WRFA-down fallback — Media One Radio Group daily Jamestown/Chautauqua roundups
+  wjtn: 'https://wjtn.com/news-and-closings/local-news-headlines/feed.xml',
   library: 'https://prendergastlibrary.org/feed/',
   lotd: 'https://rss.libsyn.com/shows/66268/destinations/266592.xml',
   regLenna: 'https://reglenna.com/events?format=json',
@@ -192,7 +195,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v20_';
+const CACHE_PREFIX = 'civic_v28_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -1069,8 +1072,17 @@ async function fetchLibraryContent(): Promise<{ events: EventItem[]; news: NewsI
 }
 
 async function fetchNews(): Promise<NewsItem[]> {
+  // Health check runs before cache so stale WRFA stories get filtered when source is down
+  const { wrfaUp } = await fetchSourceHealth();
+
   const cached = await getCached<NewsItem[]>('news', TTL.news);
-  if (cached) return cached;
+  if (cached) {
+    if (wrfaUp) return cached;
+    // When WRFA is down, filter it out — but if that leaves too few items, do a fresh fetch instead
+    const filtered = cached.filter(n => n.source !== 'WRFA-LP');
+    if (filtered.length >= 5) return filtered;
+    // Fall through to fresh fetch so WJTN and boosted limits kick in
+  }
 
   const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, spectrumRes, wnyNewsNowRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
@@ -1100,20 +1112,25 @@ async function fetchNews(): Promise<NewsItem[]> {
       }));
   }
 
-  const wrfaItems = wrfaRes.status === 'fulfilled' && wrfaRes.value.ok
+  // When WRFA is down, boost limits on other local sources to keep the feed full
+  const lim = wrfaUp
+    ? { city: 3, jackson: 3, wgrzST: 5, wgrzGeo: 3, wnyNewsNow: 5 }
+    : { city: 6, jackson: 5, wgrzST: 8, wgrzGeo: 5, wnyNewsNow: 8 };
+
+  const wrfaItems = wrfaUp && wrfaRes.status === 'fulfilled' && wrfaRes.value.ok
     ? toNewsItems(await wrfaRes.value.text(), 5, 'WRFA-LP')
     : [];
 
   const cityItems = cityRes.status === 'fulfilled' && cityRes.value.ok
-    ? toNewsItems(await cityRes.value.text(), 3, 'City of Jamestown')
+    ? toNewsItems(await cityRes.value.text(), lim.city, 'City of Jamestown')
     : [];
 
   const jacksonItems = jacksonRes.status === 'fulfilled' && jacksonRes.value.ok
-    ? toNewsItems(await jacksonRes.value.text(), 3, 'Jackson Center')
+    ? toNewsItems(await jacksonRes.value.text(), lim.jackson, 'Jackson Center')
     : [];
 
   const JAMESTOWN_TERMS = /jamestown|jcc|chautauqua|falconer|lakewood|celoron|frewsburg|ellicott/i;
-  function toWGRZItems(raw: string, source: string): NewsItem[] {
+  function toWGRZItems(raw: string, source: string, limit = lim.wgrzGeo): NewsItem[] {
     const items = getRssItems(raw);
     return items
       .filter(item => {
@@ -1121,7 +1138,7 @@ async function fetchNews(): Promise<NewsItem[]> {
         const desc  = getItemText(item.description ?? '');
         return JAMESTOWN_TERMS.test(title) || JAMESTOWN_TERMS.test(desc);
       })
-      .slice(0, 3)
+      .slice(0, limit)
       .map(item => ({
         title:   stripHtml(getItemText(item.title)),
         link:    getItemText(item.link),
@@ -1141,7 +1158,7 @@ async function fetchNews(): Promise<NewsItem[]> {
 
   // Southern Tier feed is already Jamestown/Chautauqua-focused — no geo filter needed
   const wgrzSTItems = wgrzSTRes.status === 'fulfilled' && wgrzSTRes.value.ok
-    ? toNewsItems(await wgrzSTRes.value.text(), 5, 'WGRZ')
+    ? toNewsItems(await wgrzSTRes.value.text(), lim.wgrzST, 'WGRZ')
     : [];
 
   const spectrumItems = spectrumRes.status === 'fulfilled' && spectrumRes.value.ok
@@ -1149,8 +1166,52 @@ async function fetchNews(): Promise<NewsItem[]> {
     : [];
 
   const wnyNewsNowItems = wnyNewsNowRes.status === 'fulfilled' && wnyNewsNowRes.value.ok
-    ? toNewsItems(await wnyNewsNowRes.value.text(), 5, 'WNY News Now')
+    ? toNewsItems(await wnyNewsNowRes.value.text(), lim.wnyNewsNow, 'WNY News Now')
     : [];
+
+  // Only fetch WJTN when WRFA is down — zero overhead during normal operation
+  let wjtnItems: NewsItem[] = [];
+  if (!wrfaUp) {
+    const wjtnRes = await fetch(proxyUrl(FEEDS.wjtn)).catch(() => null);
+    if (wjtnRes?.ok) {
+      const wjtnRaw = await wjtnRes.text();
+      // Each WJTN post is a daily roundup of multiple stories in one <description> block.
+      // Split it into individual NewsItems — one per story, all linking back to that day's post.
+      const rssItems = getRssItems(wjtnRaw).slice(0, 3); // at most 3 daily posts
+      for (const item of rssItems) {
+        const link    = getItemText(item.link);
+        const pubDate = getItemText(item.pubDate);
+        const html    = getItemText(item.description ?? '');
+        // Normalize: replace <br> and </p> with newlines, strip remaining tags
+        const plain = html
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>');
+        // WJTN format: each story is two consecutive blocks — headline then body.
+        // After splitting on blank lines, blocks alternate: [headline, body, headline, body, ...]
+        const blocks = plain.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+        for (let i = 0; i + 1 < blocks.length; i += 2) {
+          // Strip trailing "..." from WJTN headlines — body text is shown on expand
+          const headline = blocks[i].replace(/\.{2,}$/, '').trim();
+          const body     = blocks[i + 1];
+          if (!headline || headline.length < 10) continue;
+          wjtnItems.push({
+            title:   headline,
+            link,
+            pubDate,
+            excerpt: body, // store full body for expandable card
+            source:  'WJTN',
+          });
+          if (wjtnItems.length >= 8) break;
+        }
+        if (wjtnItems.length >= 8) break;
+      }
+    }
+  }
 
   const seen = new Set<string>();
   const addUnique = (items: NewsItem[]) =>
@@ -1171,6 +1232,7 @@ async function fetchNews(): Promise<NewsItem[]> {
     ...wgrzSportsItems,
     ...wgrzWNYItems,
     ...spectrumItems,
+    ...wjtnItems,
   ])
     .sort((a, b) => {
       const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;

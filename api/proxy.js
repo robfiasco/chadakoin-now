@@ -33,6 +33,10 @@ const ALLOWED_HOSTS = new Set([
   'www.wnynewsnow.com',
   'spectrumlocalnews.com',
   'www.spectrumlocalnews.com',
+  'wjtn.com',
+  'www.wjtn.com',
+  'mediaonegroupradio.com',
+  'www.mediaonegroupradio.com',
 ]);
 
 // In-memory rate limiter: 60 req/IP/min rolling window

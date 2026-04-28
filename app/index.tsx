@@ -591,7 +591,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               <Text style={styles.gasPriceLabel}>Central Atlantic avg</Text>
               <View style={styles.gasPriceDivider} />
               <TouchableOpacity onPress={() => openLink('https://www.gasbuddy.com/home?search=Jamestown%2C+NY&fuel=1')} activeOpacity={0.7}>
-                <Text style={[styles.gasPriceCta, { color: theme.acc }]}>Find cheapest stations near you →</Text>
+                <Text style={[styles.gasPriceCta, { color: theme.acc }]}>Find cheapest stations in Jamestown →</Text>
               </TouchableOpacity>
               <Text style={styles.gasPriceMeta}>EIA weekly data</Text>
             </View>

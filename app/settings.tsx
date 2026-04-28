@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking, Switch, Animated, Easing,
+  TouchableOpacity, Linking, Animated, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,12 +15,6 @@ import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 
-const NOTIFICATIONS: { id: string; label: string; sub: string }[] = [
-  { id: 'parking',   label: 'Parking reminders',   sub: 'Alternate-side · Nov–Mar only' },
-  { id: 'recycling', label: 'Recycling reminders',  sub: 'Day-before pickup alerts' },
-  { id: 'news',      label: 'Breaking news',        sub: 'Jamestown & Chautauqua County' },
-  { id: 'events',    label: 'Events & activities',  sub: 'New events added nearby' },
-];
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
@@ -36,9 +30,6 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [termsOpen, setTermsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState('general');
-  const [notifs, setNotifs] = useState<Record<string, boolean>>(
-    Object.fromEntries(NOTIFICATIONS.map(n => [n.id, false]))
-  );
 
   // Theme description sheet
   const [descTheme, setDescTheme] = useState<Theme | null>(null);
@@ -75,34 +66,6 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        {/* ── Notifications ──────────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.45)` }]}>Notifications</Text>
-        <View style={[styles.card, { borderColor: dark.border }]}>
-          {NOTIFICATIONS.map((n, i) => (
-            <View key={n.id}>
-              {i > 0 && <View style={[styles.rowDivider, { backgroundColor: dark.border }]} />}
-              <View style={styles.toggleRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.toggleLabel}>{n.label}</Text>
-                  <Text style={styles.toggleSub}>{n.sub}</Text>
-                </View>
-                <Switch
-                  value={notifs[n.id]}
-                  onValueChange={v => setNotifs(prev => ({ ...prev, [n.id]: v }))}
-                  trackColor={{ false: 'rgba(255,255,255,0.08)', true: `rgba(${theme.accRGB},0.45)` }}
-                  thumbColor={notifs[n.id] ? theme.acc : 'rgba(255,255,255,0.35)'}
-                />
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Coming soon pill — notifications require Android app */}
-        <View style={styles.comingSoonRow}>
-          <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.25)" />
-          <Text style={styles.comingSoonText}>Notifications coming with the Android app</Text>
-        </View>
 
         {/* ── Appearance ─────────────────────────────────── */}
         <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.45)` }]}>Appearance</Text>
@@ -262,10 +225,6 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: dark.surface },
   rowDivider: { height: 1, marginHorizontal: 16 },
 
-  toggleRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
-  toggleLabel:{ fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
-  toggleSub:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
-
   themeGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   themeTile:      { width: '47.5%', borderWidth: 1, borderRadius: 12, padding: 12, gap: 8, position: 'relative' },
   themeDotsRow:   { flexDirection: 'row', gap: 5 },
@@ -290,19 +249,6 @@ const styles = StyleSheet.create({
   sources: { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 6, color: 'rgba(255,255,255,0.1)', lineHeight: 16 },
 
   fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 9999, elevation: 9999, flex: 1 },
-
-  comingSoonRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    alignSelf: 'center', marginTop: -4, marginBottom: 4,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  comingSoonText: {
-    fontFamily: 'Outfit', fontSize: 11,
-    color: 'rgba(255,255,255,0.25)', letterSpacing: 0.3,
-  },
 
   // Bottom sheet — in-tree absolute overlay (no Modal portal)
   sheetContainer: {

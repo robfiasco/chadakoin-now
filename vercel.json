@@ -1,11 +1,14 @@
 {
+  "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/proxy", "destination": "/api/proxy" },
-    { "source": "/api/weather", "destination": "/api/weather" },
-    { "source": "/api/cdir", "destination": "/api/cdir" },
-    { "source": "/api/sabres", "destination": "/api/sabres" },
-    { "source": "/api/jhs-sports", "destination": "/api/jhs-sports" },
-    { "source": "/api/mlb", "destination": "/api/mlb" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/proxy",         "destination": "/api/proxy" },
+    { "source": "/api/weather",       "destination": "/api/weather" },
+    { "source": "/api/cdir",          "destination": "/api/cdir" },
+    { "source": "/api/sabres",        "destination": "/api/sabres" },
+    { "source": "/api/mlb",           "destination": "/api/mlb" },
+    { "source": "/api/feedback",      "destination": "/api/feedback" },
+    { "source": "/api/source-health", "destination": "/api/source-health" },
+    { "source": "/api/gas",           "destination": "/api/gas" },
+    { "source": "/(.*)",              "destination": "/index.html" }
   ]
 }

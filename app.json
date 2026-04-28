@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chadakoin Now",
     "slug": "chadakoin-now",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
@@ -14,7 +14,7 @@
         "foregroundImage": "./assets/files/icon-chadakoin.png",
         "backgroundColor": "#0f0b08"
       },
-      "versionCode": 3,
+      "versionCode": 4,
       "package": "com.chadakoinnow",
       "permissions": [
         "android.permission.RECORD_AUDIO",

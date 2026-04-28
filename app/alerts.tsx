@@ -129,6 +129,46 @@ export default function AlertsScreen() {
         )}
 
         <Text style={styles.updatedLine}>Refreshes every 5 minutes</Text>
+
+        {/* Utility resources */}
+        <Text style={styles.sectionLabel}>RESOURCES</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.resourceCard, glassWeb]}>
+          <TouchableOpacity
+            onPress={() => openLink('https://www.nyseg.com/outage')}
+            activeOpacity={0.75}
+            style={styles.resourceRow}
+            accessibilityRole="link"
+            accessibilityLabel="NYSEG outage map"
+          >
+            <View style={[styles.resourceIcon, { backgroundColor: `rgba(${ACC_RGB},0.1)` }]}>
+              <Ionicons name="flash-outline" size={16} color={ACC} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.resourceTitle}>NYSEG Outage Map</Text>
+              <Text style={styles.resourceSub}>Check power outages in your area</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />
+          </TouchableOpacity>
+          <View style={styles.resourceDivider} />
+          <TouchableOpacity
+            onPress={() => openLink('https://jamestownnybpu.gov/172/Pay-My-Bill')}
+            activeOpacity={0.75}
+            style={styles.resourceRow}
+            accessibilityRole="link"
+            accessibilityLabel="Pay your BPU bill"
+          >
+            <View style={[styles.resourceIcon, { backgroundColor: `rgba(${ACC_RGB},0.1)` }]}>
+              <Ionicons name="receipt-outline" size={16} color={ACC} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.resourceTitle}>Pay My BPU Bill</Text>
+              <Text style={styles.resourceSub}>Water, electric & trash · jamestownnybpu.gov</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </ThemedBackground>
   );
@@ -175,4 +215,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28,
     color: `rgba(${ACC_RGB},0.3)`,
   },
+
+  resourceCard: {
+    borderRadius: 14, borderWidth: 1,
+    backgroundColor: dark.surface, borderColor: dark.border,
+    overflow: 'hidden', marginBottom: 8,
+  },
+  resourceRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  resourceIcon: {
+    width: 32, height: 32, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  resourceTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff', marginBottom: 2 },
+  resourceSub:   { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
+  resourceDivider: { height: 1, backgroundColor: dark.border, marginHorizontal: 14 },
 });

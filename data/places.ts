@@ -86,7 +86,7 @@ export const PLACES: Place[] = [
     categories: ['food'],
     icon: 'restaurant-outline',
     description: 'Local Jamestown taqueria serving fresh tacos, burritos, and more.',
-    address: 'Jamestown, NY',
+    address: '212 N Main St, Jamestown',
     featured: false,
   },
   {
@@ -212,7 +212,7 @@ export const PLACES: Place[] = [
     categories: ['drinks', 'food'],
     icon: 'wine-outline',
     description: 'Full service bar and restaurant in the heart of downtown Jamestown.',
-    address: 'Jamestown, NY',
+    address: '326 Cherry St, Jamestown',
     featured: false,
   },
   {
@@ -280,6 +280,19 @@ export const PLACES: Place[] = [
   },
 
   {
+    id: 'lucy-desi-museum',
+    name: 'Lucille Ball Desi Arnaz Museum',
+    categories: ['activity'],
+    icon: 'tv-outline',
+    description: "Two floors dedicated to Lucille Ball and Desi Arnaz — costumes, props, scripts, and set recreations from I Love Lucy. Jamestown is Lucy's birthplace, and this museum takes that seriously.",
+    address: '2 W 3rd St, Jamestown',
+    website: 'https://www.lucylovesdesi.com/',
+    hours: 'Mon–Sat 10am–5:30pm · Sun 1pm–5pm',
+    featured: false,
+    visited: false,
+    lat: 42.09610, lng: -79.24215,
+  },
+  {
     id: 'comedy-center',
     name: 'National Comedy Center',
     categories: ['activity'],
@@ -343,6 +356,18 @@ export const PLACES: Place[] = [
   },
 
   {
+    id: 'chautauqua-lake',
+    name: 'Chautauqua Lake',
+    categories: ['activity'],
+    icon: 'boat-outline',
+    description: "17 miles long, sitting at 1,308 feet elevation — one of the highest navigable lakes in the eastern US. Fishing, boating, kayaking, and swimming in summer. Public boat launches at Celoron, Mayville, and Bemus Point. Water quality and beach conditions posted by Chautauqua County Health.",
+    address: 'Celoron, Lakewood, Bemus Point, Mayville',
+    website: 'https://www.chautauquacounty.com/departments/health/environmental-health/beach-monitoring',
+    hours: 'Open year-round · Beach season Jun–Aug',
+    featured: false,
+    lat: 42.15, lng: -79.40,
+  },
+  {
     id: 'chautauqua-institution',
     name: 'Chautauqua Institution',
     categories: ['activity'],
@@ -366,16 +391,6 @@ export const PLACES: Place[] = [
     featured: true,
     featuredNote: 'Lakeside hotel with marina views — 5 min from downtown.',
     lat: 42.11021, lng: -79.28518,
-  },
-  {
-    id: 'airbnb-jamestown',
-    name: 'Airbnb & VRBO',
-    categories: ['stay'],
-    icon: 'home-outline',
-    description: 'Short-term rentals throughout Jamestown and the Chautauqua Lake area. Good option for groups or longer stays.',
-    address: 'Various locations',
-    website: 'https://www.airbnb.com/s/Jamestown--New-York',
-    featured: false,
   },
 ];
 

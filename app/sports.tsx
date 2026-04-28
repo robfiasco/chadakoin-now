@@ -599,7 +599,18 @@ export default function SportsScreen() {
   const [sheetCarouselIdx, setSheetCarouselIdx] = useState(0);
   const sheetScrollRef = useRef<any>(null);
   const { width: winWidth } = useWindowDimensions();
-  const cardWidth = winWidth - 32; // 16px padding each side
+
+  // Scroll the sheet carousel to the correct game when it opens
+  useEffect(() => {
+    if (!detailGame) return;
+    const timeout = setTimeout(() => {
+      sheetScrollRef.current?.scrollTo({ x: sheetCarouselIdx * winWidth, animated: false });
+    }, 50); // small delay lets the ScrollView mount first
+    return () => clearTimeout(timeout);
+  }, [detailGame]);
+  // Cards fill full page width — internal padding handles the visual inset.
+  // This prevents next-card peek-through with pagingEnabled.
+  const cardWidth = winWidth;
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -828,7 +839,6 @@ export default function SportsScreen() {
         {(loading || nextUpItems.length > 0) && (
           <View style={styles.nextUpSection}>
             <View style={styles.sectionLabelRow}>
-              <PulsingDot color={nextUpItems[nextUpIdx]?.isLive ? ACC.mlb : '#fb7185'} size={6} />
               <Text style={styles.sectionLabel}>{nextUpItems[nextUpIdx]?.isLive ? 'Live Now' : 'Next Up'}</Text>
             </View>
 
@@ -841,10 +851,16 @@ export default function SportsScreen() {
                   pagingEnabled
                   showsHorizontalScrollIndicator={false}
                   onMomentumScrollEnd={e => {
-                    setNextUpIdx(Math.round(e.nativeEvent.contentOffset.x / cardWidth));
+                    setNextUpIdx(Math.round(e.nativeEvent.contentOffset.x / winWidth));
                   }}
+                  onScroll={e => {
+                    // Keep dots in sync on web where onMomentumScrollEnd may not fire
+                    const idx = Math.round(e.nativeEvent.contentOffset.x / winWidth);
+                    if (idx !== nextUpIdx) setNextUpIdx(idx);
+                  }}
+                  scrollEventThrottle={16}
                   style={{ marginHorizontal: -16 }}
-                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                  contentContainerStyle={{ paddingHorizontal: 0 }}
                 >
                   {nextUpItems.map((nextUp, idx) => {
                     const bgOpacity = nextUp.bgKey === 'baseball' ? 0.45 : 0.4;
@@ -888,34 +904,40 @@ export default function SportsScreen() {
                     };
                     if (Platform.OS === 'web' && bgUri) {
                       return (
-                        <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
-                          {/* @ts-ignore */}
-                          <View style={[styles.nextUpCard, { width: cardWidth, backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 1 }]}>
-                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: `rgba(6,14,24,${1 - bgOpacity})`, borderRadius: 16 }]} pointerEvents="none" />
-                            {cardContent}
-                          </View>
-                        </TouchableOpacity>
+                        <View key={idx} style={{ width: cardWidth, paddingHorizontal: 16 }}>
+                          <TouchableOpacity onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
+                            {/* @ts-ignore */}
+                            <View style={[styles.nextUpCard, { backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 1 }]}>
+                              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: `rgba(6,14,24,${1 - bgOpacity})`, borderRadius: 18 }]} pointerEvents="none" />
+                              {cardContent}
+                            </View>
+                          </TouchableOpacity>
+                        </View>
                       );
                     }
                     // @ts-ignore
                     return bgSourceNative ? (
-                      <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
-                        <ImageBackground
-                          source={bgSourceNative}
-                          style={[styles.nextUpCard, { width: cardWidth }]}
-                          imageStyle={{ borderRadius: 16, opacity: bgOpacity }}
-                          resizeMode="cover"
-                        >
-                          {cardContent}
-                        </ImageBackground>
-                      </TouchableOpacity>
+                      <View key={idx} style={{ width: cardWidth, paddingHorizontal: 16 }}>
+                        <TouchableOpacity onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
+                          <ImageBackground
+                            source={bgSourceNative}
+                            style={styles.nextUpCard}
+                            imageStyle={{ borderRadius: 18, opacity: bgOpacity }}
+                            resizeMode="cover"
+                          >
+                            {cardContent}
+                          </ImageBackground>
+                        </TouchableOpacity>
+                      </View>
                     ) : (
-                      <TouchableOpacity key={idx} onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
-                        {/* @ts-ignore */}
-                        <View style={[styles.nextUpCard, glassWeb, { width: cardWidth }]}>
-                          {cardContent}
-                        </View>
-                      </TouchableOpacity>
+                      <View key={idx} style={{ width: cardWidth, paddingHorizontal: 16 }}>
+                        <TouchableOpacity onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
+                          {/* @ts-ignore */}
+                          <View style={[styles.nextUpCard, glassWeb]}>
+                            {cardContent}
+                          </View>
+                        </TouchableOpacity>
+                      </View>
                     );
                   })}
                 </ScrollView>
@@ -1096,9 +1118,14 @@ export default function SportsScreen() {
               });
             })()}
           </View>
-          <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7} style={styles.moreLink}>
-            <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7} style={styles.moreLink}>
+              <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => openLink('https://www.milb.com/jamestown/tickets')} activeOpacity={0.7} style={styles.moreLink}>
+              <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Get Tickets →</Text>
+            </TouchableOpacity>
+          </View>
         </TeamCard>
 
         {/* ── Regional ────────────────────────────────────────── */}

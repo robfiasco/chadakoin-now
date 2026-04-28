@@ -113,6 +113,26 @@ export const CITY_SERVICES: CityService[] = [
     tip: 'Remove basketball hoops from the street before collection begins. No plastic bags or trash mixed in.',
   },
   {
+    id: 'citycouncil',
+    icon: 'people-outline',
+    title: 'City Council Meetings',
+    badge: 'MONTHLY',
+    badgeColor: '#60a5fa',
+    status: 'year-round',
+    summary: '2nd & 4th Monday · City Hall, 7:30 PM\nPublic welcome — all meetings open',
+    details: [
+      { label: 'Regular Meetings', value: '2nd and 4th Monday of each month · 7:30 PM' },
+      { label: 'Location',         value: 'Municipal Building, 2nd Floor · 200 E 3rd St' },
+      { label: 'Committee Meetings', value: 'Typically the week before regular meetings — check agenda' },
+      { label: 'Agendas & Minutes', value: 'Posted at jamestownny.gov ahead of each meeting' },
+      { label: 'Public Comment',   value: 'Public participation allowed at regular meetings' },
+    ],
+    tip: 'Agendas are posted a few days before each meeting. Minutes from previous meetings are available on the city website.',
+    links: [
+      { label: 'Agendas, minutes & meeting info', url: 'https://www.jamestownny.gov/government/city-council' },
+    ],
+  },
+  {
     id: 'syringes',
     icon: 'medkit-outline',
     title: 'Sharps / Syringe Disposal',

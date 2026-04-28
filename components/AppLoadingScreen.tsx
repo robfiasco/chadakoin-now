@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet, Platform, Dimensions } from 'react-native';
+import { THEMES } from '../lib/themes';
 
 const TARGET_TITLE = 'CHADAKOIN NOW';
 const TARGET_SUB   = 'JAMESTOWN · NEW YORK';
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%&';
 const SCRAMBLE_STEPS = 32;
+
+// Pick once per session — stable across re-renders
+const SESSION_THEME = THEMES[Math.floor(Math.random() * THEMES.length)];
 
 export function AppLoadingScreen({
   isAppReady = false,
@@ -13,6 +17,8 @@ export function AppLoadingScreen({
   isAppReady?: boolean;
   onFinished?: () => void;
 }) {
+  const theme = SESSION_THEME;
+
   const [titleText, setTitleText]     = useState('');
   const [subText, setSubText]         = useState('');
   const [progress, setProgress]       = useState(0);
@@ -77,8 +83,24 @@ export function AppLoadingScreen({
   const { width } = Dimensions.get('window');
   const barMaxWidth = Math.min(260, width * 0.62);
 
+  const glowStyle = Platform.OS === 'web'
+    ? ({ boxShadow: `0 0 120px 60px rgba(${theme.accRGB},0.12)` } as any)
+    : { backgroundColor: `rgba(${theme.accRGB},0.05)` };
+
+  const titleStyle = Platform.OS === 'web'
+    ? ({ textShadow: `0 0 14px rgba(${theme.accRGB},0.35), 0 0 32px rgba(${theme.accRGB},0.18)` } as any)
+    : {};
+
+  const titleReadyStyle = Platform.OS === 'web'
+    ? ({ textShadow: `0 0 18px rgba(${theme.accRGB},0.7), 0 0 40px rgba(${theme.accRGB},0.35)` } as any)
+    : {};
+
+  const statusReadyStyle = Platform.OS === 'web'
+    ? ({ textShadow: `0 0 10px rgba(${theme.accRGB},0.8)` } as any)
+    : {};
+
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+    <Animated.View style={[styles.container, { backgroundColor: theme.bg, opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
 
       {/* Subtle grid — web only */}
       {Platform.OS === 'web' && (
@@ -89,29 +111,36 @@ export function AppLoadingScreen({
       )}
 
       {/* Radial glow */}
-      <Animated.View style={[styles.glow, { opacity: glowAnim }]} />
+      <Animated.View style={[styles.glow, glowStyle, { opacity: glowAnim }]} />
 
       {/* Content */}
       <View style={styles.content}>
 
         {/* Title block */}
         <View style={styles.titleBlock}>
-          <Text style={[styles.title, statusReady && styles.titleReady]}>
+          <Text style={[styles.title, titleStyle, statusReady && { color: theme.acc, ...titleReadyStyle }]}>
             {titleText || ' '}
           </Text>
           {!sequenceDone && (
-            <Text style={styles.cursor}>_</Text>
+            <Text style={[styles.cursor, { color: `rgba(${theme.accRGB},0.7)` }]}>_</Text>
           )}
           <Text style={styles.subtitle}>{subText || ' '}</Text>
         </View>
 
         {/* Progress bar */}
         <View style={[styles.barTrack, { width: barMaxWidth }]}>
-          <View style={[styles.barFill, { width: (progress / 100) * barMaxWidth }]} />
+          <View style={[
+            styles.barFill,
+            { width: (progress / 100) * barMaxWidth, backgroundColor: theme.acc },
+            Platform.OS === 'web' ? ({ boxShadow: `0 0 8px ${theme.acc}` } as any) : {},
+          ]} />
         </View>
 
         {/* Status */}
-        <Text style={[styles.status, statusReady && styles.statusReady]}>
+        <Text style={[
+          styles.status,
+          statusReady && { color: theme.acc, ...statusReadyStyle },
+        ]}>
           {statusReady ? '[ READY ]  CITY DATA LOADED' : 'LOADING CITY DATA...'}
         </Text>
 
@@ -123,13 +152,11 @@ export function AppLoadingScreen({
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#060e18',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 999,
   },
   grid: {
-    // Applied as inline style on web only — backgroundImage not in RN types
     backgroundImage:
       'linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px)',
     backgroundSize: '40px 40px',
@@ -140,10 +167,6 @@ const styles = StyleSheet.create({
     height: 340,
     borderRadius: 170,
     backgroundColor: 'transparent',
-    // soft radial using shadow on web; native approximation via bg
-    ...(Platform.OS === 'web'
-      ? ({ boxShadow: '0 0 120px 60px rgba(34,211,238,0.10)' } as any)
-      : { backgroundColor: 'rgba(34,211,238,0.04)' }),
   },
   content: {
     alignItems: 'center',
@@ -160,15 +183,6 @@ const styles = StyleSheet.create({
     letterSpacing: 6,
     color: '#e2f8ff',
     textAlign: 'center',
-    ...(Platform.OS === 'web'
-      ? ({ textShadow: '0 0 14px rgba(34,211,238,0.35), 0 0 32px rgba(34,211,238,0.18)' } as any)
-      : {}),
-  },
-  titleReady: {
-    color: '#22d3ee',
-    ...(Platform.OS === 'web'
-      ? ({ textShadow: '0 0 18px rgba(34,211,238,0.7), 0 0 40px rgba(34,211,238,0.35)' } as any)
-      : {}),
   },
   cursor: {
     position: 'absolute',
@@ -176,7 +190,6 @@ const styles = StyleSheet.create({
     bottom: 22,
     fontFamily: 'DMSans_400Regular',
     fontSize: 20,
-    color: 'rgba(34,211,238,0.7)',
   },
   subtitle: {
     fontFamily: 'DMSans_500Medium',
@@ -194,10 +207,6 @@ const styles = StyleSheet.create({
   },
   barFill: {
     height: 1,
-    backgroundColor: '#22d3ee',
-    ...(Platform.OS === 'web'
-      ? ({ boxShadow: '0 0 8px #22d3ee' } as any)
-      : {}),
   },
   status: {
     fontFamily: 'DMSans_500Medium',
@@ -206,11 +215,5 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.25)',
     textAlign: 'center',
     textTransform: 'uppercase',
-  },
-  statusReady: {
-    color: '#22d3ee',
-    ...(Platform.OS === 'web'
-      ? ({ textShadow: '0 0 10px rgba(34,211,238,0.8)' } as any)
-      : {}),
   },
 });

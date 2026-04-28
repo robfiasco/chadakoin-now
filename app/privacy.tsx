@@ -59,10 +59,6 @@ export default function PrivacyPolicyScreen({ onClose }: { onClose: () => void }
         </Section>
 
         <Section title="What I do collect">
-          <Text style={s.body}>
-            <Text style={s.bold}>Notifications (Android). </Text>
-            If you turn on push notifications, your device gets a token from Google's Firebase so I can send you the alerts you asked for. You can turn them off anytime in Settings or your phone's system settings.
-          </Text>
           <Text style={[s.body, { marginTop: 12 }]}>
             <Text style={s.bold}>Analytics. </Text>
             I use analytics to understand how many people use the app and which parts get the most attention. It's aggregated — I see things like "200 people opened the News tab this week," not anything tied to you specifically. The tool may log your device type, OS version, and country (from your IP, not GPS). I don't see your IP address or anything that identifies you personally.

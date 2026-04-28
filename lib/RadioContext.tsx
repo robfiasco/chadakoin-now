@@ -54,6 +54,11 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
   // Player lives here at the root level — survives tab navigation
   const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
 
+  // Fetch artwork on mount so it shows before the user hits play
+  useEffect(() => {
+    fetchNowPlaying().then(setNowPlaying).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (radioPlaying) {
       fetchNowPlaying().then(setNowPlaying).catch(() => {});
