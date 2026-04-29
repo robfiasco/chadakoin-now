@@ -104,7 +104,7 @@ function TeamLogo({ uri, abbr, size, accent }: { uri?: string; abbr: string; siz
   );
 }
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
-const JCC_LOGO    = require('../assets/jcc.png');
+const JCC_LOGO    = require('../assets/jcc_logo.png');
 
 const ACC = {
   jcc:    '#34d399',  // emerald-400
