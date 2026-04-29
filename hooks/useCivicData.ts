@@ -1084,7 +1084,7 @@ async function fetchNews(): Promise<NewsItem[]> {
     // Fall through to fresh fetch so WJTN and boosted limits kick in
   }
 
-  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, spectrumRes, wnyNewsNowRes] = await Promise.allSettled([
+  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, spectrumRes, wnyNewsNowRes, wjtnRes] = await Promise.allSettled([
     fetch(proxyUrl(FEEDS.news)),
     fetch(proxyUrl(FEEDS.cityNews)),
     fetch(proxyUrl(FEEDS.jackson)),
@@ -1093,6 +1093,7 @@ async function fetchNews(): Promise<NewsItem[]> {
     fetch(proxyUrl(FEEDS.wgrzSouthernTier)),
     fetch(proxyUrl(FEEDS.spectrumWNY)),
     fetch(proxyUrl(FEEDS.wnyNewsNow)),
+    fetch(proxyUrl(FEEDS.wjtn)),
   ]);
 
   function toNewsItems(raw: string, limit: number, source: string): NewsItem[] {
@@ -1114,8 +1115,8 @@ async function fetchNews(): Promise<NewsItem[]> {
 
   // When WRFA is down, boost limits on other local sources to keep the feed full
   const lim = wrfaUp
-    ? { city: 3, jackson: 3, wgrzST: 5, wgrzGeo: 3, wnyNewsNow: 5 }
-    : { city: 6, jackson: 5, wgrzST: 8, wgrzGeo: 5, wnyNewsNow: 8 };
+    ? { city: 3, jackson: 3, wgrzST: 5, wgrzGeo: 3, wnyNewsNow: 5, wjtn: 4 }
+    : { city: 6, jackson: 5, wgrzST: 8, wgrzGeo: 5, wnyNewsNow: 8, wjtn: 8 };
 
   const wrfaItems = wrfaUp && wrfaRes.status === 'fulfilled' && wrfaRes.value.ok
     ? toNewsItems(await wrfaRes.value.text(), 5, 'WRFA-LP')
@@ -1169,47 +1170,33 @@ async function fetchNews(): Promise<NewsItem[]> {
     ? toNewsItems(await wnyNewsNowRes.value.text(), lim.wnyNewsNow, 'WNY News Now')
     : [];
 
-  // Only fetch WJTN when WRFA is down — zero overhead during normal operation
-  let wjtnItems: NewsItem[] = [];
-  if (!wrfaUp) {
-    const wjtnRes = await fetch(proxyUrl(FEEDS.wjtn)).catch(() => null);
-    if (wjtnRes?.ok) {
-      const wjtnRaw = await wjtnRes.text();
-      // Each WJTN post is a daily roundup of multiple stories in one <description> block.
-      // Split it into individual NewsItems — one per story, all linking back to that day's post.
-      const rssItems = getRssItems(wjtnRaw).slice(0, 3); // at most 3 daily posts
-      for (const item of rssItems) {
-        const link    = getItemText(item.link);
-        const pubDate = getItemText(item.pubDate);
-        const html    = getItemText(item.description ?? '');
-        // Normalize: replace <br> and </p> with newlines, strip remaining tags
-        const plain = html
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<\/p>/gi, '\n')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>');
-        // WJTN format: each story is two consecutive blocks — headline then body.
-        // After splitting on blank lines, blocks alternate: [headline, body, headline, body, ...]
-        const blocks = plain.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
-        for (let i = 0; i + 1 < blocks.length; i += 2) {
-          // Strip trailing "..." from WJTN headlines — body text is shown on expand
-          const headline = blocks[i].replace(/\.{2,}$/, '').trim();
-          const body     = blocks[i + 1];
-          if (!headline || headline.length < 10) continue;
-          wjtnItems.push({
-            title:   headline,
-            link,
-            pubDate,
-            excerpt: body, // store full body for expandable card
-            source:  'WJTN',
-          });
-          if (wjtnItems.length >= 8) break;
-        }
-        if (wjtnItems.length >= 8) break;
+  // WJTN: always-on at reduced limit; boosted when WRFA is down
+  const wjtnItems: NewsItem[] = [];
+  if (wjtnRes.status === 'fulfilled' && wjtnRes.value.ok) {
+    const wjtnRaw = await wjtnRes.value.text();
+    // Each WJTN post is a daily roundup — split the description block into individual stories
+    const rssItems = getRssItems(wjtnRaw).slice(0, 3);
+    for (const item of rssItems) {
+      const link    = getItemText(item.link);
+      const pubDate = getItemText(item.pubDate);
+      const html    = getItemText(item.description ?? '');
+      const plain = html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+      const blocks = plain.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+      for (let i = 0; i + 1 < blocks.length; i += 2) {
+        const headline = blocks[i].replace(/\.{2,}$/, '').trim();
+        const body     = blocks[i + 1];
+        if (!headline || headline.length < 10) continue;
+        wjtnItems.push({ title: headline, link, pubDate, excerpt: body, source: 'WJTN' });
+        if (wjtnItems.length >= lim.wjtn) break;
       }
+      if (wjtnItems.length >= lim.wjtn) break;
     }
   }
 
