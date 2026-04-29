@@ -7,6 +7,8 @@
     "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
     "splash": {
+      "image": "./assets/files/icon-chadakoin.png",
+      "resizeMode": "contain",
       "backgroundColor": "#0f0b08"
     },
     "android": {
