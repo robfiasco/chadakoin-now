@@ -364,11 +364,11 @@ const row = StyleSheet.create({
 });
 
 // ── Section header ────────────────────────────────────────────────
-function SectionHeader({ label, blotter }: { label: string; blotter?: boolean }) {
+function SectionHeader({ label, blotter, expanded, onToggle }: { label: string; blotter?: boolean; expanded?: boolean; onToggle?: () => void }) {
   const { theme } = useTheme();
   const color = blotter ? 'rgba(255,255,255,0.3)' : theme.acc;
   const gradColor = blotter ? 'rgba(255,255,255,0.08)' : `rgba(${theme.accRGB},0.25)`;
-  return (
+  const inner = (
     <View style={sec.row}>
       {blotter && <Ionicons name="shield-outline" size={10} color={color} style={{ marginRight: 2 }} />}
       <Text style={[sec.label, { color }]}>{label.toUpperCase()}</Text>
@@ -377,8 +377,18 @@ function SectionHeader({ label, blotter }: { label: string; blotter?: boolean })
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         style={sec.line}
       />
+      {blotter && (
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={12} color={color}
+        />
+      )}
     </View>
   );
+  if (blotter && onToggle) {
+    return <TouchableOpacity onPress={onToggle} activeOpacity={0.7}>{inner}</TouchableOpacity>;
+  }
+  return inner;
 }
 
 const sec = StyleSheet.create({
@@ -393,6 +403,7 @@ export default function NewsScreen() {
   const civic = useCivic();
   const { news, loading } = civic;
   const [refreshing, setRefreshing] = useState(false);
+  const [blotterOpen, setBlotterOpen] = useState(false);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -453,8 +464,13 @@ export default function NewsScreen() {
           <>
             {buckets.map((bucket, bi) => (
               <View key={bucket.label} style={{ marginBottom: 8 }}>
-                <SectionHeader label={bucket.label} blotter={bucket.isBlotter} />
-                {bucket.items.map((item, i) =>
+                <SectionHeader
+                  label={bucket.label}
+                  blotter={bucket.isBlotter}
+                  expanded={blotterOpen}
+                  onToggle={() => setBlotterOpen(o => !o)}
+                />
+                {(!bucket.isBlotter || blotterOpen) && bucket.items.map((item, i) =>
                   bi === 0 && i === 0 && !bucket.isBlotter
                     ? <HeroCard key={i} item={item} />
                     : <NewsRow key={i} item={item} />
