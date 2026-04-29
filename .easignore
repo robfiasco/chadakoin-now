@@ -1,0 +1,8 @@
+# Web-only static assets — not needed in native builds
+public/
+
+# Docs and release notes
+docs/
+
+# PDFs
+*.pdf
