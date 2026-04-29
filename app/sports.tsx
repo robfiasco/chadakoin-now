@@ -867,9 +867,9 @@ export default function SportsScreen() {
                     const bgUri = nextUp.bgKey === 'baseball' ? '/ballpark.jpg'
                       : nextUp.bgKey === 'hockey' ? '/hockey.jpg' : null;
                     const bgSourceNative = nextUp.bgKey === 'baseball'
-                      ? require('../public/ballpark.jpg')
+                      ? require('../assets/ballpark.jpg')
                       : nextUp.bgKey === 'hockey'
-                      ? require('../public/hockey.jpg')
+                      ? require('../assets/hockey.jpg')
                       : null;
                     const cardContent = (
                       <View style={styles.nextUpBody}>
@@ -971,7 +971,7 @@ export default function SportsScreen() {
           subtitle="NJCAA · Jamestown Community College"
           defaultOpen={false}
           glassWeb={glassWeb}
-          bgImage={Platform.OS === 'web' ? { uri: '/jcc.jpg' } : require('../public/jcc.jpg')}
+          bgImage={Platform.OS === 'web' ? { uri: '/jcc.jpg' } : require('../assets/jcc.jpg')}
           glanceRow={
             loading ? (
               <SkeletonPulse width="60%" height={14} borderRadius={4} accRGB="52,211,153" />
@@ -1072,14 +1072,14 @@ export default function SportsScreen() {
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
             <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-              <Image source={require('../public/tarpskunk.png')} style={{ width: 28, height: 28 }} resizeMode="contain" />
+              <Image source={require('../assets/tarpskunk.png')} style={{ width: 28, height: 28 }} resizeMode="contain" />
             </View>
           }
           name="Tarp Skunks"
           subtitle="PGCBL · Diethrick Park"
           defaultOpen={false}
           glassWeb={glassWeb}
-          bgImage={Platform.OS === 'web' ? { uri: '/tspark.jpg' } : require('../public/tspark.jpg')}
+          bgImage={Platform.OS === 'web' ? { uri: '/tspark.jpg' } : require('../assets/tspark.jpg')}
           glanceRow={
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={[styles.glanceText, { color: dark.text.muted }]}>Season opens</Text>
@@ -1136,7 +1136,7 @@ export default function SportsScreen() {
           accentColor={ACC.sabres}
           gradStart="rgba(96,165,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          bgImage={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../public/hockey.jpg')}
+          bgImage={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../assets/hockey.jpg')}
           iconContent={
             <Image source={{ uri: SABRES_LOGO }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
@@ -1580,8 +1580,8 @@ export default function SportsScreen() {
       {!!detailGame && (() => {
         const sheetItems = nextUpItems.filter(g => !g.isLive);
         const currentGame = sheetItems[sheetCarouselIdx] ?? sheetItems[0];
-        const bgSrc = currentGame?.bgKey === 'baseball' ? require('../public/ballpark.jpg')
-          : currentGame?.bgKey === 'hockey' ? require('../public/hockey.jpg') : null;
+        const bgSrc = currentGame?.bgKey === 'baseball' ? require('../assets/ballpark.jpg')
+          : currentGame?.bgKey === 'hockey' ? require('../assets/hockey.jpg') : null;
         return (
           <View style={styles.sheetOverlay}>
             <TouchableOpacity style={[StyleSheet.absoluteFillObject, styles.sheetBackdrop]} activeOpacity={1} onPress={() => setDetailGame(null)} />

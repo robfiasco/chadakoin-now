@@ -10,7 +10,7 @@ import { dark } from '../lib/colors';
 
 const BG_POOL = Platform.OS === 'web'
   ? [{ uri: '/jamestown.jpg' }, { uri: '/alley.jpg' }, { uri: '/lake.png' }]
-  : [require('../public/jamestown.jpg'), require('../public/alley.jpg'), require('../public/lake.png')];
+  : [require('../assets/jamestown.jpg'), require('../assets/alley.jpg'), require('../assets/lake.png')];
 
 // One random image per session, used for the full onboarding flow
 const BG_SRC = BG_POOL[Math.floor(Math.random() * BG_POOL.length)];
