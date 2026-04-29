@@ -32,7 +32,16 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0f0b08",
+          "image": "./assets/files/icon-chadakoin.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ]
     ],
     "extra": {
       "router": {},
