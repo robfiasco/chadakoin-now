@@ -157,6 +157,15 @@ function proxyUrl(url: string): string {
   return url;
 }
 
+// Web goes through the Vercel proxy which has its own timeouts.
+// Native hits feeds directly — without a timeout a single slow host
+// can block the whole loading screen indefinitely.
+const FEED_TIMEOUT_MS = 8000;
+function feedFetch(url: string): Promise<Response> {
+  if (Platform.OS === 'web') return fetch(url);
+  return fetch(url, { signal: AbortSignal.timeout(FEED_TIMEOUT_MS) });
+}
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
@@ -367,7 +376,7 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   const cached = await getCached<RecyclingData>('recycling', TTL.recycling);
   if (cached) return cached;
 
-  const res = await fetch(proxyUrl(FEEDS.recyclingICS));
+  const res = await feedFetch(proxyUrl(FEEDS.recyclingICS));
   if (!res.ok) throw new Error(`Recycling ICS fetch failed: ${res.status}`);
   const text = await res.text();
 
@@ -461,7 +470,7 @@ async function fetchAlerts(): Promise<AlertsData> {
   const cached = await getCached<AlertsData>('alerts', TTL.alerts);
   if (cached) return cached;
 
-  const res = await fetch(proxyUrl(FEEDS.alerts));
+  const res = await feedFetch(proxyUrl(FEEDS.alerts));
   if (!res.ok) throw new Error('Alerts fetch failed');
   const text = await res.text();
   const items = getRssItems(text);
@@ -724,7 +733,7 @@ async function fetchEvents(): Promise<EventItem[]> {
 
   let bpuEvents: EventItem[] = [];
   try {
-    const res = await fetch(proxyUrl(FEEDS.eventsFallback));
+    const res = await feedFetch(proxyUrl(FEEDS.eventsFallback));
     if (res.ok) {
       const text = await res.text();
       const items = getRssItems(text);
@@ -791,7 +800,7 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
   if (cached) return cached;
 
   try {
-    const res = await fetch(proxyUrl(FEEDS.regLenna));
+    const res = await feedFetch(proxyUrl(FEEDS.regLenna));
     if (!res.ok) throw new Error('Reg Lenna fetch failed');
     const json = await res.json();
 
@@ -833,7 +842,7 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
 
 async function fetchChautauquaAlerts(): Promise<AlertItem[]> {
   try {
-    const res = await fetch(proxyUrl(FEEDS.chautauquaAlerts));
+    const res = await feedFetch(proxyUrl(FEEDS.chautauquaAlerts));
     if (!res.ok) return [];
     const text = await res.text();
     const items = getRssItems(text);
@@ -864,7 +873,7 @@ async function fetchLOTD(): Promise<PodcastEpisode | null> {
   const cached = await getCached<PodcastEpisode>('lotd', TTL.lotd);
   if (cached) return cached;
 
-  const res = await fetch(proxyUrl(FEEDS.lotd));
+  const res = await feedFetch(proxyUrl(FEEDS.lotd));
   if (!res.ok) throw new Error('LOTD fetch failed');
   const text = await res.text();
   const items = getRssItems(text);
@@ -969,7 +978,7 @@ const NOT_EVENT = /calling for|call for|seeks? (volunteers?|presenters?|applican
 
 async function fetchWrfaEvents(): Promise<EventItem[]> {
   try {
-    const res = await fetch(proxyUrl(FEEDS.news));
+    const res = await feedFetch(proxyUrl(FEEDS.news));
     if (!res.ok) return [];
     const text = await res.text();
     const items = getRssItems(text);
@@ -1032,7 +1041,7 @@ async function fetchWrfaEvents(): Promise<EventItem[]> {
 
 async function fetchLibraryContent(): Promise<{ events: EventItem[]; news: NewsItem[] }> {
   try {
-    const res = await fetch(proxyUrl(FEEDS.library));
+    const res = await feedFetch(proxyUrl(FEEDS.library));
     if (!res.ok) return { events: [], news: [] };
     const text = await res.text();
     const items = getRssItems(text);
@@ -1085,15 +1094,15 @@ async function fetchNews(): Promise<NewsItem[]> {
   }
 
   const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, spectrumRes, wnyNewsNowRes, wjtnRes] = await Promise.allSettled([
-    fetch(proxyUrl(FEEDS.news)),
-    fetch(proxyUrl(FEEDS.cityNews)),
-    fetch(proxyUrl(FEEDS.jackson)),
-    fetch(proxyUrl(FEEDS.wgrzSports)),
-    fetch(proxyUrl(FEEDS.wgrzWNY)),
-    fetch(proxyUrl(FEEDS.wgrzSouthernTier)),
-    fetch(proxyUrl(FEEDS.spectrumWNY)),
-    fetch(proxyUrl(FEEDS.wnyNewsNow)),
-    fetch(proxyUrl(FEEDS.wjtn)),
+    feedFetch(proxyUrl(FEEDS.news)),
+    feedFetch(proxyUrl(FEEDS.cityNews)),
+    feedFetch(proxyUrl(FEEDS.jackson)),
+    feedFetch(proxyUrl(FEEDS.wgrzSports)),
+    feedFetch(proxyUrl(FEEDS.wgrzWNY)),
+    feedFetch(proxyUrl(FEEDS.wgrzSouthernTier)),
+    feedFetch(proxyUrl(FEEDS.spectrumWNY)),
+    feedFetch(proxyUrl(FEEDS.wnyNewsNow)),
+    feedFetch(proxyUrl(FEEDS.wjtn)),
   ]);
 
   function toNewsItems(raw: string, limit: number, source: string): NewsItem[] {

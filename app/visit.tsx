@@ -124,7 +124,7 @@ interface LocalFav {
   quote: string;
   lat?: number;
   lng?: number;
-  image?: string;
+  image?: any;
   imageAnchor?: 'top' | 'center';
 }
 
@@ -138,7 +138,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: true,
     quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
     lat: 42.09711, lng: -79.24081,
-    image: Platform.OS === 'web' ? '/Brazil-%20Lab.jpg' : undefined,
+    image: Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'),
   },
   {
     name: "Honest John's Pizzeria",
@@ -149,7 +149,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: true,
     quote: "Jamestown has no shortage of great pizza and wings, and Honest John's holds its own. The subs are solid too if you're in that mood.",
     lat: 42.11282, lng: -79.21690,
-    image: Platform.OS === 'web' ? '/honest%20johns.jpg' : undefined,
+    image: Platform.OS === 'web' ? { uri: '/honest%20johns.jpg' } : require('../assets/honest-johns.jpg'),
     imageAnchor: 'top',
   },
   {
@@ -161,7 +161,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: true,
     quote: "I've been three times and would go back. Comedy is my thing, so take that for what it's worth — but this is genuinely the best museum I've ever been to. If you visit Jamestown and skip it, you made a mistake.",
     lat: 42.09467, lng: -79.24365,
-    image: Platform.OS === 'web' ? '/comedy_center.jpg' : undefined,
+    image: Platform.OS === 'web' ? { uri: '/comedy_center.jpg' } : require('../assets/comedy_center.jpg'),
   },
 ];
 
@@ -307,7 +307,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
       <View style={hero.imgWrap}>
         {fav.image ? (
           <Image
-            source={{ uri: fav.image }}
+            source={fav.image}
             style={[hero.img, fav.imageAnchor === 'top' && hero.imgTop]}
           />
         ) : null}
