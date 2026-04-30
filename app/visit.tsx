@@ -561,11 +561,13 @@ export default function VisitScreen() {
     [active]
   );
 
-  // Places — filtered by category + search + open now, exclude Editor's Picks IDs
+  // Places — filtered by category + search + open now, exclude Editor's Picks IDs.
+  // Stay places get pulled out into their own section, so exclude them here.
   const browsePlaces = useMemo(() => {
     return PLACES
       .filter(p => !EDITOR_PICKS_IDS.has(p.id))
       .map(p => ({ ...p, _cat: mapCategory(p) }))
+      .filter(p => p._cat !== 'stay')
       .filter(p => {
         if (active !== 'all' && p._cat !== active) return false;
         if (openNow && isOpenNow(p.hours) === false) return false;
@@ -579,21 +581,36 @@ export default function VisitScreen() {
         return true;
       })
       .sort((a, b) => {
-        // When browsing all (no search), alphabetize
         if (active === 'all' && !q) return a.name.localeCompare(b.name);
-        // Within a category, featured first then alpha
         const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
         return featDiff !== 0 ? featDiff : a.name.localeCompare(b.name);
       });
   }, [active, q, openNow]);
 
-  // Also in Jamestown — only for stay/all
-  const showAlso = active === 'all' || active === 'stay';
+  // Stay-category places from PLACES (e.g. Chautauqua Harbor Hotel) — only for stay/all
+  const showStay = active === 'all' || active === 'stay';
+  const stayPlaces = useMemo(() => {
+    if (!showStay) return [];
+    return PLACES
+      .filter(p => !EDITOR_PICKS_IDS.has(p.id))
+      .map(p => ({ ...p, _cat: mapCategory(p) }))
+      .filter(p => p._cat === 'stay')
+      .filter(p => !q
+        || p.name.toLowerCase().includes(q)
+        || p.address?.toLowerCase().includes(q)
+        || p.description?.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+        return featDiff !== 0 ? featDiff : a.name.localeCompare(b.name);
+      });
+  }, [showStay, q]);
+
+  // Chain hotels (DoubleTree, La Quinta, etc.) — only for stay/all
   const filteredAlso = useMemo(() =>
-    !showAlso ? [] : q
+    !showStay ? [] : q
       ? ALSO_IN_JAMESTOWN.filter(e => e.name.toLowerCase().includes(q))
       : ALSO_IN_JAMESTOWN,
-    [showAlso, q]
+    [showStay, q]
   );
 
   // Parks — only for do/all
@@ -605,7 +622,7 @@ export default function VisitScreen() {
     [showParks, q]
   );
 
-  const hasBrowseContent = browsePlaces.length > 0 || filteredAlso.length > 0 || filteredParks.length > 0;
+  const hasBrowseContent = browsePlaces.length > 0 || stayPlaces.length > 0 || filteredAlso.length > 0 || filteredParks.length > 0;
 
   return (
     <ThemedBackground>
@@ -697,11 +714,18 @@ export default function VisitScreen() {
               />
             ))}
 
-            {filteredAlso.length > 0 && (
+            {(stayPlaces.length > 0 || filteredAlso.length > 0) && (
               <>
                 {browsePlaces.length > 0 && (
                   <Text style={[styles.groupLabel, { color: 'rgba(255,255,255,0.2)' }]}>Where to stay</Text>
                 )}
+                {stayPlaces.map(p => (
+                  <PlaceListCard
+                    key={p.id}
+                    place={p}
+                    color={CAT_COLOR.stay ?? theme.acc}
+                  />
+                ))}
                 {filteredAlso.map(e => <AlsoListCard key={e.name} entry={e} />)}
               </>
             )}
