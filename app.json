@@ -16,7 +16,7 @@
         "foregroundImage": "./assets/files/icon-chadakoin.png",
         "backgroundColor": "#0f0b08"
       },
-      "versionCode": 4,
+      "versionCode": 5,
       "package": "com.chadakoinnow",
       "permissions": [
         "android.permission.RECORD_AUDIO",

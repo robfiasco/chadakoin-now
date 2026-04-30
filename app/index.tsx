@@ -16,6 +16,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { openLink } from '../lib/openLink';
 import { useRadio } from '../lib/RadioContext';
+import { apiUrl } from '../lib/api';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
 import RecyclingScreen from './recycling';
@@ -155,7 +156,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
-    fetch('/api/gas').then(r => r.json()).then(setGasPrice).catch(() => {});
+    fetch(apiUrl('/api/gas')).then(r => r.json()).then(setGasPrice).catch(() => {});
   }, []);
 
   async function onRefresh() {

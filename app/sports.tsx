@@ -13,6 +13,7 @@ import { SkeletonPulse } from '../components/SkeletonPulse';
 import { PulsingDot } from '../components/PulsingDot';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
+import { apiUrl } from '../lib/api';
 
 interface NextUpItem {
   ts: number; sport: string; emoji: string; matchup: string;
@@ -235,7 +236,7 @@ function parseNHLGame(g: any): GameResult | null {
 async function fetchMLB(): Promise<MLBTeam[]> {
   try {
     if (Platform.OS === 'web') {
-      const res = await fetch('/api/mlb');
+      const res = await fetch(apiUrl('/api/mlb'));
       if (!res.ok) return [];
       const json = await res.json();
       return (json.teams ?? []) as MLBTeam[];
@@ -443,7 +444,7 @@ async function fetchPlayoffSeries(): Promise<PlayoffSeries | null> {
 
 async function fetchSabres(): Promise<SabresData> {
   if (Platform.OS === 'web') {
-    const [sabresRes, mlbRes] = await Promise.all([fetch('/api/sabres'), fetchMLB()]);
+    const [sabresRes, mlbRes] = await Promise.all([fetch(apiUrl('/api/sabres')), fetchMLB()]);
     if (!sabresRes.ok) throw new Error('Sabres API failed');
     const json = await sabresRes.json();
     const rawJcc = json.jcc;

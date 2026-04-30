@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { dark } from '../lib/colors';
+import { apiUrl } from '../lib/api';
 
 const ACC     = '#22d3ee';
 const ACC_RGB = '34,211,238';
@@ -41,7 +42,7 @@ export default function FeedbackScreen({ onClose, initialType = 'general' }: { o
     if (!message.trim() || status === 'sending') return;
     setStatus('sending');
     try {
-      const res = await fetch('/api/feedback', {
+      const res = await fetch(apiUrl('/api/feedback'), {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
