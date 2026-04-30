@@ -269,7 +269,7 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
 
 const sp = StyleSheet.create({
   card:       { backgroundColor: dark.surface, borderWidth: 1, borderColor: 'rgba(204,20,20,0.25)', borderRadius: 18, overflow: 'hidden', marginBottom: 12 },
-  photoWrap:  { height: 240, position: 'relative', justifyContent: 'flex-end' },
+  photoWrap:  { height: 240, position: 'relative', justifyContent: 'flex-end', overflow: 'hidden' },
   featPill:   { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   featPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
   nameBlock:  { paddingHorizontal: 16, paddingBottom: 14, gap: 2 },
