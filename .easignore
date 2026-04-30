@@ -6,3 +6,18 @@ docs/
 
 # PDFs
 *.pdf
+
+# Native dirs — let EAS regenerate via `expo prebuild` (CNG)
+android/
+ios/
+
+# Other gitignored noise
+node_modules/
+.expo/
+dist/
+build/
+web-build/
+.vercel
+.env
+*.log
+.DS_Store
