@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Privacy Policy — Chadakoin Now</title>
+  <meta name="description" content="Privacy policy for Chadakoin Now, a free utility app for Jamestown, NY." />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f0b08;
+      --surface: #14212B;
+      --border: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.6);
+      --accent: #49D17D;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      font-size: 16px;
+      padding: 32px 20px 64px;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 0 0 4px;
+      letter-spacing: -0.4px;
+    }
+    h1 span { color: var(--accent); }
+    h2 {
+      font-size: 18px;
+      margin: 32px 0 8px;
+      letter-spacing: -0.2px;
+    }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 4px; }
+    code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 13px;
+    }
+    footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Chadakoin <span>Now</span> — Privacy Policy</h1>
+    <p class="muted">Last updated: May 1, 2026</p>
+
+    <p>Chadakoin Now is a free utility app for residents and visitors of Jamestown, NY, built and operated by Chadakoin Digital. We take privacy seriously and have designed this app to collect as little data as possible.</p>
+
+    <h2>Short version</h2>
+    <ul>
+      <li>We do not require an account.</li>
+      <li>We do not collect, store, or transmit any personal information.</li>
+      <li>We do not track your location.</li>
+      <li>We do not use third-party analytics, advertising SDKs, or behavioral trackers.</li>
+      <li>We do not sell or share data, because we do not have any to sell or share.</li>
+    </ul>
+
+    <h2>What the app does</h2>
+    <p>Chadakoin Now displays public civic and community information for Jamestown, NY, including:</p>
+    <ul>
+      <li>Recycling and parking schedules</li>
+      <li>Local news headlines</li>
+      <li>Local sports scores</li>
+      <li>Community events</li>
+      <li>Restaurants, attractions, and lodging</li>
+      <li>BPU and county alerts</li>
+      <li>Optional audio playback of CDIR (Chadakoin Digital Radio), a local independent stream</li>
+    </ul>
+    <p>To fetch this content, the app makes anonymous HTTPS requests to public RSS feeds and APIs (e.g., jamestownny.gov, jamestownbpu.com, wrfalp.com, weather.gov, wgrz.com). These requests contain no personal information. Some requests are routed through our own server (now.chadakoindigital.com) to handle CORS and standardize headers — that server logs only the basic request metadata Vercel collects by default (IP address, user agent, timestamp) for rate limiting and abuse prevention. These logs are not linked to any identity and are discarded according to Vercel's standard retention.</p>
+
+    <h2>Permissions we request</h2>
+    <ul>
+      <li><strong>Internet</strong> — to fetch civic data and stream CDIR audio.</li>
+      <li><strong>Audio playback</strong> — to play CDIR in the background when you press play. The <code>RECORD_AUDIO</code> permission appears in the manifest because Android requires it for the audio playback library we use, but the app does not record audio at any time. The microphone is never accessed.</li>
+    </ul>
+
+    <h2>Data we do not collect</h2>
+    <p>We do not collect, request, or transmit:</p>
+    <ul>
+      <li>Your name, email, phone number, or any contact info</li>
+      <li>Your location (GPS, IP geolocation, or otherwise)</li>
+      <li>Your device identifiers (advertising ID, IMEI, MAC address)</li>
+      <li>Browsing history, app usage, or behavioral data</li>
+      <li>Photos, contacts, calendar, or microphone input</li>
+    </ul>
+
+    <h2>Maps and external links</h2>
+    <p>When you tap "Directions" on a place or event, the app opens your device's default maps app with the destination address. The app does not access your current location. Tapping article or website links opens them in your default browser. We do not control or take responsibility for the privacy practices of those external services.</p>
+
+    <h2>Feedback form</h2>
+    <p>The app includes an optional feedback form. If you choose to send feedback, your message is delivered to the developer via email. You may include your contact info if you want a reply, but it is never required. We do not store feedback in any external database.</p>
+
+    <h2>Children</h2>
+    <p>The app is not directed at children under 13 and does not knowingly collect any data from anyone of any age.</p>
+
+    <h2>Future changes</h2>
+    <p>If we add analytics or advertising in the future (for example, to support the app through local ad sales), we will update this policy clearly, increment the "Last updated" date above, and disclose every category of data collected and every third party involved before the change ships. Existing users will see the updated policy in the Play Store listing.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or concerns? Email <a href="mailto:rob@chadakoindigital.com">rob@chadakoindigital.com</a>.</p>
+
+    <footer>© Chadakoin Digital — Jamestown, NY</footer>
+  </main>
+</body>
+</html>
