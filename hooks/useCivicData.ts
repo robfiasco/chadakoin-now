@@ -148,13 +148,14 @@ const DEFAULTS: Omit<CivicData, 'refresh'> = {
   lastUpdated: null,
 };
 
-// Routes RSS/JSON requests through our own Expo Router API endpoint
-// to avoid browser CORS restrictions. Native fetches directly.
+// Routes RSS/JSON requests through our own Vercel API endpoint.
+// Web needs it for CORS; native needs it because many news sources
+// (WordPress, WGRZ, etc.) reject non-browser user agents and the
+// edge function adds proper headers. Both platforms go through proxy.
+const NATIVE_API_HOST = 'https://now.chadakoindigital.com';
 function proxyUrl(url: string): string {
-  if (Platform.OS === 'web') {
-    return `/api/proxy?url=${encodeURIComponent(url)}`;
-  }
-  return url;
+  const path = `/api/proxy?url=${encodeURIComponent(url)}`;
+  return Platform.OS === 'web' ? path : `${NATIVE_API_HOST}${path}`;
 }
 
 // Web goes through the Vercel proxy which has its own timeouts.
@@ -204,7 +205,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v28_';
+const CACHE_PREFIX = 'civic_v29_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
