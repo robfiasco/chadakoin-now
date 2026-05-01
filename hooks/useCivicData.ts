@@ -159,12 +159,14 @@ function proxyUrl(url: string): string {
 }
 
 // Web goes through the Vercel proxy which has its own timeouts.
-// Native hits feeds directly — without a timeout a single slow host
-// can block the whole loading screen indefinitely.
-const FEED_TIMEOUT_MS = 8000;
+// Native uses AbortController + setTimeout (portable across Hermes/RN — AbortSignal.timeout
+// is missing in some RN fetch polyfills and throws synchronously, killing parallel fetches).
+const FEED_TIMEOUT_MS = 15000;
 function feedFetch(url: string): Promise<Response> {
   if (Platform.OS === 'web') return fetch(url);
-  return fetch(url, { signal: AbortSignal.timeout(FEED_TIMEOUT_MS) });
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FEED_TIMEOUT_MS);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
 }
 
 const xmlParser = new XMLParser({
@@ -205,7 +207,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v29_';
+const CACHE_PREFIX = 'civic_v30_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -1238,7 +1240,8 @@ async function fetchNews(): Promise<NewsItem[]> {
     })
     .slice(0, 20);
 
-  await setCache('news', news);
+  // Don't cache empty results — would mask transient failures for hours
+  if (news.length > 0) await setCache('news', news);
   return news;
 }
 

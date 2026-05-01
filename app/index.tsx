@@ -434,7 +434,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                       style={StyleSheet.absoluteFill}
                     />
                     <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
-                    <Text style={styles.heroWatermark}>
+                    <Text style={styles.heroWatermark} numberOfLines={1} adjustsFontSizeToFit>
                       {sLabel}
                     </Text>
                     <Text style={styles.heroBannerMeta} numberOfLines={1}>
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   heroGradient: { height: 96, justifyContent: 'center', paddingHorizontal: 14, paddingLeft: 18, position: 'relative' },
   heroAccentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
   heroWatermark: {
-    position: 'absolute', right: -8, bottom: -6,
+    position: 'absolute', right: -8, bottom: -6, left: 40,
     fontFamily: 'Syne', fontSize: 88, letterSpacing: 4, opacity: 0.03, color: '#fff', textAlign: 'right',
   },
   heroBannerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
