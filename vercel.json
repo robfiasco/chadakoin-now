@@ -1,5 +1,7 @@
 {
   "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     { "source": "/api/proxy",         "destination": "/api/proxy" },
     { "source": "/api/weather",       "destination": "/api/weather" },
