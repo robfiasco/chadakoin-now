@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  Image, TextInput, Linking, Platform,
+  TextInput, Linking, Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -308,7 +309,9 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
         {fav.image ? (
           <Image
             source={fav.image}
-            style={[hero.img, fav.imageAnchor === 'top' && hero.imgTop]}
+            style={hero.img}
+            contentFit="cover"
+            contentPosition={fav.imageAnchor === 'top' ? 'top' : 'center'}
           />
         ) : null}
         <LinearGradient
@@ -370,8 +373,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
 const hero = StyleSheet.create({
   card:    { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden', marginBottom: 10 },
   imgWrap: { height: 130, position: 'relative', overflow: 'hidden' },
-  img:     { ...StyleSheet.absoluteFillObject, resizeMode: 'cover', opacity: 0.55 },
-  imgTop:  { resizeMode: 'cover', top: 0 },
+  img:     { ...StyleSheet.absoluteFillObject, opacity: 0.55 },
   catPill: { position: 'absolute', top: 10, left: 12, flexDirection: 'row', borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   catPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
   editorPill: { position: 'absolute', top: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },

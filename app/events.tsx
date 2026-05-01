@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Image, Platform,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -187,7 +188,7 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
     <View style={sp.card}>
       {/* Photo + gradient */}
       <View style={sp.photoWrap}>
-        <Image source={show.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={show.image} style={StyleSheet.absoluteFill} contentFit="cover" />
         {/* Bottom fade — heavy so logo text reads */}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.72)', 'rgba(0,0,0,0.95)'] as any}
@@ -308,7 +309,7 @@ function FeaturedCard({ event }: { event: EventItem }) {
             <Image
               source={{ uri: event.imageUrl }}
               style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
-              resizeMode="cover"
+              contentFit="cover"
             />
             <LinearGradient
               colors={['rgba(0,0,0,0.15)', 'transparent', 'rgba(0,0,0,0.65)'] as any}
