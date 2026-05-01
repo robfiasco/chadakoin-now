@@ -9,7 +9,6 @@
     { "source": "/api/feedback",      "destination": "/api/feedback" },
     { "source": "/api/source-health", "destination": "/api/source-health" },
     { "source": "/api/gas",           "destination": "/api/gas" },
-    { "source": "/privacy",           "destination": "/privacy.html" },
     { "source": "/(.*)",              "destination": "/index.html" }
   ]
 }

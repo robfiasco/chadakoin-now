@@ -29,18 +29,20 @@ function Bullet({ children }: { children: string }) {
   );
 }
 
-export default function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
+export default function PrivacyPolicyScreen({ onClose }: { onClose?: () => void }) {
   return (
     <View style={s.container}>
       <SafeAreaView edges={['top']} style={s.header}>
         <View style={s.headerRow}>
           <View>
             <Text style={s.title}>Privacy Policy</Text>
-            <Text style={s.updated}>Last updated: April 17, 2026</Text>
+            <Text style={s.updated}>Last updated: May 1, 2026</Text>
           </View>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
-          </TouchableOpacity>
+          {onClose ? (
+            <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </SafeAreaView>
 
@@ -53,37 +55,48 @@ export default function PrivacyPolicyScreen({ onClose }: { onClose: () => void }
         <Section title="What I don't do">
           <Bullet>No user accounts. You don't sign up, log in, or create a profile.</Bullet>
           <Bullet>I don't ask for your name, email, phone number, or location.</Bullet>
+          <Bullet>I don't use any third-party analytics, advertising SDKs, or behavioral trackers.</Bullet>
           <Bullet>I don't sell, share, or rent data about you to anyone. Ever.</Bullet>
           <Bullet>I don't track you across other apps or websites.</Bullet>
           <Bullet>There are no ads in the app.</Bullet>
         </Section>
 
         <Section title="What I do collect">
+          <Body>
+            Nothing personal. The app does not collect, store, or transmit your name, email, phone, location, contacts, photos, or device identifiers.
+          </Body>
           <Text style={[s.body, { marginTop: 12 }]}>
-            <Text style={s.bold}>Analytics. </Text>
-            I use analytics to understand how many people use the app and which parts get the most attention. It's aggregated — I see things like "200 people opened the News tab this week," not anything tied to you specifically. The tool may log your device type, OS version, and country (from your IP, not GPS). I don't see your IP address or anything that identifies you personally.
+            <Text style={s.bold}>Server logs. </Text>
+            When the app fetches content from my server (now.chadakoindigital.com), Vercel — my hosting provider — logs basic request metadata (IP address, user agent, timestamp) for rate limiting and abuse prevention. These logs aren't linked to any identity, aren't used for analytics, and are kept only for Vercel's standard short retention.
+          </Text>
+        </Section>
+
+        <Section title="Permissions Android shows you">
+          <Text style={[s.body, { marginTop: 12 }]}>
+            <Text style={s.bold}>Internet. </Text>
+            To fetch news, events, weather, recycling schedules, and to stream CDIR audio when you press play.
           </Text>
           <Text style={[s.body, { marginTop: 12 }]}>
-            <Text style={s.bold}>That's it. </Text>
-            No location. No microphone. No camera. No contacts. No accounts.
+            <Text style={s.bold}>RECORD_AUDIO. </Text>
+            This appears in the manifest because the audio playback library Android uses requires it. The app does not record audio at any time. Your microphone is never accessed.
           </Text>
         </Section>
 
         <Section title="Where content comes from">
           <Body>
-            News, events, and business info come from public sources — RSS feeds, public APIs, and things I've added myself. I don't collect anything about you when you browse this content.
+            News, events, and business info come from public sources — RSS feeds and public APIs from places like jamestownny.gov, jamestownbpu.com, wrfalp.com, weather.gov, wgrz.com, and a few others. The app makes anonymous HTTPS requests to those sources. They don't get anything that identifies you.
           </Body>
         </Section>
 
         <Section title="Directions">
           <Body>
-            Tapping "Directions" opens your phone's maps app. Whatever happens after that is between you and the maps app — I don't see any of it.
+            Tapping "Directions" opens your phone's maps app with the destination address. The app does not access your current location. Whatever happens after that is between you and the maps app — I don't see any of it.
           </Body>
         </Section>
 
         <Section title="Feedback">
           <Body>
-            If you send feedback through the app, I receive what you type. I use it to read and respond. I won't add you to any list.
+            If you send feedback through the app, I receive what you type via email. I use it to read and respond. I won't add you to any list, and feedback isn't stored in any database.
           </Body>
         </Section>
 
@@ -95,12 +108,12 @@ export default function PrivacyPolicyScreen({ onClose }: { onClose: () => void }
 
         <Section title="If this changes">
           <Body>
-            If I ever start collecting something new — accounts, location, anything — I'll update this policy and call it out clearly in the app. No quiet changes.
+            If I ever start collecting something new — analytics, ads, accounts, location — I'll update this policy with the date, list every category and every third party involved, and call it out clearly in the app and the Play Store listing before the change ships. No quiet changes.
           </Body>
         </Section>
 
         <Section title="Questions">
-          <Body>rob@robfiasco.dev</Body>
+          <Body>rob@chadakoindigital.com</Body>
         </Section>
 
         <Text style={s.footer}>
