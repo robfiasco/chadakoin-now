@@ -13,10 +13,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/files/icon-chadakoin.png",
+        "foregroundImage": "./assets/files/icon-chadakoin-android.png",
         "backgroundColor": "#0f0b08"
       },
-      "versionCode": 7,
+      "versionCode": 8,
       "package": "com.chadakoinnow",
       "permissions": [
         "android.permission.RECORD_AUDIO",
