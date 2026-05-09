@@ -7,6 +7,15 @@ const TARGET_SUB   = 'JAMESTOWN · NEW YORK';
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%&';
 const SCRAMBLE_STEPS = 32;
 
+// Shown in rotation while waiting on slow networks so the screen doesn't look stuck.
+const WAITING_MESSAGES = [
+  'LOADING NEWS...',
+  'LOADING WEATHER...',
+  'LOADING SCORES...',
+  'LOADING EVENTS...',
+  'ALMOST THERE...',
+];
+
 // Pick once per session — stable across re-renders
 const SESSION_THEME = THEMES[Math.floor(Math.random() * THEMES.length)];
 
@@ -24,10 +33,14 @@ export function AppLoadingScreen({
   const [progress, setProgress]       = useState(0);
   const [sequenceDone, setSequenceDone] = useState(false);
   const [statusReady, setStatusReady] = useState(false);
+  const [waitingIdx, setWaitingIdx]   = useState(0);
 
   const fadeAnim  = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim  = useRef(new Animated.Value(0.5)).current;
+  const sweepAnim = useRef(new Animated.Value(0)).current;
+
+  const isWaiting = sequenceDone && !isAppReady;
 
   // Glow pulse
   useEffect(() => {
@@ -66,6 +79,24 @@ export function AppLoadingScreen({
     }, 45);
     return () => clearInterval(interval);
   }, []);
+
+  // While waiting on data after scramble: sweep the bar and rotate status text
+  // so the screen reads as alive on slow connections.
+  useEffect(() => {
+    if (!isWaiting) return;
+    sweepAnim.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(sweepAnim, { toValue: 1, duration: 1400, useNativeDriver: true })
+    );
+    loop.start();
+    const interval = setInterval(() => {
+      setWaitingIdx(i => (i + 1) % WAITING_MESSAGES.length);
+    }, 2000);
+    return () => {
+      loop.stop();
+      clearInterval(interval);
+    };
+  }, [isWaiting]);
 
   // Exit when both conditions met
   useEffect(() => {
@@ -131,9 +162,31 @@ export function AppLoadingScreen({
         <View style={[styles.barTrack, { width: barMaxWidth }]}>
           <View style={[
             styles.barFill,
-            { width: (progress / 100) * barMaxWidth, backgroundColor: theme.acc },
-            Platform.OS === 'web' ? ({ boxShadow: `0 0 8px ${theme.acc}` } as any) : {},
+            {
+              width: isWaiting ? barMaxWidth : (progress / 100) * barMaxWidth,
+              backgroundColor: isWaiting ? `rgba(${theme.accRGB},0.22)` : theme.acc,
+            },
+            !isWaiting && Platform.OS === 'web' ? ({ boxShadow: `0 0 8px ${theme.acc}` } as any) : {},
           ]} />
+          {isWaiting && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.barSweep,
+                {
+                  width: barMaxWidth * 0.3,
+                  backgroundColor: theme.acc,
+                  transform: [{
+                    translateX: sweepAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-barMaxWidth * 0.3, barMaxWidth],
+                    }),
+                  }],
+                },
+                Platform.OS === 'web' ? ({ boxShadow: `0 0 8px ${theme.acc}` } as any) : {},
+              ]}
+            />
+          )}
         </View>
 
         {/* Status */}
@@ -141,7 +194,11 @@ export function AppLoadingScreen({
           styles.status,
           statusReady && { color: theme.acc, ...statusReadyStyle },
         ]}>
-          {statusReady ? '[ READY ]  CITY DATA LOADED' : 'LOADING CITY DATA...'}
+          {statusReady
+            ? '[ READY ]  CITY DATA LOADED'
+            : isWaiting
+              ? WAITING_MESSAGES[waitingIdx]
+              : 'LOADING CITY DATA...'}
         </Text>
 
       </View>
@@ -206,6 +263,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   barFill: {
+    height: 1,
+  },
+  barSweep: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
     height: 1,
   },
   status: {
