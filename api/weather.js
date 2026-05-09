@@ -12,7 +12,8 @@ function codeToIcon(id, icon) {
   if (id >= 300 && id < 400) return '🌦️';
   if (id >= 500 && id < 600) return id >= 511 ? '🌨️' : '🌧️';
   if (id >= 600 && id < 700) return '❄️';
-  if (id >= 700 && id < 800) return '🌫️';
+  // Fog emoji 🌫️ is missing from many Android Noto Emoji fonts and renders as tofu.
+  if (id >= 700 && id < 800) return '☁️';
   return '🌤️';
 }
 
