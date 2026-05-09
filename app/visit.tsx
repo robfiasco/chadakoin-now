@@ -129,6 +129,7 @@ interface LocalFav {
   lng?: number;
   image?: any;
   imageAnchor?: 'top' | 'center';
+  imageFit?: 'cover' | 'contain'; // default 'cover'
 }
 
 const LOCAL_FAVORITES: LocalFav[] = [
@@ -142,6 +143,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: false,
     quote: "Dirty sodas tuned for max flavor — smooth, fizzy, and always race-ready. A new spot on E 2nd St serving up the kind of pit-lane pick-me-up Jamestown didn't know it needed.",
     image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
+    imageFit: 'contain',
   },
   {
     name: 'Labyrinth Press Co.',
@@ -323,7 +325,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
           <Image
             source={fav.image}
             style={hero.img}
-            contentFit="cover"
+            contentFit={fav.imageFit ?? 'cover'}
             contentPosition={fav.imageAnchor === 'top' ? 'top' : 'center'}
           />
         ) : null}
@@ -363,7 +365,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
 
       {expanded && (
         <View style={[hero.expanded, { borderTopColor: `rgba(${fav.rgb},0.1)` }]}>
-          <Text style={[hero.quote, { color: `rgba(${fav.rgb},0.6)` }]}>"{fav.quote}"</Text>
+          <Text style={[hero.quote, { color: `rgba(${fav.rgb},0.85)` }]}>"{fav.quote}"</Text>
           <View style={hero.linksRow}>
             {fav.orderUrl ? (
               <TouchableOpacity onPress={() => openLink(fav.orderUrl!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
