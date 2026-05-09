@@ -402,7 +402,7 @@ const hero = StyleSheet.create({
   beenThereDot: { width: 5, height: 5, borderRadius: 3 },
   beenThereText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
   body:    { paddingHorizontal: 14, paddingVertical: 12 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3 },
   name:    { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: -0.2, flex: 1, marginRight: 8 },
   detail:  { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.2 },
   expanded:{ borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
