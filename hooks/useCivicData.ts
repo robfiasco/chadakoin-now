@@ -772,7 +772,9 @@ async function fetchEvents(): Promise<EventItem[]> {
     }
   }
 
+  // Start-of-today, not "now" — keeps today's events visible even if their start time has passed.
   const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
   const result = merged
     .filter(e => new Date(e.startDate) >= cutoff)
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -789,7 +791,7 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
   const seen = new Set(fetched.map(key));
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
-  const fresh = CURATED_EVENTS.filter(e => new Date(e.startDate) >= new Date());
+  const fresh = CURATED_EVENTS.filter(e => new Date(e.startDate) >= cutoff);
   const combined = [
     ...fresh.filter(e => !seen.has(key(e))),
     ...fetched,
