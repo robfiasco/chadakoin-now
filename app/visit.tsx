@@ -131,6 +131,15 @@ interface LocalFav {
 
 const LOCAL_FAVORITES: LocalFav[] = [
   {
+    name: 'Pit Stop Pops',
+    category: 'drink',
+    detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
+    rgb: '245,87,87',
+    visited: false,
+    quote: "Dirty sodas tuned for max flavor — smooth, fizzy, and always race-ready. A new spot on E 2nd St serving up the kind of pit-lane pick-me-up Jamestown didn't know it needed.",
+    image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
+  },
+  {
     name: 'Labyrinth Press Co.',
     category: 'eat',
     detail: 'Eat · Drink · Tue–Sat 8am–9pm',
@@ -140,18 +149,6 @@ const LOCAL_FAVORITES: LocalFav[] = [
     quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
     lat: 42.09711, lng: -79.24081,
     image: Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'),
-  },
-  {
-    name: "Honest John's Pizzeria",
-    category: 'eat',
-    detail: 'Eat · Daily 11am–10pm',
-    website: 'https://honestjohns.pizza/',
-    rgb: '245,166,35',
-    visited: true,
-    quote: "Jamestown has no shortage of great pizza and wings, and Honest John's holds its own. The subs are solid too if you're in that mood.",
-    lat: 42.11282, lng: -79.21690,
-    image: Platform.OS === 'web' ? { uri: '/honest%20johns.jpg' } : require('../assets/honest-johns.jpg'),
-    imageAnchor: 'top',
   },
   {
     name: 'National Comedy Center',
@@ -294,7 +291,7 @@ const PARKS: ParkEntry[] = [
 ];
 
 // Places excluded from Browse (already in Editor's Picks)
-const EDITOR_PICKS_IDS = new Set(['labyrinth-press', 'comedy-center', 'honest-johns']);
+const EDITOR_PICKS_IDS = new Set(['labyrinth-press', 'comedy-center', 'pit-stop-pops']);
 
 // ─── Editor's Pick hero card ──────────────────────────────────────
 function EditorPickCard({ fav }: { fav: LocalFav }) {
