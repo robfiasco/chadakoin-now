@@ -393,7 +393,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
 
 const hero = StyleSheet.create({
   card:    { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden', marginBottom: 10 },
-  imgWrap: { height: 130, position: 'relative', overflow: 'hidden' },
+  imgWrap: { height: 200, position: 'relative', overflow: 'hidden' },
   img:     { ...StyleSheet.absoluteFillObject, opacity: 0.55 },
   catPill: { position: 'absolute', top: 10, left: 12, flexDirection: 'row', borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   catPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
