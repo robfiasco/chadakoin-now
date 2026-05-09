@@ -143,7 +143,6 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: false,
     quote: "Pit lane pick-me-up. Dirty sodas tuned for max flavor — smooth, fizzy, podium-worthy. Race-ready refreshment on E 2nd St.",
     image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
-    imageFit: 'contain',
   },
   {
     name: 'Labyrinth Press Co.',
