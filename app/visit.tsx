@@ -120,6 +120,8 @@ interface LocalFav {
   category: FilterCat;
   detail: string;
   website?: string;
+  orderUrl?: string;
+  hours?: string;     // standard format consumed by isOpenNow()
   rgb: string;
   visited: boolean;
   quote: string;
@@ -134,6 +136,8 @@ const LOCAL_FAVORITES: LocalFav[] = [
     name: 'Pit Stop Pops',
     category: 'drink',
     detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
+    orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
+    hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
     rgb: '245,87,87',
     visited: false,
     quote: "Dirty sodas tuned for max flavor — smooth, fizzy, and always race-ready. A new spot on E 2nd St serving up the kind of pit-lane pick-me-up Jamestown didn't know it needed.",
@@ -144,6 +148,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     category: 'eat',
     detail: 'Eat · Drink · Tue–Sat 8am–9pm',
     website: 'https://www.labpressco.com/',
+    hours: 'Tue–Sat 8am–9pm',
     rgb: '0,212,200',
     visited: true,
     quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
@@ -155,6 +160,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     category: 'explore',
     detail: 'Explore · Wed–Sun, 10am–5pm',
     website: 'https://comedycenter.org',
+    hours: 'Wed–Sun 10am–5pm',
     rgb: '155,109,255',
     visited: true,
     quote: "I've been three times and would go back. Comedy is my thing, so take that for what it's worth — but this is genuinely the best museum I've ever been to. If you visit Jamestown and skip it, you made a mistake.",
@@ -293,6 +299,16 @@ const PARKS: ParkEntry[] = [
 // Places excluded from Browse (already in Editor's Picks)
 const EDITOR_PICKS_IDS = new Set(['labyrinth-press', 'comedy-center', 'pit-stop-pops']);
 
+// ─── "Open" badge (rendered when isOpenNow returns true) ──────────
+function OpenBadge() {
+  return (
+    <View style={list.badge}>
+      <View style={[list.badgeDot, { backgroundColor: '#34d399' }]} />
+      <Text style={[list.badgeText, { color: '#34d399' }]}>OPEN</Text>
+    </View>
+  );
+}
+
 // ─── Editor's Pick hero card ──────────────────────────────────────
 function EditorPickCard({ fav }: { fav: LocalFav }) {
   const { theme } = useTheme();
@@ -336,6 +352,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
       <TouchableOpacity activeOpacity={0.88} onPress={() => setExpanded(e => !e)} style={hero.body}>
         <View style={hero.nameRow}>
           <Text style={hero.name}>{fav.name}</Text>
+          {isOpenNow(fav.hours) === true ? <OpenBadge /> : null}
           <Ionicons
             name={expanded ? 'chevron-up' : 'chevron-down'}
             size={14} color="rgba(255,255,255,0.3)"
@@ -348,6 +365,12 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
         <View style={[hero.expanded, { borderTopColor: `rgba(${fav.rgb},0.1)` }]}>
           <Text style={[hero.quote, { color: `rgba(${fav.rgb},0.6)` }]}>"{fav.quote}"</Text>
           <View style={hero.linksRow}>
+            {fav.orderUrl ? (
+              <TouchableOpacity onPress={() => openLink(fav.orderUrl!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
+                <Ionicons name="bag-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
+                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Order online</Text>
+              </TouchableOpacity>
+            ) : null}
             {fav.website ? (
               <TouchableOpacity onPress={() => openLink(fav.website!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
                 <Ionicons name="globe-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
@@ -391,12 +414,13 @@ const hero = StyleSheet.create({
 
 // ─── Compact list card (Places + Also + Parks) ────────────────────
 function ListCard({
-  name, address, color, visited, children,
+  name, address, color, visited, badge, children,
 }: {
   name: string;
   address?: string;
   color: string;
   visited?: boolean;
+  badge?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -408,6 +432,7 @@ function ListCard({
         <View style={{ flex: 1 }}>
           <View style={list.nameRow}>
             <Text style={list.name}>{name}</Text>
+            {badge}
           </View>
           {address ? <Text style={list.address}>{address}</Text> : null}
         </View>
@@ -441,12 +466,14 @@ const list = StyleSheet.create({
 
 function PlaceListCard({ place, color }: { place: Place; color: string }) {
   const { theme } = useTheme();
+  const open = isOpenNow(place.hours) === true;
   return (
     <ListCard
       name={place.name}
       address={place.address}
       color={color}
       visited={place.visited}
+      badge={open ? <OpenBadge /> : undefined}
     >
       {place.description ? (
         <Text style={[lc.desc, { color: `${color}99` }]}>{place.description}</Text>
@@ -455,6 +482,11 @@ function PlaceListCard({ place, color }: { place: Place; color: string }) {
         <Text style={lc.hours}>{place.hours}</Text>
       ) : null}
       <View style={lc.links}>
+        {place.orderUrl ? (
+          <TouchableOpacity onPress={() => openLink(place.orderUrl!)} activeOpacity={0.7}>
+            <Text style={[lc.link, { color: theme.acc }]}>Order online →</Text>
+          </TouchableOpacity>
+        ) : null}
         {place.website ? (
           <TouchableOpacity onPress={() => openLink(place.website!)} activeOpacity={0.7}>
             <Text style={[lc.link, { color: theme.acc }]}>Website →</Text>
@@ -554,10 +586,14 @@ export default function VisitScreen() {
 
   const q = search.trim().toLowerCase();
 
-  // Editor's Picks — filtered by category
+  // Editor's Picks — filtered by category and (when toggled) "open now"
   const editorPicks = useMemo(() =>
-    LOCAL_FAVORITES.filter(f => active === 'all' || f.category === active),
-    [active]
+    LOCAL_FAVORITES.filter(f => {
+      if (active !== 'all' && f.category !== active) return false;
+      if (openNow && isOpenNow(f.hours) === false) return false;
+      return true;
+    }),
+    [active, openNow]
   );
 
   // Places — filtered by category + search + open now, exclude Editor's Picks IDs.

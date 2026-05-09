@@ -10,6 +10,7 @@ export interface Place {
   description: string;
   address: string;
   website?: string;
+  orderUrl?: string;       // online ordering link (e.g. DoorDash, Toast)
   hours?: string;
   featured: boolean;
   featuredNote?: string;  // custom tagline shown on featured card
@@ -96,6 +97,7 @@ export const PLACES: Place[] = [
     icon: 'cafe-outline',
     description: 'Dirty sodas tuned for max flavor — smooth, fizzy, and always race-ready. Pickup and delivery available.',
     address: '522 E 2nd St, Jamestown',
+    orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
     hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
     featured: true,
     featuredNote: 'Dirty sodas tuned for max flavor — fizzy, smooth, race-ready.',
