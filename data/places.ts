@@ -100,7 +100,7 @@ export const PLACES: Place[] = [
     orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
     hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
     featured: true,
-    featuredNote: 'Dirty sodas tuned for max flavor — fizzy, smooth, race-ready.',
+    featuredNote: 'Pole-position dirty sodas. Pit lane vibes on E 2nd St.',
   },
   {
     id: 'paces',
