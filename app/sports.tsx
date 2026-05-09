@@ -421,24 +421,27 @@ async function fetchPlayoffSeries(): Promise<PlayoffSeries | null> {
     const res = await fetch(`https://api-web.nhle.com/v1/playoff-series/carousel/${seasonId}`);
     if (!res.ok) return null;
     const data = await res.json();
+    // Pick the highest round BUF appears in — earlier rounds remain in the carousel
+    // after they end, so a first-match return would stay stuck on round 1.
+    let latest: PlayoffSeries | null = null;
     for (const round of (data.rounds ?? [])) {
       for (const series of (round.series ?? [])) {
         const top = series.topSeed ?? {};
         const bot = series.bottomSeed ?? {};
-        if (top.abbrev === 'BUF' || bot.abbrev === 'BUF') {
-          const bufWins = top.abbrev === 'BUF' ? top.wins : bot.wins;
-          const oppWins = top.abbrev === 'BUF' ? bot.wins : top.wins;
-          return {
-            round: round.roundNumber,
-            roundLabel: round.roundLabel ?? `Round ${round.roundNumber}`,
-            opponent: top.abbrev === 'BUF' ? bot.abbrev : top.abbrev,
-            bufWins, oppWins,
-            neededToWin: series.neededToWin ?? 4,
-          };
-        }
+        if (top.abbrev !== 'BUF' && bot.abbrev !== 'BUF') continue;
+        if (latest && round.roundNumber <= latest.round) continue;
+        const bufWins = top.abbrev === 'BUF' ? top.wins : bot.wins;
+        const oppWins = top.abbrev === 'BUF' ? bot.wins : top.wins;
+        latest = {
+          round: round.roundNumber,
+          roundLabel: round.roundLabel ?? `Round ${round.roundNumber}`,
+          opponent: top.abbrev === 'BUF' ? bot.abbrev : top.abbrev,
+          bufWins, oppWins,
+          neededToWin: series.neededToWin ?? 4,
+        };
       }
     }
-    return null;
+    return latest;
   } catch { return null; }
 }
 
