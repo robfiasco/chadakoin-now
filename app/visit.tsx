@@ -140,7 +140,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
     orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
     hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
-    rgb: '225,6,0',
+    rgb: '210,150,60',
     visited: false,
     quote: "Pit lane pick-me-up. Dirty sodas tuned for max flavor — smooth, fizzy, podium-worthy. Race-ready refreshment.",
     image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
