@@ -312,7 +312,7 @@ function FeaturedCard({ event }: { event: EventItem }) {
               contentFit="cover"
             />
             <LinearGradient
-              colors={['rgba(0,0,0,0.15)', 'transparent', 'rgba(0,0,0,0.65)'] as any}
+              colors={['rgba(0,0,0,0.1)', 'transparent', 'rgba(0,0,0,0.4)'] as any}
               start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
