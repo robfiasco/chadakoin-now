@@ -142,7 +142,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
     rgb: '225,6,0',
     visited: false,
-    quote: "Pit lane pick-me-up. Dirty sodas tuned for max flavor — smooth, fizzy, podium-worthy. Race-ready refreshment on E 2nd St.",
+    quote: "Pit lane pick-me-up. Dirty sodas tuned for max flavor — smooth, fizzy, podium-worthy. Race-ready refreshment.",
     image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
     bannerAspect: 1024 / 434,
   },
@@ -373,12 +373,10 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
                 <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Website</Text>
               </TouchableOpacity>
             ) : null}
-            {fav.lat ? (
-              <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
-                <Ionicons name="navigate-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
-                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Directions</Text>
-              </TouchableOpacity>
-            ) : null}
+            <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
+              <Ionicons name="navigate-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
+              <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Directions</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -402,7 +400,7 @@ const hero = StyleSheet.create({
   name:    { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: -0.2, flex: 1, marginRight: 8 },
   detail:  { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.2 },
   expanded:{ borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  quote:   { fontFamily: 'Outfit', fontSize: 11, lineHeight: 17, fontStyle: 'italic' },
+  quote:   { fontFamily: 'Outfit', fontSize: 12, lineHeight: 18 },
   linksRow:{ flexDirection: 'row', gap: 8 },
   linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   linkBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
