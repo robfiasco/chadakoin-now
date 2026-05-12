@@ -198,12 +198,11 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
 
-  const filtered = CITY_SERVICES.filter(s =>
-    filter === 'all' ||
-    s.status === filter ||
-    // "coming-up" filter chip also catches imminent items
-    (filter === 'coming-up' && s.status === 'imminent')
-  );
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const filtered = CITY_SERVICES.filter(s => {
+    if (s.expiresAfter && today > new Date(s.expiresAfter)) return false;
+    return filter === 'all' || s.status === filter || (filter === 'coming-up' && s.status === 'imminent');
+  });
 
   return (
     <ThemedBackground>

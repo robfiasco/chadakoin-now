@@ -25,6 +25,7 @@ export interface CityService {
   schedule?: ScheduleEntry[];
   tip?: string;
   links?: { label: string; url: string }[];
+  expiresAfter?: string; // ISO date — card hidden after this date (e.g. '2026-05-13')
 }
 
 export const CITY_SERVICES: CityService[] = [
@@ -64,6 +65,7 @@ export const CITY_SERVICES: CityService[] = [
       { date: 'May 12',   day: 'Tue',     areas: 'SW Jamestown — Baker, State, Chautauqua Ave · Busti north' },
       { date: 'May 13',   day: 'Wed',     areas: 'SE Jamestown — Barrows, Sciota, Virginia Blvd, Collins' },
     ],
+    expiresAfter: '2026-05-13',
     tip: 'Before your flush day: set aside water for drinking/cooking, and check the tap before doing laundry — discolored water can stain clothes. Never add discolored water to your hot water tank. If laundry is affected, don\'t dry it — rewash with rust remover (free at BPU Customer Service, 661-1660). Discoloration clears in 12–24 hours.',
     links: [
       { label: 'Map 1 — Falconer, E. Ellicott, Jamestown, W. Ellicott, Celoron', url: 'https://www.jamestownnybpu.gov/DocumentCenter/View/3976/BPU-Spring-2026-Water-Main-Flushing-1' },
