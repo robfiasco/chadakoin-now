@@ -364,7 +364,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
 
       {expanded && (
         <View style={[hero.expanded, { borderTopColor: `rgba(${fav.rgb},0.1)` }]}>
-          <Text style={[hero.quote, { color: `rgba(${fav.rgb},0.85)` }]}>"{fav.quote}"</Text>
+          <Text style={[hero.quote, { color: 'rgba(255,255,255,0.75)' }]}>"{fav.quote}"</Text>
           <View style={hero.linksRow}>
             {fav.orderUrl ? (
               <TouchableOpacity onPress={() => openLink(fav.orderUrl!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
