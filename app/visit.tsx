@@ -130,6 +130,7 @@ interface LocalFav {
   image?: any;
   imageAnchor?: 'top' | 'center';
   imageFit?: 'cover' | 'contain'; // default 'cover'
+  bannerAspect?: number;          // width/height ratio; if set, wrapper auto-sizes instead of fixed 200px
 }
 
 const LOCAL_FAVORITES: LocalFav[] = [
@@ -143,7 +144,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: false,
     quote: "Pit lane pick-me-up. Dirty sodas tuned for max flavor — smooth, fizzy, podium-worthy. Race-ready refreshment on E 2nd St.",
     image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
-    imageFit: 'contain',
+    bannerAspect: 1024 / 434,
   },
   {
     name: 'Labyrinth Press Co.',
@@ -317,10 +318,14 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
   const [expanded, setExpanded] = useState(true);
   const catColor = CAT_COLOR[fav.category] ?? theme.acc;
 
+  const imgWrapStyle = fav.bannerAspect
+    ? [hero.imgWrap, { height: undefined, aspectRatio: fav.bannerAspect }]
+    : hero.imgWrap;
+
   return (
     <View style={hero.card}>
       {/* Image header */}
-      <View style={hero.imgWrap}>
+      <View style={imgWrapStyle}>
         {fav.image ? (
           <Image
             source={fav.image}
@@ -342,11 +347,6 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
           <Text style={[hero.catPillText, { color: catColor }]}>
             {fav.category.toUpperCase()}
           </Text>
-        </View>
-        {/* Editor's Pick pill */}
-        <View style={hero.editorPill}>
-          <Ionicons name="star" size={8} color={theme.acc} />
-          <Text style={[hero.editorPillText, { color: theme.acc }]}>Editor's Pick</Text>
         </View>
       </View>
 
