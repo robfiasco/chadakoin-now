@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image,
-  TouchableOpacity, Animated, Easing, Platform, RefreshControl, Share,
+  TouchableOpacity, Animated, Easing, Platform, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -219,17 +219,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               <LiveDot color={theme.acc} />
               <Text style={[styles.dateBadgeText, { color: theme.acc }]}>{dateBadge}</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => Share.share({
-                title: 'Chadakoin Now',
-                message: 'Chadakoin Now — your guide to what\'s happening in Jamestown, NY: https://now.chadakoindigital.com',
-                url: 'https://now.chadakoindigital.com',
-              })}
-              activeOpacity={0.7}
-              style={styles.settingsBtn}
-            >
-              <Ionicons name="share-outline" size={18} color="rgba(255,255,255,0.4)" />
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setSettingsOpen(true)}
               activeOpacity={0.7}

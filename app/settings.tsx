@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking, Animated, Easing,
+  TouchableOpacity, Linking, Animated, Easing, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,10 +18,11 @@ import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
-  { id: 'feedback', label: 'Send feedback',  icon: 'chatbubble-outline'    },
-  { id: 'intro',    label: 'Onboarding',        icon: 'play-circle-outline' },
-  { id: 'privacy',  label: 'Privacy policy', icon: 'shield-outline'        },
-  { id: 'terms',    label: 'Terms of use',   icon: 'document-text-outline' },
+  { id: 'share',    label: 'Share this app',  icon: 'share-outline'         },
+  { id: 'feedback', label: 'Send feedback',   icon: 'chatbubble-outline'    },
+  { id: 'intro',    label: 'Onboarding',      icon: 'play-circle-outline'   },
+  { id: 'privacy',  label: 'Privacy policy',  icon: 'shield-outline'        },
+  { id: 'terms',    label: 'Terms of use',    icon: 'document-text-outline' },
 ];
 
 export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
@@ -128,6 +129,7 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
                 activeOpacity={0.7}
                 style={styles.aboutRow}
                 onPress={
+                  row.id === 'share'     ? () => Share.share({ title: 'Chadakoin Now', message: 'Chadakoin Now — your guide to what\'s happening in Jamestown, NY: https://now.chadakoindigital.com', url: 'https://now.chadakoindigital.com' }) :
                   row.id === 'privacy'   ? () => setPrivacyOpen(true)  :
                   row.id === 'terms'     ? () => setTermsOpen(true)    :
                   row.id === 'feedback'  ? () => setFeedbackOpen(true) :
