@@ -319,7 +319,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
   const catColor = CAT_COLOR[fav.category] ?? theme.acc;
 
   const imgWrapStyle = fav.bannerAspect
-    ? [hero.imgWrap, { height: undefined, aspectRatio: fav.bannerAspect }]
+    ? { aspectRatio: fav.bannerAspect, position: 'relative' as const, overflow: 'hidden' as const }
     : hero.imgWrap;
 
   return (
