@@ -336,7 +336,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
         ) : null}
         <LinearGradient
           colors={fav.image
-            ? ['transparent', 'rgba(0,0,0,0.35)', dark.bg] as any
+            ? ['transparent', 'transparent', 'rgba(0,0,0,0.25)'] as any
             : [`rgba(${fav.rgb},0.15)`, `rgba(${fav.rgb},0.05)`, dark.bg] as any
           }
           start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
