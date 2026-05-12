@@ -342,12 +342,6 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
           start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        {/* Category pill */}
-        <View style={[hero.catPill, { backgroundColor: `${catColor}22`, borderColor: `${catColor}44` }]}>
-          <Text style={[hero.catPillText, { color: catColor }]}>
-            {fav.category.toUpperCase()}
-          </Text>
-        </View>
       </View>
 
       {/* Card body */}
