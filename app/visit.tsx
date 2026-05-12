@@ -131,6 +131,8 @@ interface LocalFav {
   imageAnchor?: 'top' | 'center';
   imageFit?: 'cover' | 'contain'; // default 'cover'
   bannerAspect?: number;          // width/height ratio; if set, wrapper auto-sizes instead of fixed 200px
+  phone?: string;                 // digits only, e.g. '7167086010'
+  cateringNote?: string;          // short line shown below quote when expanded
 }
 
 const LOCAL_FAVORITES: LocalFav[] = [
@@ -140,9 +142,11 @@ const LOCAL_FAVORITES: LocalFav[] = [
     detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
     orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
     hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
+    phone: '7167086010',
     rgb: '210,150,60',
     visited: false,
-    quote: "Pit lane pick-me-up. Dirty sodas tuned for max flavor — smooth, fizzy, podium-worthy. Race-ready refreshment.",
+    quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
+    cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
     image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
     bannerAspect: 1024 / 434,
   },
@@ -360,11 +364,23 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
       {expanded && (
         <View style={[hero.expanded, { borderTopColor: `rgba(${fav.rgb},0.1)` }]}>
           <Text style={[hero.quote, { color: 'rgba(255,255,255,0.75)' }]}>"{fav.quote}"</Text>
+          {fav.cateringNote ? (
+            <View style={[hero.cateringRow, { backgroundColor: `rgba(${fav.rgb},0.07)`, borderColor: `rgba(${fav.rgb},0.15)` }]}>
+              <Ionicons name="sparkles-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
+              <Text style={[hero.cateringText, { color: `rgba(${fav.rgb},0.8)` }]}>{fav.cateringNote}</Text>
+            </View>
+          ) : null}
           <View style={hero.linksRow}>
             {fav.orderUrl ? (
               <TouchableOpacity onPress={() => openLink(fav.orderUrl!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
                 <Ionicons name="bag-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
                 <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Order online</Text>
+              </TouchableOpacity>
+            ) : null}
+            {fav.phone ? (
+              <TouchableOpacity onPress={() => Linking.openURL(`tel:${fav.phone}`)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
+                <Ionicons name="call-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
+                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Call</Text>
               </TouchableOpacity>
             ) : null}
             {fav.website ? (
@@ -401,7 +417,9 @@ const hero = StyleSheet.create({
   detail:  { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.2 },
   expanded:{ borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   quote:   { fontFamily: 'Outfit', fontSize: 12, lineHeight: 18 },
-  linksRow:{ flexDirection: 'row', gap: 8 },
+  cateringRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  cateringText: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, flex: 1 },
+  linksRow:{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   linkBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
 });
