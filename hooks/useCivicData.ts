@@ -19,6 +19,7 @@ export interface RecyclingData {
   upcomingWeeks: RecyclingWeek[];  // next 4 weeks beyond nextWeek
   holidayDelay: boolean;
   affectedDays: string[];
+  upcomingHoliday: { name: string; date: string } | null;
 }
 
 export interface ParkingData {
@@ -128,6 +129,21 @@ const BPU_HOLIDAYS_2027 = [
 
 const FEDERAL_HOLIDAYS = [...BPU_HOLIDAYS_2026, ...BPU_HOLIDAYS_2027];
 
+const HOLIDAY_NAMES: Record<string, string> = {
+  '2026-01-01': "New Year's Day",
+  '2026-05-25': 'Memorial Day',
+  '2026-07-04': 'Independence Day',
+  '2026-09-07': 'Labor Day',
+  '2026-11-26': 'Thanksgiving',
+  '2026-12-25': 'Christmas',
+  '2027-01-01': "New Year's Day",
+  '2027-05-31': 'Memorial Day',
+  '2027-07-05': 'Independence Day',
+  '2027-09-06': 'Labor Day',
+  '2027-11-25': 'Thanksgiving',
+  '2027-12-24': 'Christmas',
+};
+
 const EMPTY_WEEK: RecyclingWeek = { material: '—', dateRange: '—', exclusions: '', startDate: '', emoji: '♻️' };
 
 const DEFAULTS: Omit<CivicData, 'refresh'> = {
@@ -139,6 +155,7 @@ const DEFAULTS: Omit<CivicData, 'refresh'> = {
     upcomingWeeks: [],
     holidayDelay: false,
     affectedDays: [],
+    upcomingHoliday: null,
   },
   parking: { active: true, side: null, isWinter: false, mode: 'monthly' as const, switchTime: '1st of month', rule: '' },
   alerts: { hasActiveAlerts: false, activeAlerts: [] },
@@ -289,7 +306,7 @@ export function computeParkingSchedule() {
   });
 }
 
-function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
+function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[]; upcomingHoliday: { name: string; date: string } | null } {
   const today = new Date();
   const dow = today.getDay();
 
@@ -304,7 +321,17 @@ function computeHolidayDelay(): { hasDelay: boolean; affectedDays: string[] } {
   });
 
   const affected = weekDays.filter(d => FEDERAL_HOLIDAYS.includes(d));
-  return { hasDelay: affected.length > 0, affectedDays: affected };
+
+  // Look ahead 7 days for an upcoming holiday (so people can prepare)
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+  const lookahead = new Date(today);
+  lookahead.setDate(today.getDate() + 7);
+  const lookaheadStr = lookahead.toISOString().split('T')[0];
+  const nextHoliday = FEDERAL_HOLIDAYS.find(d => d > todayStr && d <= lookaheadStr && !affected.includes(d));
+  const upcomingHoliday = nextHoliday ? { name: HOLIDAY_NAMES[nextHoliday] ?? 'Holiday', date: nextHoliday } : null;
+
+  return { hasDelay: affected.length > 0, affectedDays: affected, upcomingHoliday };
 }
 
 function parseIcsDate(raw: string): Date | null {
@@ -457,12 +484,15 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   const holidayDelay = thisStart ? holidayDates.some(d => d >= thisStart && d <= thisEnd) : false;
   const affectedDays = thisStart ? holidayDates.filter(d => d >= thisStart && d <= thisEnd) : [];
 
+  const { upcomingHoliday } = computeHolidayDelay();
+
   const result: RecyclingData = {
     thisWeek,
     nextWeek,
     upcomingWeeks,
     holidayDelay,
     affectedDays,
+    upcomingHoliday,
   };
 
   await setCache('recycling', result);
@@ -1254,7 +1284,7 @@ export function useCivicData(): CivicData {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     const parking = computeParking();
-    const { hasDelay, affectedDays } = computeHolidayDelay();
+    const { hasDelay, affectedDays, upcomingHoliday } = computeHolidayDelay();
 
     const [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult] = await Promise.allSettled([
       fetchRecyclingICS(),
@@ -1268,7 +1298,7 @@ export function useCivicData(): CivicData {
 
     const recycling = recyclingResult.status === 'fulfilled'
       ? recyclingResult.value
-      : { ...DEFAULTS.recycling, holidayDelay: hasDelay, affectedDays };
+      : { ...DEFAULTS.recycling, holidayDelay: hasDelay, affectedDays, upcomingHoliday };
 
     const bpuAlerts = alertsResult.status === 'fulfilled' ? alertsResult.value : DEFAULTS.alerts;
     const countyAlerts = countyAlertsResult.status === 'fulfilled' ? (countyAlertsResult.value as AlertItem[]) : [];

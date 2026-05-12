@@ -385,7 +385,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
           <View style={[styles.delayBanner, glassWeb]}>
             <Ionicons name="warning-outline" size={14} color="#f59e0b" />
-            <Text style={styles.delayText}>Holiday this week — pickup may shift by one day.</Text>
+            <Text style={styles.delayText}>Holiday this week — garbage & recycling pickup shifts by one day.</Text>
+          </View>
+        )}
+        {!recycling.holidayDelay && recycling.upcomingHoliday && (
+          // @ts-ignore
+          <View style={[styles.delayBanner, glassWeb]}>
+            <Ionicons name="calendar-outline" size={14} color="#f59e0b" />
+            <Text style={styles.delayText}>{recycling.upcomingHoliday.name} is coming up — garbage & recycling pickup will shift by one day that week.</Text>
           </View>
         )}
 
