@@ -193,9 +193,9 @@ function HeroCard({ item }: { item: NewsItem }) {
 
       {/* TOP STORY badge pinned top-left */}
       <View style={hero.badgeWrap}>
-        <View style={[hero.topBadge, { borderColor: `${bar}50`, backgroundColor: `${bar}14` }]}>
+        <View style={[hero.topBadge, { borderColor: `${bar}80`, backgroundColor: 'rgba(0,0,0,0.55)' }]}>
           <View style={[hero.badgeDot, { backgroundColor: bar }]} />
-          <Text style={[hero.topBadgeText, { color: bar }]}>TOP STORY</Text>
+          <Text style={[hero.topBadgeText, { color: '#fff' }]}>TOP STORY</Text>
         </View>
       </View>
 

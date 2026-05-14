@@ -1159,11 +1159,11 @@ async function fetchNews(): Promise<NewsItem[]> {
 
   // When WRFA is down, boost limits on other local sources to keep the feed full
   const lim = wrfaUp
-    ? { city: 3, jackson: 3, wgrzST: 5, wgrzGeo: 3, wnyNewsNow: 5, wjtn: 4 }
-    : { city: 6, jackson: 5, wgrzST: 8, wgrzGeo: 5, wnyNewsNow: 8, wjtn: 8 };
+    ? { city: 5, jackson: 4, wgrzST: 8, wgrzGeo: 5, wnyNewsNow: 8, wjtn: 6 }
+    : { city: 8, jackson: 6, wgrzST: 10, wgrzGeo: 7, wnyNewsNow: 10, wjtn: 10 };
 
   const wrfaItems = wrfaUp && wrfaRes.status === 'fulfilled' && wrfaRes.value.ok
-    ? toNewsItems(await wrfaRes.value.text(), 5, 'WRFA-LP')
+    ? toNewsItems(await wrfaRes.value.text(), 15, 'WRFA-LP')
     : [];
 
   const cityItems = cityRes.status === 'fulfilled' && cityRes.value.ok
