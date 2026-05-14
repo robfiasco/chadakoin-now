@@ -14,15 +14,17 @@ import FeedbackScreen from './feedback';
 import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
+import DollarTrailScreen from './dollar-trail';
 
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
-  { id: 'share',    label: 'Share this app',  icon: 'share-outline'         },
-  { id: 'feedback', label: 'Send feedback',   icon: 'chatbubble-outline'    },
-  { id: 'intro',    label: 'Onboarding',      icon: 'play-circle-outline'   },
-  { id: 'privacy',  label: 'Privacy policy',  icon: 'shield-outline'        },
-  { id: 'terms',    label: 'Terms of use',    icon: 'document-text-outline' },
+  { id: 'share',       label: 'Share this app',  icon: 'share-outline'         },
+  { id: 'feedback',    label: 'Send feedback',   icon: 'chatbubble-outline'    },
+  { id: 'dollartrail', label: 'The Dollar Trail', icon: 'footsteps-outline'    },
+  { id: 'intro',       label: 'Onboarding',      icon: 'play-circle-outline'   },
+  { id: 'privacy',     label: 'Privacy policy',  icon: 'shield-outline'        },
+  { id: 'terms',       label: 'Terms of use',    icon: 'document-text-outline' },
 ];
 
 export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
@@ -31,6 +33,7 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [termsOpen, setTermsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState('general');
+  const [dollarTrailOpen, setDollarTrailOpen] = useState(false);
 
   // Theme description sheet
   const [descTheme, setDescTheme] = useState<Theme | null>(null);
@@ -129,12 +132,13 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
                 activeOpacity={0.7}
                 style={styles.aboutRow}
                 onPress={
-                  row.id === 'share'     ? () => Share.share({ title: 'Chadakoin Now', message: 'Chadakoin Now — your guide to what\'s happening in Jamestown, NY: https://now.chadakoindigital.com', url: 'https://now.chadakoindigital.com' }) :
-                  row.id === 'privacy'   ? () => setPrivacyOpen(true)  :
-                  row.id === 'terms'     ? () => setTermsOpen(true)    :
-                  row.id === 'feedback'  ? () => setFeedbackOpen(true) :
-                  row.id === 'intro'     ? () => onboardingResetRef.reset()
-                                         : () => {}
+                  row.id === 'share'       ? () => Share.share({ title: 'Chadakoin Now', message: 'Chadakoin Now — your guide to what\'s happening in Jamestown, NY: https://now.chadakoindigital.com', url: 'https://now.chadakoindigital.com' }) :
+                  row.id === 'privacy'     ? () => setPrivacyOpen(true)      :
+                  row.id === 'terms'       ? () => setTermsOpen(true)        :
+                  row.id === 'feedback'    ? () => setFeedbackOpen(true)     :
+                  row.id === 'dollartrail' ? () => setDollarTrailOpen(true)  :
+                  row.id === 'intro'       ? () => onboardingResetRef.reset()
+                                           : () => {}
                 }
               >
                 <Ionicons name={row.icon} size={16} color={`rgba(${theme.accRGB},0.5)`} />
@@ -169,6 +173,11 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
         <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via NWS</Text>
       </ScrollView>
 
+      {dollarTrailOpen && (
+        <View style={styles.fullOverlay}>
+          <DollarTrailScreen onClose={() => setDollarTrailOpen(false)} />
+        </View>
+      )}
       {feedbackOpen && (
         <View style={styles.fullOverlay}>
           <FeedbackScreen onClose={() => { setFeedbackOpen(false); setFeedbackType('general'); }} initialType={feedbackType} />

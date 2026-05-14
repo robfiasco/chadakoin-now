@@ -11,6 +11,7 @@ import { CivicDataProvider, useCivic } from '../lib/CivicDataContext';
 import { RadioProvider, useRadio } from '../lib/RadioContext';
 import { Image } from 'react-native';
 import { AppLoadingScreen } from '../components/AppLoadingScreen';
+import { AddToHomeScreen } from '../components/AddToHomeScreen';
 import { onboardingResetRef } from '../lib/onboardingReset';
 import { LinearGradient } from 'expo-linear-gradient';
 import OnboardingScreen from './onboarding';
@@ -194,6 +195,9 @@ function AppLayout() {
           <OnboardingScreen onDone={handleOnboardingDone} />
         </View>
       )}
+
+      {/* PWA install banner — floats above tab bar, shown after loading */}
+      {!showLoading && <AddToHomeScreen />}
     </View>
   );
 }

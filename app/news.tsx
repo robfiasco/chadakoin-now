@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  RefreshControl, Share,
+  RefreshControl, Share, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,14 @@ import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import type { NewsItem } from '../hooks/useCivicData';
 
+
+const HERO_PHOTOS = [
+  require('../assets/JTNY1.png'),
+  require('../assets/JTNY2.png'),
+  require('../assets/JTNY3.png'),
+  require('../assets/JTNY4.png'),
+];
+const HERO_PHOTO = HERO_PHOTOS[Math.floor(Math.random() * HERO_PHOTOS.length)];
 
 // ── Category derivation ───────────────────────────────────────────
 type NewsCategory = 'Music' | 'City' | 'State' | 'JCC' | 'Education' | 'Community' | 'Breaking' | 'Local';
@@ -175,33 +183,24 @@ function HeroCard({ item }: { item: NewsItem }) {
       activeOpacity={0.75}
       style={hero.card}
     >
-      {/* ── Banner ── */}
-      <View style={hero.header}>
-        {/* Dark navy gradient — subtle, no accent color bleed */}
-        <LinearGradient
-          colors={['rgba(12,22,48,0.98)', 'rgba(6,12,30,0.99)'] as any}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* Thin accent bar on left edge */}
-        <View style={[hero.accentBar, { backgroundColor: bar }]} />
+      <Image source={HERO_PHOTO} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
+      <LinearGradient
+        colors={['transparent', 'rgba(4,10,22,0.7)', 'rgba(4,10,22,0.97)'] as any}
+        start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[hero.accentBar, { backgroundColor: bar }]} />
 
-        {/* Category watermark — bleeds off right edge */}
-        <Text style={hero.watermark} numberOfLines={1} adjustsFontSizeToFit>
-          {category.toUpperCase()}
-        </Text>
-
-        {/* Row: TOP STORY pill only — source/time shown in body */}
-        <View style={hero.headerTop}>
-          <View style={[hero.topBadge, { borderColor: `${bar}50`, backgroundColor: `${bar}14` }]}>
-            <View style={[hero.badgeDot, { backgroundColor: bar }]} />
-            <Text style={[hero.topBadgeText, { color: bar }]}>TOP STORY</Text>
-          </View>
+      {/* TOP STORY badge pinned top-left */}
+      <View style={hero.badgeWrap}>
+        <View style={[hero.topBadge, { borderColor: `${bar}50`, backgroundColor: `${bar}14` }]}>
+          <View style={[hero.badgeDot, { backgroundColor: bar }]} />
+          <Text style={[hero.topBadgeText, { color: bar }]}>TOP STORY</Text>
         </View>
       </View>
 
-      {/* ── Body ── */}
-      <View style={hero.body}>
+      {/* Content pinned to bottom */}
+      <View style={hero.content}>
         <Text style={hero.title} numberOfLines={3}>{item.title}</Text>
         {item.excerpt ? (
           <Text style={hero.excerpt} numberOfLines={2}>{item.excerpt}</Text>
@@ -226,24 +225,14 @@ function HeroCard({ item }: { item: NewsItem }) {
 
 const hero = StyleSheet.create({
   card: {
-    backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
-    borderRadius: 18, overflow: 'hidden', marginBottom: 12,
-  },
-  header: {
-    height: 96, position: 'relative',
-    justifyContent: 'center', paddingHorizontal: 14, paddingLeft: 18,
+    height: 220, borderRadius: 18, overflow: 'hidden',
+    marginBottom: 12, position: 'relative',
   },
   accentBar: {
-    position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2,
+    position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2, zIndex: 2,
   },
-  watermark: {
-    position: 'absolute', right: -8, bottom: -6, left: 40,
-    fontFamily: 'DMSans_800ExtraBold', fontSize: 44,
-    letterSpacing: 2, opacity: 0.06, textAlign: 'right',
-    color: '#fff',
-  },
-  headerTop: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  badgeWrap: {
+    position: 'absolute', top: 14, left: 18, zIndex: 2,
   },
   topBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -259,9 +248,9 @@ const hero = StyleSheet.create({
   categoryLabel: {
     fontFamily: 'DMSans_800ExtraBold', fontSize: 24, letterSpacing: 1,
   },
-  body:   { padding: 16, gap: 8 },
+  content:{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, gap: 6, zIndex: 2 },
   title:  { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 24 },
-  excerpt:{ fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 19 },
+  excerpt:{ fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 19 },
   metaRow:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
   source: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
   dot:    { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
