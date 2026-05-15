@@ -192,13 +192,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     ? civic.news.find(n => DELAY_PATTERN.test(n.title) && /\b(school|district|jamestown|chautauqua)\b/i.test(n.title) && !SCHOOL_POLICY_PATTERN.test(n.title))
     : null;
 
-  const topStoryCandidate = civic.news.length > 0 ? civic.news[0] : null;
   const TOP_STORY_MAX_AGE_MS = 36 * 60 * 60 * 1000; // hide if older than 36h
-  const topStory: NewsItem | null =
-    topStoryCandidate && topStoryCandidate.pubDate &&
-    Date.now() - new Date(topStoryCandidate.pubDate).getTime() < TOP_STORY_MAX_AGE_MS
-      ? topStoryCandidate
-      : null;
+  const TOP_STORY_EXCLUDE = /\b(arrest|arrested|fugitive|wanted|charged|indicted|convicted|sentence|prison|jail|shooting|stabbing|homicide|murder|robbery|burglary|assault|DWI|DUI)\b/i;
+  const topStoryCandidate = civic.news.find(n =>
+    n.pubDate &&
+    Date.now() - new Date(n.pubDate).getTime() < TOP_STORY_MAX_AGE_MS &&
+    !TOP_STORY_EXCLUDE.test(n.title)
+  ) ?? null;
+  const topStory: NewsItem | null = topStoryCandidate ?? null;
   const weekendEvent = getThisWeekendEvent(civic.events);
 
   // Simplify recycling material name — strip parenthetical, shorten known long names

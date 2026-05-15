@@ -130,6 +130,7 @@ interface LocalFav {
   image?: any;
   imageAnchor?: 'top' | 'center';
   imageFit?: 'cover' | 'contain'; // default 'cover'
+  imageBg?: string;               // background color behind image (useful for logos with solid bg)
   bannerAspect?: number;          // width/height ratio; if set, wrapper auto-sizes instead of fixed 200px
   phone?: string;                 // digits only, e.g. '7167086010'
   cateringNote?: string;          // short line shown below quote when expanded
@@ -148,6 +149,8 @@ const LOCAL_FAVORITES: LocalFav[] = [
     quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
     cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
     image: Platform.OS === 'web' ? { uri: '/IMG_4371.PNG' } : require('../assets/psp-logo.png'),
+    imageFit: 'contain',
+    imageBg: '#fff',
     bannerAspect: 4078 / 3198,
   },
   {
@@ -323,7 +326,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
   const catColor = CAT_COLOR[fav.category] ?? theme.acc;
 
   const imgWrapStyle = fav.bannerAspect
-    ? { aspectRatio: fav.bannerAspect, position: 'relative' as const, overflow: 'hidden' as const }
+    ? { aspectRatio: fav.bannerAspect, position: 'relative' as const, overflow: 'hidden' as const, backgroundColor: fav.imageBg ?? 'transparent' }
     : hero.imgWrap;
 
   return (
