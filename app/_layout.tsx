@@ -203,6 +203,15 @@ function AppLayout() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const s = document.createElement('script');
+    s.defer = true;
+    s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    s.setAttribute('data-cf-beacon', '{"token": "7053ba8c9b0a4e93ab6e27c45ae017d3"}');
+    document.head.appendChild(s);
+  }, []);
+
   const [fontsLoaded] = useFonts({
     DMSans_400Regular,
     DMSans_500Medium,
