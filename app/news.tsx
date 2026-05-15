@@ -117,14 +117,11 @@ function relativeTime(pubDate: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-// Routine arrest/charge stories — buried in Police Blotter, not the main feed.
-// High-impact crime (shootings, fatal crashes, major investigations) stays in main feed.
-const BLOTTER_PATTERN = /\b(arrested|charged with|faces .{0,20}charge|possession of|dwi|dui|trespass|harassment|petit larceny|shoplifting|disorderly|unlawful|appearance ticket|arraigned|probation violation)\b/i;
-const MAJOR_CRIME_PATTERN = /\b(shot|shooting|killed|fatal|homicide|murder|stabbing|missing person|amber alert|manhunt|major investigation|sex crime|child|assault)\b/i;
+// Crime/incident keywords — all matching stories go to Police Blotter (shown last, collapsed).
+export const CRIME_PATTERN = /\b(arrest|arrested|arraigned|charged|indicted|convicted|sentence|prison|jail|fugitive|wanted|probation|appearance ticket|unlawful|trespass|harassment|dispute|domestic|assault|robbery|burglary|larceny|shoplifting|vandalism|graffiti|disorderly|drunken|dwi|dui|possession|meth|drug|gun|gunshot|shot|shooting|stabbing|homicide|murder|killed|fatal|manhunt|missing person|amber alert|sex crime|condemn|police|crime)\b/i;
 
 function isBlotter(item: NewsItem): boolean {
-  const t = item.title + ' ' + (item.excerpt ?? '');
-  return BLOTTER_PATTERN.test(t) && !MAJOR_CRIME_PATTERN.test(t);
+  return CRIME_PATTERN.test(item.title);
 }
 
 type Bucket = { label: string; items: NewsItem[]; isBlotter?: boolean };
@@ -401,7 +398,6 @@ export default function NewsScreen() {
   }
 
   const cutoff = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-  const HERO_EXCLUDE = /\b(arrest|arrested|fugitive|wanted|charged|indicted|convicted|sentence|prison|jail|shooting|stabbing|homicide|murder|robbery|burglary|assault|DWI|DUI)\b/i;
   const filtered = news
     .filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff);
 
@@ -461,7 +457,7 @@ export default function NewsScreen() {
                   onToggle={() => setBlotterOpen(o => !o)}
                 />
                 {(!bucket.isBlotter || blotterOpen) && bucket.items.map((item, i) =>
-                  bi === 0 && i === 0 && !bucket.isBlotter && !HERO_EXCLUDE.test(item.title)
+                  bi === 0 && i === 0 && !bucket.isBlotter
                     ? <HeroCard key={i} item={item} />
                     : <NewsRow key={i} item={item} />
                 )}

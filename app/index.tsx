@@ -23,6 +23,7 @@ import RecyclingScreen from './recycling';
 import ParkingScreen from './parking';
 import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
+import { CRIME_PATTERN } from './news';
 const HERO_PHOTOS = [
   { source: require('../assets/JTNY1.png'), scale: 1.0, translateY: -35 },
   { source: require('../assets/JTNY2.png'), scale: 1.0, translateY: -20 },
@@ -193,11 +194,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     : null;
 
   const TOP_STORY_MAX_AGE_MS = 36 * 60 * 60 * 1000; // hide if older than 36h
-  const TOP_STORY_EXCLUDE = /\b(arrest|arrested|fugitive|wanted|charged|indicted|convicted|sentence|prison|jail|shooting|stabbing|homicide|murder|robbery|burglary|assault|DWI|DUI)\b/i;
   const topStoryCandidate = civic.news.find(n =>
     n.pubDate &&
     Date.now() - new Date(n.pubDate).getTime() < TOP_STORY_MAX_AGE_MS &&
-    !TOP_STORY_EXCLUDE.test(n.title)
+    !CRIME_PATTERN.test(n.title)
   ) ?? null;
   const topStory: NewsItem | null = topStoryCandidate ?? null;
   const weekendEvent = getThisWeekendEvent(civic.events);

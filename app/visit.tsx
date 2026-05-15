@@ -341,14 +341,16 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
             contentPosition={fav.imageAnchor === 'top' ? 'top' : 'center'}
           />
         ) : null}
-        <LinearGradient
-          colors={fav.image
-            ? ['transparent', 'transparent', 'rgba(0,0,0,0.25)'] as any
-            : [`rgba(${fav.rgb},0.15)`, `rgba(${fav.rgb},0.05)`, dark.bg] as any
-          }
-          start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        {fav.imageFit !== 'contain' && (
+          <LinearGradient
+            colors={fav.image
+              ? ['transparent', 'transparent', 'rgba(0,0,0,0.25)'] as any
+              : [`rgba(${fav.rgb},0.15)`, `rgba(${fav.rgb},0.05)`, dark.bg] as any
+            }
+            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
       </View>
 
       {/* Card body */}
