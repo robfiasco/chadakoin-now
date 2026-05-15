@@ -151,7 +151,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     image: Platform.OS === 'web' ? { uri: '/IMG_4371.PNG' } : require('../assets/psp-logo.png'),
     imageFit: 'contain',
     imageBg: '#111',
-    bannerAspect: 4078 / 3198,
+    bannerAspect: 4078 / 3400,
   },
   {
     name: 'Labyrinth Press Co.',
