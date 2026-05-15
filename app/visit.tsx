@@ -336,7 +336,7 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
         {fav.image ? (
           <Image
             source={fav.image}
-            style={hero.img}
+            style={[hero.img, fav.imageFit === 'contain' && { opacity: 1 }]}
             contentFit={fav.imageFit ?? 'cover'}
             contentPosition={fav.imageAnchor === 'top' ? 'top' : 'center'}
           />
