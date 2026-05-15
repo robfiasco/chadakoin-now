@@ -147,8 +147,8 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: false,
     quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
     cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
-    image: Platform.OS === 'web' ? { uri: '/psp.jpg' } : require('../assets/psp.jpg'),
-    bannerAspect: 1024 / 434,
+    image: Platform.OS === 'web' ? { uri: '/IMG_4371.PNG' } : require('../assets/psp-logo.png'),
+    bannerAspect: 4078 / 3198,
   },
   {
     name: 'Labyrinth Press Co.',
