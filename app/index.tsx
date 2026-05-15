@@ -25,7 +25,7 @@ import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
 import { CRIME_PATTERN } from './news';
 const HERO_PHOTOS = [
-  { source: require('../assets/JTNY1.png'), scale: 1.0, translateY: -35 },
+  { source: require('../assets/JTNY1.png'), scale: 1.0, translateY: -65 },
   { source: require('../assets/JTNY2.png'), scale: 1.0, translateY: -20 },
   { source: require('../assets/JTNY3.png'), scale: 1.0, translateY: -30 },
   { source: require('../assets/JTNY4.png'), scale: 1.0, translateY: -20 },
