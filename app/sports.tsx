@@ -410,7 +410,9 @@ async function fetchJCCNative(): Promise<JCCData> {
       if (!records[r.sport]) records[r.sport] = { w: 0, l: 0 };
       if (r.won) records[r.sport].w++; else records[r.sport].l++;
     }
-    return { results: results.slice(0, 8), upcoming: upcoming.slice(0, 8), records };
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentResults = results.filter(r => new Date(r.date) >= sevenDaysAgo);
+    return { results: recentResults.slice(0, 8), upcoming: upcoming.slice(0, 8), records };
   } catch { return empty; }
 }
 
@@ -767,9 +769,10 @@ export default function SportsScreen() {
     return Math.max(0, Math.ceil((open.getTime() - today.getTime()) / 86400000));
   }, []);
 
-  // JCC glance: last result per sport (up to 2 distinct sports)
+  // JCC glance: last result per sport (up to 2 distinct sports), within 7 days
   const jccGlance = useMemo(() => {
-    const results = data?.jcc?.results ?? [];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const results = (data?.jcc?.results ?? []).filter(r => new Date(r.date) >= sevenDaysAgo);
     const seen = new Set<string>();
     const out: JCCResult[] = [];
     for (const r of results) {

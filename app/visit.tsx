@@ -150,7 +150,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
     image: Platform.OS === 'web' ? { uri: '/IMG_4371.PNG' } : require('../assets/psp-logo.png'),
     imageFit: 'contain',
-    imageBg: '#fff',
+    imageBg: '#111',
     bannerAspect: 4078 / 3198,
   },
   {

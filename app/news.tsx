@@ -401,6 +401,7 @@ export default function NewsScreen() {
   }
 
   const cutoff = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+  const HERO_EXCLUDE = /\b(arrest|arrested|fugitive|wanted|charged|indicted|convicted|sentence|prison|jail|shooting|stabbing|homicide|murder|robbery|burglary|assault|DWI|DUI)\b/i;
   const filtered = news
     .filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff);
 
@@ -460,7 +461,7 @@ export default function NewsScreen() {
                   onToggle={() => setBlotterOpen(o => !o)}
                 />
                 {(!bucket.isBlotter || blotterOpen) && bucket.items.map((item, i) =>
-                  bi === 0 && i === 0 && !bucket.isBlotter
+                  bi === 0 && i === 0 && !bucket.isBlotter && !HERO_EXCLUDE.test(item.title)
                     ? <HeroCard key={i} item={item} />
                     : <NewsRow key={i} item={item} />
                 )}
