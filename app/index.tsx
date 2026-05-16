@@ -194,7 +194,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   // School delays/closings — scan news for delay keywords, show within school-year months (Sep–Jun)
   const schoolMonth = (() => { const m = new Date().getMonth() + 1; return m >= 9 || m <= 6; })();
-  const DELAY_PATTERN = /\b(delay|delayed|closing|closed|cancel|cancellation|2.hour|school)\b/i;
+  const DELAY_PATTERN = /\b(delay|delayed|closing|closed|cancel|cancellation|2.hour)\b/i;
   const SCHOOL_POLICY_PATTERN = /\b(budget|mandate|bill|legislation|law|nys|state|federal|senate|assembly|congress|electric|ev)\b/i;
   const schoolAlert = schoolMonth
     ? civic.news.find(n => DELAY_PATTERN.test(n.title) && /\b(school|district|jamestown|chautauqua)\b/i.test(n.title) && !SCHOOL_POLICY_PATTERN.test(n.title))
