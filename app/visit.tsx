@@ -131,6 +131,7 @@ interface LocalFav {
   imageAnchor?: 'top' | 'center';
   imageFit?: 'cover' | 'contain'; // default 'cover'
   imageBg?: string;               // background color behind image (useful for logos with solid bg)
+  noFilter?: boolean;             // skip opacity dim + gradient overlay
   bannerAspect?: number;          // width/height ratio; if set, wrapper auto-sizes instead of fixed 200px
   phone?: string;                 // digits only, e.g. '7167086010'
   cateringNote?: string;          // short line shown below quote when expanded
@@ -164,6 +165,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
     lat: 42.09711, lng: -79.24081,
     image: Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'),
+    noFilter: true,
   },
   {
     name: 'National Comedy Center',
@@ -176,6 +178,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     quote: "I've been three times and would go back. Comedy is my thing, so take that for what it's worth — but this is genuinely the best museum I've ever been to. If you visit Jamestown and skip it, you made a mistake.",
     lat: 42.09467, lng: -79.24365,
     image: Platform.OS === 'web' ? { uri: '/comedy_center.jpg' } : require('../assets/comedy_center.jpg'),
+    noFilter: true,
   },
 ];
 
@@ -336,12 +339,12 @@ function EditorPickCard({ fav }: { fav: LocalFav }) {
         {fav.image ? (
           <Image
             source={fav.image}
-            style={[hero.img, fav.imageFit === 'contain' && { opacity: 1 }]}
+            style={[hero.img, (fav.imageFit === 'contain' || fav.noFilter) && { opacity: 1 }]}
             contentFit={fav.imageFit ?? 'cover'}
             contentPosition={fav.imageAnchor === 'top' ? 'top' : 'center'}
           />
         ) : null}
-        {fav.imageFit !== 'contain' && (
+        {fav.imageFit !== 'contain' && !fav.noFilter && (
           <LinearGradient
             colors={fav.image
               ? ['transparent', 'transparent', 'rgba(0,0,0,0.25)'] as any
