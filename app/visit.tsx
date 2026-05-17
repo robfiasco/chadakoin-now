@@ -80,9 +80,12 @@ function isOpenNow(hours?: string): boolean | null {
   const dow = now.getDay();
   const cur = now.getHours() * 60 + now.getMinutes();
 
-  // "Closes Xpm" shorthand
-  const cl = hours.match(/closes?\s+(\d+(?::\d+)?\s*(?:am|pm)?)/i);
-  if (cl) { const t = parseTimeMins(cl[1]); return t > 0 && cur < t; }
+  // "Closes Xpm" shorthand — only for simple single-value strings with no open time
+  // Multi-segment strings (·) that happen to contain "closes" are handled below
+  if (!hours.includes('·')) {
+    const cl = hours.match(/^closes?\s+(\d+(?::\d+)?\s*(?:am|pm)?)\s*$/i);
+    if (cl) return null; // closing time only, opening time unknown
+  }
 
   const segments = hours.split(/·/).map(s => s.trim()).filter(Boolean);
   let todayCovered = false;
