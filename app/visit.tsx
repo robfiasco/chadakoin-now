@@ -100,7 +100,8 @@ function isOpenNow(hours?: string): boolean | null {
     todayCovered = true;
     const closeMer = /pm/i.test(m[3]) ? 'pm' : /am/i.test(m[3]) ? 'am' : undefined;
     const open  = parseTimeMins(m[2], closeMer === 'pm' && !/am|pm/i.test(m[2]) ? 'pm' : undefined);
-    const close = parseTimeMins(m[3]);
+    let close = parseTimeMins(m[3]);
+    if (/^12\s*am/i.test(m[3].trim())) close = 1440; // midnight closing = end of day
     if (open < 0 || close < 0) continue;
     if (cur >= open && cur < close) return true;
   }
