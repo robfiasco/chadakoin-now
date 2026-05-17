@@ -37,7 +37,10 @@ const HERO_PHOTOS = Platform.OS === 'web'
     { source: require('../assets/JTNY3.png'), scale: 1.0, translateY: -30 },
     { source: require('../assets/JTNY4.png'), scale: 1.0, translateY: -20 },
   ];
-const HERO_PHOTO = HERO_PHOTOS[Math.floor(Math.random() * HERO_PHOTOS.length)];
+// On web: always JTNY1 so the <link rel="preload"> in +html.tsx reliably matches
+const HERO_PHOTO = Platform.OS === 'web'
+  ? HERO_PHOTOS[0]
+  : HERO_PHOTOS[Math.floor(Math.random() * HERO_PHOTOS.length)];
 
 function getDateBadge() {
   const d = new Date();
