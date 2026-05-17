@@ -149,7 +149,7 @@ const LOCAL_FAVORITES: LocalFav[] = [
     visited: false,
     quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
     cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
-    image: Platform.OS === 'web' ? { uri: '/psp-logo.jpg' } : require('../assets/psp-logo.png'),
+    image: Platform.OS === 'web' ? { uri: '/psp-logo.png' } : require('../assets/psp-logo.png'),
     imageFit: 'contain',
     imageBg: '#111',
     bannerAspect: 4078 / 3400,
@@ -610,7 +610,7 @@ export default function VisitScreen() {
   const editorPicks = useMemo(() =>
     LOCAL_FAVORITES.filter(f => {
       if (active !== 'all' && f.category !== active) return false;
-      if (openNow && isOpenNow(f.hours) === false) return false;
+      if (openNow && isOpenNow(f.hours) !== true) return false;
       return true;
     }),
     [active, openNow]
@@ -625,7 +625,7 @@ export default function VisitScreen() {
       .filter(p => p._cat !== 'stay')
       .filter(p => {
         if (active !== 'all' && p._cat !== active) return false;
-        if (openNow && isOpenNow(p.hours) === false) return false;
+        if (openNow && isOpenNow(p.hours) !== true) return false;
         if (q) {
           return (
             p.name.toLowerCase().includes(q) ||
