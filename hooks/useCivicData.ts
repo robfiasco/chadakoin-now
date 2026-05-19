@@ -105,7 +105,6 @@ const FEEDS = {
   chautauquaAlerts: 'https://chautauquacountyny.gov/rss.xml',
   jackson: 'https://www.roberthjackson.org/feed/',
   fenton: 'https://fentonhistorycenter.org/?post_type=mec-events&feed=rss2',
-  mychqEvents: 'https://mychq.org/wp-json/tribe/events/v1/events?per_page=50&start_date=',
 };
 
 const TTL = {
@@ -769,7 +768,61 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth', 'Events'],
-    link: 'https://www.labpressco.com/',
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
+  },
+  {
+    title: 'Young Adult Book Club',
+    startDate: '2026-05-20T17:30:00',
+    endDate: '2026-05-20T18:30:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth'],
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
+  },
+  {
+    title: 'Craft & Sip Thursdays @ The Lab',
+    startDate: '2026-05-21T19:00:00',
+    endDate: '2026-05-21T22:00:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth'],
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
+  },
+  {
+    title: 'Craft & Sip Thursdays @ The Lab',
+    startDate: '2026-05-28T19:00:00',
+    endDate: '2026-05-28T22:00:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth'],
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
+  },
+  {
+    title: 'Craft & Sip Thursdays @ The Lab',
+    startDate: '2026-06-04T19:00:00',
+    endDate: '2026-06-04T22:00:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth'],
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
+  },
+  {
+    title: 'Book Club: Who Is Government? By Michael Lewis',
+    startDate: '2026-06-13T15:30:00',
+    endDate: '2026-06-13T17:00:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth'],
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
+  },
+  {
+    title: 'Merry Mushroom – Paint Your Own Pottery Night',
+    startDate: '2026-06-18T16:30:00',
+    endDate: '2026-06-18T21:30:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth'],
+    link: 'https://mychq.org/venue/labyrinth-press-company/',
   },
 ];
 
@@ -777,12 +830,11 @@ async function fetchEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('events', TTL.events);
   if (cached) return cached;
 
-  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, labyrinthEvents] = await Promise.all([
+  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
     fetchRegLennaEvents(),
     fetchFentonEvents(),
-    fetchLabyrinthEvents(),
   ]);
   const libraryEvents = libraryContent.events;
 
@@ -812,16 +864,31 @@ async function fetchEvents(): Promise<EventItem[]> {
       (e.startDate?.split('T')[0] ?? '');
   }
 
+  const STOP_WORDS = new Set(['the','and','for','with','from','this','that','will','hold','held','may','june','july']);
+  function titleKeywords(e: EventItem): Set<string> {
+    return new Set(
+      e.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+        .filter(w => w.length >= 4 && !STOP_WORDS.has(w))
+    );
+  }
+  function isSameEvent(a: EventItem, b: EventItem): boolean {
+    if (a.startDate?.split('T')[0] !== b.startDate?.split('T')[0]) return false;
+    const kA = titleKeywords(a); const kB = titleKeywords(b);
+    let shared = 0;
+    for (const w of kA) { if (kB.has(w)) shared++; }
+    return shared >= 3;
+  }
+
   const seen = new Set<string>();
   const merged: EventItem[] = [];
 
-  // Priority: Reg Lenna (structured) → Fenton → Labyrinth → Library → WRFA → BPU
-  for (const e of [...regLennaEvents, ...fentonEvents, ...labyrinthEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
+  // Priority: Reg Lenna (structured) → Fenton → Library → WRFA → BPU
+  for (const e of [...regLennaEvents, ...fentonEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
     const key = dedupeKey(e);
-    if (!seen.has(key)) {
-      seen.add(key);
-      merged.push(e);
-    }
+    if (seen.has(key)) continue;
+    if (merged.some(m => isSameEvent(m, e))) continue; // fuzzy same-day title match
+    seen.add(key);
+    merged.push(e);
   }
 
   // Start-of-today, not "now" — keeps today's events visible even if their start time has passed.
@@ -916,42 +983,6 @@ async function fetchFentonEvents(): Promise<EventItem[]> {
   }
 }
 
-async function fetchLabyrinthEvents(): Promise<EventItem[]> {
-  const cached = await getCached<EventItem[]>('labyrinth', TTL.events);
-  if (cached) return cached;
-  try {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const startParam = today.toISOString().split('T')[0];
-    const res = await feedFetch(proxyUrl(FEEDS.mychqEvents + startParam));
-    if (!res.ok) throw new Error('mychq events fetch failed');
-    const json = await res.json();
-    const allEvents: any[] = json.events ?? (Array.isArray(json) ? json : []);
-
-    const events: EventItem[] = allEvents
-      .filter(ev => ev.venue?.slug === 'labyrinth-press-company')
-      .map(ev => {
-        const startDate = new Date(ev.start_date ?? ev.start_date_details?.date ?? '');
-        if (!ev.start_date || isNaN(startDate.getTime())) return null;
-        return {
-          title: stripHtml(ev.title ?? ''),
-          startDate: startDate.toISOString(),
-          endDate: ev.end_date ? new Date(ev.end_date).toISOString() : startDate.toISOString(),
-          location: 'Labyrinth Press Co., Jamestown',
-          category: 'Community',
-          tags: ['Labyrinth'],
-          link: ev.url ?? 'https://mychq.org/venue/labyrinth-press-company/',
-        } as EventItem;
-      })
-      .filter((e): e is EventItem => e !== null);
-
-    await setCache('labyrinth', events);
-    return events;
-  } catch {
-    const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}labyrinth`);
-    if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
-    return [];
-  }
-}
 
 async function fetchRegLennaEvents(): Promise<EventItem[]> {
   // Use own cache key so failures don't erase previous successful results
