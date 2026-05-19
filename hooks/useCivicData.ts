@@ -105,8 +105,7 @@ const FEEDS = {
   chautauquaAlerts: 'https://chautauquacountyny.gov/rss.xml',
   jackson: 'https://www.roberthjackson.org/feed/',
   fenton: 'https://fentonhistorycenter.org/?post_type=mec-events&feed=rss2',
-  mychqVenue: 'https://mychq.org/wp-json/wp/v2/tribe_venue?slug=labyrinth-press-company',
-  mychqEvents: 'https://mychq.org/wp-json/wp/v2/tribe_events?per_page=20&orderby=date&order=asc',
+  mychqEvents: 'https://mychq.org/wp-json/tribe/events/v1/events?per_page=50&start_date=',
 };
 
 const TTL = {
@@ -921,38 +920,26 @@ async function fetchLabyrinthEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('labyrinth', TTL.events);
   if (cached) return cached;
   try {
-    // Step 1: get the numeric venue ID for Labyrinth from mychq
-    const venueRes = await feedFetch(proxyUrl(FEEDS.mychqVenue));
-    if (!venueRes.ok) throw new Error('mychq venue lookup failed');
-    const venues = await venueRes.json();
-    const venueId: number | undefined = Array.isArray(venues) ? venues[0]?.id : undefined;
-    if (!venueId) throw new Error('Labyrinth venue ID not found');
-
-    // Step 2: fetch events at that venue
-    const url = `${FEEDS.mychqEvents}&tribe_venue=${venueId}`;
-    const evRes = await feedFetch(proxyUrl(url));
-    if (!evRes.ok) throw new Error('mychq events fetch failed');
-    const evJson: any[] = await evRes.json();
-
     const today = new Date(); today.setHours(0, 0, 0, 0);
+    const startParam = today.toISOString().split('T')[0];
+    const res = await feedFetch(proxyUrl(FEEDS.mychqEvents + startParam));
+    if (!res.ok) throw new Error('mychq events fetch failed');
+    const json = await res.json();
+    const allEvents: any[] = json.events ?? (Array.isArray(json) ? json : []);
 
-    const events: EventItem[] = (Array.isArray(evJson) ? evJson : [])
+    const events: EventItem[] = allEvents
+      .filter(ev => ev.venue?.slug === 'labyrinth-press-company')
       .map(ev => {
-        // Tribe Events stores start/end in _EventStartDate and _EventEndDate meta
-        const meta = ev.meta ?? {};
-        const startRaw = meta._EventStartDate?.[0] ?? ev.date ?? '';
-        const endRaw   = meta._EventEndDate?.[0]   ?? startRaw;
-        if (!startRaw) return null;
-        const startDate = new Date(startRaw);
-        if (startDate < today) return null;
+        const startDate = new Date(ev.start_date ?? ev.start_date_details?.date ?? '');
+        if (!ev.start_date || isNaN(startDate.getTime())) return null;
         return {
-          title: stripHtml(ev.title?.rendered ?? ''),
+          title: stripHtml(ev.title ?? ''),
           startDate: startDate.toISOString(),
-          endDate: endRaw ? new Date(endRaw).toISOString() : startDate.toISOString(),
+          endDate: ev.end_date ? new Date(ev.end_date).toISOString() : startDate.toISOString(),
           location: 'Labyrinth Press Co., Jamestown',
           category: 'Community',
           tags: ['Labyrinth'],
-          link: ev.link ?? 'https://mychq.org/venue/labyrinth-press-company/',
+          link: ev.url ?? 'https://mychq.org/venue/labyrinth-press-company/',
         } as EventItem;
       })
       .filter((e): e is EventItem => e !== null);
