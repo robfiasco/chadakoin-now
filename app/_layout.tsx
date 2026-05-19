@@ -84,7 +84,9 @@ function AppLayout() {
   const [activePage, setActivePage] = useState(0);
   const pagerRef = useRef<PagerViewHandle>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
-  const [showLoading, setShowLoading] = useState(true);
+  // Skip loading screen on web for repeat visitors — assets are cached, no need to block LCP
+  const isRepeatWebVisit = Platform.OS === 'web' && typeof localStorage !== 'undefined' && localStorage.getItem('app_visited') === 'true';
+  const [showLoading, setShowLoading] = useState(!isRepeatWebVisit);
 
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY).then(val => {
@@ -185,7 +187,12 @@ function AppLayout() {
       {showLoading && (
         <AppLoadingScreen
           isAppReady={!dataLoading}
-          onFinished={() => setShowLoading(false)}
+          onFinished={() => {
+            setShowLoading(false);
+            if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+              localStorage.setItem('app_visited', 'true');
+            }
+          }}
         />
       )}
 

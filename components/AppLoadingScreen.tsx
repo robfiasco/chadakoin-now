@@ -104,10 +104,10 @@ export function AppLoadingScreen({
     setStatusReady(true);
     const exit = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 0,    duration: 550, useNativeDriver: true }),
-        Animated.timing(scaleAnim, { toValue: 1.04, duration: 550, useNativeDriver: true }),
+        Animated.timing(fadeAnim,  { toValue: 0,    duration: 350, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1.04, duration: 350, useNativeDriver: true }),
       ]).start(() => onFinished?.());
-    }, 2000);
+    }, 400);
     return () => clearTimeout(exit);
   }, [sequenceDone, isAppReady]);
 
