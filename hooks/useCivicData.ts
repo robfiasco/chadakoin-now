@@ -104,6 +104,9 @@ const FEEDS = {
   regLenna: 'https://reglenna.com/events?format=json',
   chautauquaAlerts: 'https://chautauquacountyny.gov/rss.xml',
   jackson: 'https://www.roberthjackson.org/feed/',
+  fenton: 'https://fentonhistorycenter.org/?post_type=mec-events&feed=rss2',
+  mychqVenue: 'https://mychq.org/wp-json/wp/v2/tribe_venue?slug=labyrinth-press-company',
+  mychqEvents: 'https://mychq.org/wp-json/wp/v2/tribe_events?per_page=20&orderby=date&order=asc',
 };
 
 const TTL = {
@@ -775,10 +778,12 @@ async function fetchEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('events', TTL.events);
   if (cached) return cached;
 
-  const [wrfaEvents, libraryContent, regLennaEvents] = await Promise.all([
+  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, labyrinthEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
     fetchRegLennaEvents(),
+    fetchFentonEvents(),
+    fetchLabyrinthEvents(),
   ]);
   const libraryEvents = libraryContent.events;
 
@@ -811,8 +816,8 @@ async function fetchEvents(): Promise<EventItem[]> {
   const seen = new Set<string>();
   const merged: EventItem[] = [];
 
-  // Priority: Reg Lenna (structured) → Library → WRFA → BPU
-  for (const e of [...regLennaEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
+  // Priority: Reg Lenna (structured) → Fenton → Labyrinth → Library → WRFA → BPU
+  for (const e of [...regLennaEvents, ...fentonEvents, ...labyrinthEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
     const key = dedupeKey(e);
     if (!seen.has(key)) {
       seen.add(key);
@@ -845,6 +850,120 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
     ...fetched,
   ];
   return combined.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+}
+
+async function fetchFentonEvents(): Promise<EventItem[]> {
+  const cached = await getCached<EventItem[]>('fenton', TTL.events);
+  if (cached) return cached;
+  try {
+    const res = await feedFetch(proxyUrl(FEEDS.fenton));
+    if (!res.ok) throw new Error('Fenton fetch failed');
+    const text = await res.text();
+    const items = getRssItems(text);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    function mecISO(dateStr: string, hourStr: string): string {
+      if (!dateStr) return '';
+      let time = '00:00';
+      const h = (hourStr ?? '').trim();
+      const m24 = h.match(/^(\d{1,2}):(\d{2})/);
+      if (m24) { time = `${m24[1].padStart(2, '0')}:${m24[2]}`; }
+      else {
+        const m12 = h.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+        if (m12) {
+          let hh = parseInt(m12[1]);
+          const mm = m12[2] ?? '00';
+          if (/pm/i.test(m12[3]) && hh !== 12) hh += 12;
+          if (/am/i.test(m12[3]) && hh === 12) hh = 0;
+          time = `${String(hh).padStart(2, '0')}:${mm}`;
+        }
+      }
+      return `${dateStr}T${time}:00`;
+    }
+
+    const events: EventItem[] = items
+      .map(item => {
+        const startDate = mecISO(
+          getItemText(item['mec:startDate'] ?? ''),
+          getItemText(item['mec:startHour'] ?? ''),
+        );
+        if (!startDate) return null;
+        const endDate = mecISO(
+          getItemText(item['mec:endDate'] ?? item['mec:startDate'] ?? ''),
+          getItemText(item['mec:endHour'] ?? item['mec:startHour'] ?? ''),
+        );
+        const locRaw = item['mec:location'];
+        const location = typeof locRaw === 'object'
+          ? (getItemText(locRaw['mec:address'] ?? locRaw['mec:title'] ?? '') || 'Fenton History Center, Jamestown')
+          : (getItemText(locRaw ?? '') || 'Fenton History Center, Jamestown');
+        return {
+          title: stripHtml(getItemText(item.title)),
+          startDate,
+          endDate: endDate || startDate,
+          location,
+          category: 'Lecture',
+          tags: ['Fenton', 'History'],
+          link: getItemText(item.link) || 'https://fentonhistorycenter.org/events',
+        } as EventItem;
+      })
+      .filter((e): e is EventItem => e !== null && new Date(e.startDate) >= today);
+
+    await setCache('fenton', events);
+    return events;
+  } catch {
+    const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}fenton`);
+    if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
+    return [];
+  }
+}
+
+async function fetchLabyrinthEvents(): Promise<EventItem[]> {
+  const cached = await getCached<EventItem[]>('labyrinth', TTL.events);
+  if (cached) return cached;
+  try {
+    // Step 1: get the numeric venue ID for Labyrinth from mychq
+    const venueRes = await feedFetch(proxyUrl(FEEDS.mychqVenue));
+    if (!venueRes.ok) throw new Error('mychq venue lookup failed');
+    const venues = await venueRes.json();
+    const venueId: number | undefined = Array.isArray(venues) ? venues[0]?.id : undefined;
+    if (!venueId) throw new Error('Labyrinth venue ID not found');
+
+    // Step 2: fetch events at that venue
+    const url = `${FEEDS.mychqEvents}&tribe_venue=${venueId}`;
+    const evRes = await feedFetch(proxyUrl(url));
+    if (!evRes.ok) throw new Error('mychq events fetch failed');
+    const evJson: any[] = await evRes.json();
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    const events: EventItem[] = (Array.isArray(evJson) ? evJson : [])
+      .map(ev => {
+        // Tribe Events stores start/end in _EventStartDate and _EventEndDate meta
+        const meta = ev.meta ?? {};
+        const startRaw = meta._EventStartDate?.[0] ?? ev.date ?? '';
+        const endRaw   = meta._EventEndDate?.[0]   ?? startRaw;
+        if (!startRaw) return null;
+        const startDate = new Date(startRaw);
+        if (startDate < today) return null;
+        return {
+          title: stripHtml(ev.title?.rendered ?? ''),
+          startDate: startDate.toISOString(),
+          endDate: endRaw ? new Date(endRaw).toISOString() : startDate.toISOString(),
+          location: 'Labyrinth Press Co., Jamestown',
+          category: 'Community',
+          tags: ['Labyrinth'],
+          link: ev.link ?? 'https://mychq.org/venue/labyrinth-press-company/',
+        } as EventItem;
+      })
+      .filter((e): e is EventItem => e !== null);
+
+    await setCache('labyrinth', events);
+    return events;
+  } catch {
+    const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}labyrinth`);
+    if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
+    return [];
+  }
 }
 
 async function fetchRegLennaEvents(): Promise<EventItem[]> {
