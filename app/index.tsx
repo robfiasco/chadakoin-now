@@ -80,29 +80,23 @@ function LiveDot({ color }: { color: string }) {
   return <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, opacity: pulse }} />;
 }
 
-// Returns the first upcoming Sat/Sun event within the next 8 days
-function getThisWeekendEvent(events: EventItem[]): EventItem | null {
+// Returns the next upcoming event (any day)
+function getNextEvent(events: EventItem[]): EventItem | null {
   const now = new Date();
-  const today = now.getDay(); // 0=Sun, 6=Sat
-  // Window: from nearest upcoming Saturday (or today if Sat/Sun) through Sunday
-  let windowStart = new Date(now);
-  if (today === 0) {
-    windowStart.setHours(0, 0, 0, 0); // today is Sunday
-  } else if (today === 6) {
-    windowStart.setHours(0, 0, 0, 0); // today is Saturday
-  } else {
-    windowStart.setDate(now.getDate() + (6 - today));
-    windowStart.setHours(0, 0, 0, 0);
-  }
-  const windowEnd = new Date(windowStart);
-  windowEnd.setDate(windowStart.getDate() + (today === 0 ? 0 : 1));
-  windowEnd.setHours(23, 59, 59, 999);
+  return events.find(e => new Date(e.startDate) >= now) ?? null;
+}
 
-  return events.find(e => {
-    const d = new Date(e.startDate);
-    const day = d.getDay();
-    return (day === 6 || day === 0) && d >= now && d <= windowEnd;
-  }) ?? null;
+function getNextEventLabel(event: EventItem): string {
+  const now = new Date();
+  const d = new Date(event.startDate);
+  const todayMidnight = new Date(now); todayMidnight.setHours(0, 0, 0, 0);
+  const tomorrowMidnight = new Date(todayMidnight); tomorrowMidnight.setDate(todayMidnight.getDate() + 1);
+  const dayAfterMidnight = new Date(tomorrowMidnight); dayAfterMidnight.setDate(tomorrowMidnight.getDate() + 1);
+  const day = d.getDay();
+  if (d >= todayMidnight && d < tomorrowMidnight) return 'Tonight';
+  if (d >= tomorrowMidnight && d < dayAfterMidnight) return 'Tomorrow';
+  if (day === 6 || day === 0) return 'This Weekend';
+  return 'Coming Up';
 }
 
 function relativeTime(dateStr: string): string {
@@ -210,7 +204,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     !CRIME_PATTERN.test(n.title)
   ) ?? null;
   const topStory: NewsItem | null = topStoryCandidate ?? null;
-  const weekendEvent = getThisWeekendEvent(civic.events);
+  const weekendEvent = getNextEvent(civic.events);
 
   // Simplify recycling material name — strip parenthetical, shorten known long names
   const recyclingRaw = recycling.thisWeek.material;
@@ -316,7 +310,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     return (
                       <View key={day.date} style={styles.forecastDay}>
                         <Text style={styles.forecastLabel}>{label}</Text>
-                        <Text style={styles.forecastIcon}>{day.icon}</Text>
+                        <Text style={styles.forecastIcon}>{i === 0 ? weather.icon : day.icon}</Text>
                         <Text style={styles.forecastHigh}>{day.high}°</Text>
                         <Text style={styles.forecastLow}>{day.low}°</Text>
                       </View>
@@ -365,6 +359,20 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               )}
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
             </LinearGradient>
+            {!civic.loading && (recycling.holidayDelay || recycling.upcomingHoliday) && (
+              <LinearGradient
+                colors={['rgba(178,34,52,0.35)', 'rgba(30,30,60,0.6)', 'rgba(60,59,110,0.35)']}
+                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                style={styles.holidayStrip}
+              >
+                <Text style={{ fontSize: 14 }}>🇺🇸</Text>
+                <Text style={styles.holidayStripText}>
+                  {recycling.holidayDelay
+                    ? 'Holiday this week — pickup shifts by one day'
+                    : `${recycling.upcomingHoliday!.name} — pickup will shift by one day`}
+                </Text>
+              </LinearGradient>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setParkingOpen(true)} activeOpacity={0.75}>
@@ -399,20 +407,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </TouchableOpacity>
         </View>
 
-        {recycling.holidayDelay && (
-          // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
-          <View style={[styles.delayBanner, glassWeb]}>
-            <Ionicons name="warning-outline" size={14} color="#f59e0b" />
-            <Text style={styles.delayText}>Holiday this week — garbage & recycling pickup shifts by one day.</Text>
-          </View>
-        )}
-        {!recycling.holidayDelay && recycling.upcomingHoliday && (
-          // @ts-ignore
-          <View style={[styles.delayBanner, glassWeb]}>
-            <Ionicons name="calendar-outline" size={14} color="#f59e0b" />
-            <Text style={styles.delayText}>{recycling.upcomingHoliday.name} is coming up — garbage & recycling pickup will shift by one day that week.</Text>
-          </View>
-        )}
 
         <TouchableOpacity
           onPress={() => setCityServicesOpen(true)}
@@ -480,7 +474,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         {(civic.loading || weekendEvent) && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: theme.acc }]}>This Weekend</Text>
+              <Text style={[styles.sectionLabel, { color: theme.acc }]}>{weekendEvent ? getNextEventLabel(weekendEvent) : 'Up Next'}</Text>
               {onNavigateToTab && (
                 <TouchableOpacity onPress={() => onNavigateToTab(3)} activeOpacity={0.7} style={styles.sectionLinkRow}>
                   <Text style={styles.sectionLink}>All events</Text>
@@ -750,8 +744,8 @@ const styles = StyleSheet.create({
   todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', textAlign: 'right' },
 
-  delayBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: 10, marginTop: 8 },
-  delayText: { fontFamily: 'Outfit', fontSize: 11, color: '#f59e0b', flex: 1, lineHeight: 16 },
+  holidayStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  holidayStripText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.8)', flex: 1, lineHeight: 16 },
 
   moreServicesLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10, paddingVertical: 4 },
   moreServicesText: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle },

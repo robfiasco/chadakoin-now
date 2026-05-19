@@ -1757,12 +1757,12 @@ const styles = StyleSheet.create({
   nextUpPill: {
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  nextUpPillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  nextUpPillText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
   nextUpBody: { padding: 14, flexDirection: 'row', alignItems: 'center' },
   nextUpDots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 8 },
   nextUpDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
@@ -1855,14 +1855,14 @@ const styles = StyleSheet.create({
   mlbGameRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   mlbGameResult:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '800', width: 14 },
 
-  playoffsBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  playoffsBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  playoffsBadge: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  playoffsBadgeText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
 
   // MLB live/streak badges and community pick
-  mlbLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(251,113,133,0.12)', borderWidth: 1, borderColor: 'rgba(251,113,133,0.3)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  mlbLiveBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', color: '#fb7185', letterSpacing: 0.8 },
-  mlbStreakBadge: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  mlbStreakBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  mlbLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(251,113,133,0.12)', borderWidth: 1, borderColor: 'rgba(251,113,133,0.3)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  mlbLiveBadgeText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: '#fb7185', letterSpacing: 0.5 },
+  mlbStreakBadge: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  mlbStreakBadgeText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
   mlbCommunityPick: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', marginTop: 1 },
 
   // Game detail bottom sheet — in-tree overlay (not Modal) so it respects app container on web
