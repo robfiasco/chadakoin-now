@@ -1138,8 +1138,8 @@ export default function SportsScreen() {
         {/* ── Regional ────────────────────────────────────────── */}
         <SectionLabel label="Regional" />
 
-        {/* Buffalo Sabres */}
-        <TeamCard
+        {/* Buffalo Sabres — hidden May–Sep (off-season); returns Oct for pre-season */}
+        {(() => { const m = new Date().getMonth() + 1; return m < 5 || m > 9; })() && <TeamCard
           accentColor={ACC.sabres}
           gradStart="rgba(96,165,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
@@ -1298,7 +1298,7 @@ export default function SportsScreen() {
               </TouchableOpacity>
             </>
           )}
-        </TeamCard>
+        </TeamCard>}
 
         {/* Regional MLB */}
         <TeamCard

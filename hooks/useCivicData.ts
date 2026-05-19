@@ -751,6 +751,24 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Annual', 'Family'],
   },
+  {
+    title: 'Lecture: King Carl XVI Gustaf of Sweden Visited Jamestown 50 Years Ago',
+    startDate: '2026-05-19T19:00:00',
+    endDate: '2026-05-19T21:00:00',
+    location: 'Fenton History Center, Jamestown',
+    category: 'Lecture',
+    tags: ['Fenton', 'History'],
+    link: 'https://fentonhistorycenter.org',
+  },
+  {
+    title: 'Plant Bingo at Labyrinth Press Co.',
+    startDate: '2026-05-19T19:00:00',
+    endDate: '2026-05-19T21:00:00',
+    location: 'Labyrinth Press Co., Jamestown',
+    category: 'Community',
+    tags: ['Labyrinth', 'Events'],
+    link: 'https://www.labpressco.com/',
+  },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
