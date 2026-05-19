@@ -368,8 +368,11 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 <Text style={{ fontSize: 14 }}>🇺🇸</Text>
                 <Text style={styles.holidayStripText}>
                   {recycling.holidayDelay
-                    ? 'Holiday this week — pickup shifts by one day'
-                    : `${recycling.upcomingHoliday!.name} — pickup will shift by one day`}
+                    ? 'BPU holiday this week — no Mon pickup, schedule shifts one day'
+                    : (() => {
+                        const [, m, d] = recycling.upcomingHoliday!.date.split('-');
+                        return `${recycling.upcomingHoliday!.name} ${parseInt(m)}/${parseInt(d)} · BPU holiday — no Mon pickup, week shifts one day`;
+                      })()}
                 </Text>
               </LinearGradient>
             )}
