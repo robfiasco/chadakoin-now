@@ -868,6 +868,7 @@ async function fetchEvents(): Promise<EventItem[]> {
   function titleKeywords(e: EventItem): Set<string> {
     return new Set(
       e.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+        .map(w => w.replace(/s$/, '')) // strip trailing 's' so "wrfa's" → "wrfa", "fairs" → "fair"
         .filter(w => w.length >= 4 && !STOP_WORDS.has(w))
     );
   }
