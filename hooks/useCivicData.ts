@@ -768,7 +768,7 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth', 'Events'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
   {
     title: 'Young Adult Book Club',
@@ -777,7 +777,7 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
   {
     title: 'Craft & Sip Thursdays @ The Lab',
@@ -786,7 +786,7 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
   {
     title: 'Craft & Sip Thursdays @ The Lab',
@@ -795,7 +795,7 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
   {
     title: 'Craft & Sip Thursdays @ The Lab',
@@ -804,7 +804,7 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
   {
     title: 'Book Club: Who Is Government? By Michael Lewis',
@@ -813,7 +813,7 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
   {
     title: 'Merry Mushroom – Paint Your Own Pottery Night',
@@ -822,8 +822,28 @@ const CURATED_EVENTS: EventItem[] = [
     location: 'Labyrinth Press Co., Jamestown',
     category: 'Community',
     tags: ['Labyrinth'],
-    link: 'https://mychq.org/venue/labyrinth-press-company/',
+    link: 'https://labpressco.com',
   },
+
+  // Music on the Stoop — Summer Patio Music Series at Labyrinth Press Co.
+  { title: 'Music on the Stoop: Adam Gould',      startDate: '2026-05-29T18:00:00', endDate: '2026-05-29T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Laura & Logan',   startDate: '2026-06-05T18:00:00', endDate: '2026-06-05T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Marley Ohl',      startDate: '2026-06-12T18:00:00', endDate: '2026-06-12T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Jarrod Eggleston', startDate: '2026-06-19T18:00:00', endDate: '2026-06-19T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Miranda Wilcox',  startDate: '2026-06-26T18:00:00', endDate: '2026-06-26T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Oliver Burdo',    startDate: '2026-06-30T18:00:00', endDate: '2026-06-30T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Gavin Paterniti', startDate: '2026-07-07T18:00:00', endDate: '2026-07-07T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Mike Brunacini',  startDate: '2026-07-14T18:00:00', endDate: '2026-07-14T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Drew & Lena',     startDate: '2026-07-22T18:00:00', endDate: '2026-07-22T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Kallie Williams', startDate: '2026-07-29T18:00:00', endDate: '2026-07-29T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Drew Minton',     startDate: '2026-08-05T18:00:00', endDate: '2026-08-05T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Davis & Eng',     startDate: '2026-08-11T18:00:00', endDate: '2026-08-11T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Mandy Andrews',   startDate: '2026-08-19T18:00:00', endDate: '2026-08-19T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'WhirlyBird: Jade Giambrone',          startDate: '2026-08-28T16:00:00', endDate: '2026-08-28T18:00:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music', 'WhirlyBird'], link: 'https://labpressco.com' },
+  { title: 'WhirlyBird: Oliver Burdo',            startDate: '2026-08-29T10:00:00', endDate: '2026-08-29T13:00:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music', 'WhirlyBird'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: The Predicamint', startDate: '2026-09-04T18:00:00', endDate: '2026-09-04T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Logan Alexander', startDate: '2026-09-11T18:00:00', endDate: '2026-09-11T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+  { title: 'Music on the Stoop: Gavin Paterniti', startDate: '2026-09-18T18:00:00', endDate: '2026-09-18T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
