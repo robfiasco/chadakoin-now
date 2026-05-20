@@ -844,6 +844,145 @@ const CURATED_EVENTS: EventItem[] = [
   { title: 'Music on the Stoop: The Predicamint', startDate: '2026-09-04T18:00:00', endDate: '2026-09-04T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
   { title: 'Music on the Stoop: Logan Alexander', startDate: '2026-09-11T18:00:00', endDate: '2026-09-11T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
   { title: 'Music on the Stoop: Gavin Paterniti', startDate: '2026-09-18T18:00:00', endDate: '2026-09-18T20:30:00', location: 'Labyrinth Press Co., Jamestown', category: 'Music', tags: ['Labyrinth', 'Live Music'], link: 'https://labpressco.com' },
+
+  // — Tour Chautauqua sourced events ————————————————————————————————————————
+  // May 21
+  {
+    title: 'ArtScape Art Opening',
+    startDate: '2026-05-21T17:00:00',
+    endDate: '2026-05-21T19:00:00',
+    location: 'Chautauqua Art Gallery / Pearl City Clay House, Jamestown',
+    category: 'Arts',
+    tags: ['Art', 'Opening'],
+    link: 'https://www.tourchautauqua.com/events/artscape-art-opening',
+  },
+  {
+    title: 'Third on 3rd',
+    startDate: '2026-05-21T18:00:00',
+    endDate: '2026-05-21T21:00:00',
+    location: '3rd Street, Downtown Jamestown',
+    category: 'Community',
+    tags: ['Downtown', 'Live Music', 'Makers'],
+    link: 'https://www.tourchautauqua.com/events/third-on-3rd',
+  },
+
+  // May 23
+  {
+    title: 'Skeletons & Strings at Wicked Warren\'s',
+    startDate: '2026-05-23T19:00:00',
+    endDate: '2026-05-23T22:00:00',
+    location: 'Wicked Warren\'s, Jamestown',
+    category: 'Music',
+    tags: ['Live Music', 'Acoustic'],
+    link: 'https://www.tourchautauqua.com/events/skeletons-and-strings-at-wicked-warrens',
+  },
+  {
+    title: 'Kenny Anderson at Wicked Warren\'s',
+    startDate: '2026-05-23T20:00:00',
+    endDate: '2026-05-23T23:00:00',
+    location: 'Wicked Warren\'s, Jamestown',
+    category: 'Music',
+    tags: ['Live Music'],
+    link: 'https://www.tourchautauqua.com/events/kenny-anderson-at-wicked-warrens',
+  },
+  {
+    title: 'Memorial Day Super Showdown at Stateline Speedway',
+    startDate: '2026-05-23T18:00:00',
+    endDate: '2026-05-23T22:00:00',
+    location: 'Stateline Speedway, Jamestown',
+    category: 'Community',
+    tags: ['Racing', 'Speedway'],
+    link: 'https://www.tourchautauqua.com/events/memorial-day-super-showdown-at-stateline-speedway',
+  },
+
+  // May 25
+  {
+    title: 'Jamestown Memorial Day Parade',
+    startDate: '2026-05-25T10:00:00',
+    endDate: '2026-05-25T12:00:00',
+    location: 'Downtown Jamestown',
+    category: 'Civic',
+    tags: ['Parade', 'Memorial Day'],
+    link: 'https://www.tourchautauqua.com/events/jamestown-ny-memorial-day-parade',
+  },
+
+  // May 29–31: TURN The Musical world premiere
+  {
+    title: 'TURN The Musical — World Premiere',
+    startDate: '2026-05-29T19:30:00',
+    endDate: '2026-05-29T22:00:00',
+    location: 'The Spire Theater, Jamestown',
+    category: 'Arts',
+    tags: ['Theater', 'Musical', 'World Premiere'],
+    link: 'https://www.tourchautauqua.com/events/turn-the-musical-world-premiere-at-the-spire-theater',
+  },
+  {
+    title: 'TURN The Musical — World Premiere',
+    startDate: '2026-05-30T19:30:00',
+    endDate: '2026-05-30T22:00:00',
+    location: 'The Spire Theater, Jamestown',
+    category: 'Arts',
+    tags: ['Theater', 'Musical', 'World Premiere'],
+    link: 'https://www.tourchautauqua.com/events/turn-the-musical-world-premiere-at-the-spire-theater',
+  },
+  {
+    title: 'TURN The Musical — World Premiere',
+    startDate: '2026-05-31T19:30:00',
+    endDate: '2026-05-31T22:00:00',
+    location: 'The Spire Theater, Jamestown',
+    category: 'Arts',
+    tags: ['Theater', 'Musical', 'World Premiere'],
+    link: 'https://www.tourchautauqua.com/events/turn-the-musical-world-premiere-at-the-spire-theater',
+  },
+
+  // May 30
+  {
+    title: '2nd Annual Bluebird Festival at RTPI',
+    startDate: '2026-05-30T10:00:00',
+    endDate: '2026-05-30T16:00:00',
+    location: 'Roger Tory Peterson Institute, 311 Curtis St, Jamestown',
+    category: 'Community',
+    tags: ['RTPI', 'Nature', 'Festival'],
+    link: 'https://www.tourchautauqua.com/events/bluebird-festival-at-rtpi',
+  },
+  {
+    title: 'Pat Hackett at Raven & Rune',
+    startDate: '2026-05-30T19:00:00',
+    endDate: '2026-05-30T22:00:00',
+    location: 'Raven & Rune, Jamestown',
+    category: 'Music',
+    tags: ['Live Music', 'Rock', 'Country'],
+    link: 'https://www.tourchautauqua.com/events/pat-hackett-live-at-raven-and-rune-1',
+  },
+  {
+    title: 'RUSH Sprint Car Invasion at Stateline Speedway',
+    startDate: '2026-05-30T18:00:00',
+    endDate: '2026-05-30T22:00:00',
+    location: 'Stateline Speedway, Jamestown',
+    category: 'Community',
+    tags: ['Racing', 'Speedway'],
+    link: 'https://www.tourchautauqua.com/events/rush-sprint-car-invasion-at-stateline-speedway',
+  },
+
+  // May 31
+  {
+    title: 'Beyond the Motorcar: James Ward Packard Lecture',
+    startDate: '2026-05-31T14:00:00',
+    endDate: '2026-05-31T15:30:00',
+    location: 'Jamestown',
+    category: 'Community',
+    tags: ['Lecture', 'History'],
+    link: 'https://www.tourchautauqua.com/events/beyond-the-motorcar-james-ward-packard-of-lakewood-may-lecture',
+  },
+  {
+    title: 'The Town Pants at Wicked Warren\'s',
+    startDate: '2026-05-31T19:00:00',
+    endDate: '2026-05-31T22:00:00',
+    location: 'Wicked Warren\'s, Jamestown',
+    category: 'Music',
+    tags: ['Live Music'],
+    link: 'https://www.tourchautauqua.com/events/the-town-pants-at-wicked-warrens',
+  },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
