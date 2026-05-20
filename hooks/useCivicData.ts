@@ -876,7 +876,7 @@ async function fetchEvents(): Promise<EventItem[]> {
     const kA = titleKeywords(a); const kB = titleKeywords(b);
     let shared = 0;
     for (const w of kA) { if (kB.has(w)) shared++; }
-    return shared >= 3;
+    return shared >= 2;
   }
 
   const seen = new Set<string>();
