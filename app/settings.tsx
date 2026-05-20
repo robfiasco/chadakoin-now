@@ -96,22 +96,22 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
                     ))}
                   </View>
 
-                  {/* Tapping the label opens the description sheet */}
-                  <TouchableOpacity
-                    onPress={() => openDesc(t)}
-                    hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                    activeOpacity={0.6}
-                    style={styles.themeLabelRow}
-                  >
+                  <View style={styles.themeLabelRow}>
                     <Text style={[styles.themeTileLabel, { color: isActive ? t.acc : 'rgba(255,255,255,0.55)' }]}>
                       {t.label}
                     </Text>
-                    <Ionicons
-                      name="information-circle-outline"
-                      size={12}
-                      color={isActive ? `rgba(${t.accRGB},0.5)` : 'rgba(255,255,255,0.2)'}
-                    />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => openDesc(t)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      activeOpacity={0.6}
+                    >
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={14}
+                        color={isActive ? `rgba(${t.accRGB},0.5)` : 'rgba(255,255,255,0.2)'}
+                      />
+                    </TouchableOpacity>
+                  </View>
 
                   {isActive && (
                     <View style={[styles.themeActiveDot, { backgroundColor: t.acc }]} />
