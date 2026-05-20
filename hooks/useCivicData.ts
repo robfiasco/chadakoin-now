@@ -827,7 +827,7 @@ const CURATED_EVENTS: EventItem[] = [
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
-  const cached = await getCached<EventItem[]>('events', TTL.events);
+  const cached = await getCached<EventItem[]>('events_v2', TTL.events);
   if (cached) return cached;
 
   const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents] = await Promise.all([
@@ -899,7 +899,7 @@ async function fetchEvents(): Promise<EventItem[]> {
     .filter(e => new Date(e.startDate) >= cutoff)
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-  await setCache('events', result);
+  await setCache('events_v2', result);
   return result;
 }
 
