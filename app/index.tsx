@@ -513,7 +513,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   </View>
                   <View style={styles.eventBody}>
                     <Text style={styles.eventTitle} numberOfLines={2}>{weekendEvent.title}</Text>
-                    <Text style={styles.eventVenue} numberOfLines={1}>{weekendEvent.location}</Text>
+                    <Text style={styles.eventVenue}>{weekendEvent.location}</Text>
                     <Text style={[styles.eventCategory, { color: evtColor }]}>{weekendEvent.category}</Text>
                   </View>
                 </TouchableOpacity>
