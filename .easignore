@@ -7,6 +7,14 @@ docs/
 # PDFs
 *.pdf
 
+# Previous build artifacts
+*.aab
+*.apk
+
+# Store listing assets and build scripts
+store-assets/
+scripts/
+
 # Native dirs — let EAS regenerate via `expo prebuild` (CNG)
 android/
 ios/
