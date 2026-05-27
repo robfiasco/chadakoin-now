@@ -175,6 +175,27 @@ export default function RecyclingScreen() {
           </View>
         )}
 
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>RECYCLING CREDIT</Text>
+        {/* @ts-ignore */}
+        <View style={[styles.creditCard, glassWeb]}>
+          <View style={styles.creditTop}>
+            <View style={styles.creditIconWrap}>
+              <Ionicons name="cash-outline" size={20} color="#4ade80" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.creditAmount}>$11 / month</Text>
+              <Text style={styles.creditSub}>credit on your Solid Waste bill</Text>
+            </View>
+          </View>
+          <Text style={styles.creditBody}>
+            Recycle at least once per billing period using your assigned orange bin and BPU automatically applies the credit to your account. The RFID chip in your bin does the tracking — no sign-up needed.
+          </Text>
+          <View style={styles.creditNote}>
+            <Ionicons name="alert-circle-outline" size={13} color="rgba(74,222,128,0.5)" />
+            <Text style={styles.creditNoteText}>Only the assigned orange bin at your address earns the credit. Extra blue bins don't count.</Text>
+          </View>
+        </View>
+
         <Text style={[styles.sectionLabel, { marginTop: 20 }]}>NOT ACCEPTED</Text>
         {/* @ts-ignore */}
         <View style={[styles.scheduleCard, glassWeb]}>
@@ -259,6 +280,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28,
     color: `rgba(${ACC_RGB},0.3)`,
   },
+
+  creditCard: {
+    borderRadius: 18, borderWidth: 1, padding: 16, gap: 12,
+    backgroundColor: 'rgba(74,222,128,0.06)', borderColor: 'rgba(74,222,128,0.2)',
+  },
+  creditTop:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  creditIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.12)', alignItems: 'center', justifyContent: 'center' },
+  creditAmount:  { fontFamily: 'Syne', fontSize: 20, fontWeight: '700', color: '#4ade80', lineHeight: 24 },
+  creditSub:     { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(74,222,128,0.6)', marginTop: 1 },
+  creditBody:    { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 },
+  creditNote:    { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  creditNoteText: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', flex: 1, lineHeight: 16 },
 
   notAcceptedRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
   naIconWrap: { width: 28, height: 28, borderRadius: 7, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },

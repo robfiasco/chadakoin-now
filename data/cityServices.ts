@@ -40,9 +40,9 @@ export const CITY_SERVICES: CityService[] = [
     summary: '1001 Monroe St · Sat Apr 11–Nov 14 · Wed May 13–Sep 30',
     details: [
       { label: 'Location',   value: '1001 Monroe St' },
-      { label: 'Saturdays',  value: 'Apr 11 – Nov 14 · 8am – 3:30pm' },
-      { label: 'Wednesdays', value: 'May 13 – Sep 30 · 8am – 3:30pm' },
-      { label: 'Closed',     value: 'May 30, Jul 4, Sep 12' },
+      { label: 'Saturdays',  value: 'Apr 11 – Nov 14 · 7am – 1pm' },
+      { label: 'Wednesdays', value: 'May 13 – Sep 30 · 4pm – 7pm' },
+      { label: 'Sat Closures', value: 'May 30, Jul 11, Sep 12 (Saturdays after summer holidays)' },
       { label: '2026 Sticker', value: '$20 · BPU Customer Service office' },
       { label: 'Accepts',    value: 'Leaves, grass, brush, twigs, branches up to 8" diameter' },
       { label: 'Note',       value: 'Residential BPU customers only. Sticker must be on rear driver-side window.' },

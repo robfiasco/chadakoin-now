@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
   TouchableOpacity, Linking, Image, ImageBackground, Animated, Easing, RefreshControl,
-  useWindowDimensions, Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -769,6 +769,17 @@ export default function SportsScreen() {
     return Math.max(0, Math.ceil((open.getTime() - today.getTime()) / 86400000));
   }, []);
 
+  // Opening Night countdown badge — shows for 3 days leading up to May 29, clears after
+  const openingNightBadge = useMemo(() => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const opening = new Date('2026-05-29T00:00:00');
+    if (today > opening) return null;
+    if (daysUntilSkunks === 0) return 'TONIGHT';
+    if (daysUntilSkunks === 1) return 'TOMORROW';
+    if (daysUntilSkunks === 2) return 'THIS FRIDAY';
+    return null;
+  }, [daysUntilSkunks]);
+
   // JCC glance: last result per sport (up to 2 distinct sports), within 7 days
   const jccGlance = useMemo(() => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -827,6 +838,52 @@ export default function SportsScreen() {
     borderColor: dark.border,
     ...glassWeb,
   };
+
+  if (showSkunksSchedule) {
+    return (
+      <ThemedBackground>
+        <SafeAreaView edges={['top']} style={styles.header}>
+          <TouchableOpacity onPress={() => setShowSkunksSchedule(false)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <Ionicons name="chevron-back" size={18} color={ACC.skunks} />
+            <Text style={[styles.subhead, { color: ACC.skunks }]}>Sports</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Tarp Skunks</Text>
+          <Text style={styles.subhead}>2026 Schedule · PGCBL</Text>
+        </SafeAreaView>
+        <ScrollView contentContainerStyle={schedModal.list} showsVerticalScrollIndicator={false}>
+          {SKUNKS_SCHEDULE.map((g, i) => {
+            const d = new Date(g.date + 'T12:00:00');
+            const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            const day   = d.getDate();
+            const dow   = d.toLocaleDateString('en-US', { weekday: 'short' });
+            return (
+              <View key={i} style={[schedModal.row, i < SKUNKS_SCHEDULE.length - 1 && schedModal.rowBorder]}>
+                <View style={schedModal.dateCol}>
+                  <Text style={[schedModal.dateDay, { color: ACC.skunks }]}>{day}</Text>
+                  <Text style={schedModal.dateMonth}>{month}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <View style={[schedModal.badge, g.isHome ? schedModal.badgeHome : schedModal.badgeAway]}>
+                      <Text style={[schedModal.badgeText, { color: g.isHome ? ACC.skunks : 'rgba(255,255,255,0.4)' }]}>
+                        {g.isHome ? 'HOME' : 'AWAY'}
+                      </Text>
+                    </View>
+                    <Text style={schedModal.dow}>{dow}</Text>
+                    <Text style={schedModal.time}>{g.time}</Text>
+                  </View>
+                  <Text style={schedModal.opponent}>{g.isHome ? 'vs. ' : '@ '}{g.opponent}</Text>
+                  {g.promotion ? (
+                    <Text style={[schedModal.promo, { color: `${ACC.skunks}80` }]}>{g.promotion}</Text>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </ThemedBackground>
+    );
+  }
 
   return (
     <ThemedBackground>
@@ -964,6 +1021,111 @@ export default function SportsScreen() {
         {/* ── Local Teams ─────────────────────────────────────── */}
         <SectionLabel label="Local Teams" />
 
+        {/* Tarp Skunks */}
+        <TeamCard
+          accentColor={ACC.skunks}
+          gradStart="rgba(132,204,22,0.22)"
+          gradEnd="rgba(15,23,42,0.9)"
+          iconContent={
+            <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              <Image source={require('../assets/tarpskunk.png')} style={{ width: 28, height: 28 }} resizeMode="contain" />
+            </View>
+          }
+          name="Tarp Skunks"
+          subtitle="PGCBL · Diethrick Park"
+          defaultOpen={daysUntilSkunks <= 2}
+          glassWeb={glassWeb}
+          bgImage={Platform.OS === 'web' ? { uri: '/tspark.jpg' } : require('../assets/tspark.jpg')}
+          glanceRow={
+            openingNightBadge ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                <Text style={[styles.glanceText, { color: ACC.skunks, fontWeight: '700' }]}>Opening Night</Text>
+                <View style={{ backgroundColor: `${ACC.skunks}28`, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Text style={{ fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: ACC.skunks }}>{openingNightBadge}</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.glanceText, { color: dark.text.muted }]}>Season opens</Text>
+                <Text style={[styles.glanceText, { color: ACC.skunks, fontWeight: '700' }]}>May 29</Text>
+                {daysUntilSkunks > 0 && (
+                  <>
+                    <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
+                    <Text style={[styles.glanceText, { color: dark.text.subtle }]}>{daysUntilSkunks} days</Text>
+                  </>
+                )}
+              </View>
+            )
+          }
+        >
+          {openingNightBadge && (
+            <View style={styles.openingNightBanner}>
+              <Ionicons name="star" size={13} color={ACC.skunks} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.openingNightTitle}>Opening Night Tailgate</Text>
+                <Text style={styles.openingNightDetail}>Fri May 29 · Tailgate 5 PM · First pitch 6:30 PM · Fireworks after · vs. Olean Oilers</Text>
+              </View>
+            </View>
+          )}
+          <Text style={[styles.innerLabel, { color: `${ACC.skunks}80` }]}>Single Game Tickets</Text>
+          {/* @ts-ignore */}
+          <View style={[innerCard, { padding: 12, gap: 8 }]}>
+            <View style={styles.skunksPricingRow}>
+              {[
+                { section: 'Reserved',   adult: '$14', disc: '$13' },
+                { section: 'Grandstand', adult: '$9',  disc: '$8'  },
+                { section: 'Bleacher',   adult: '$6',  disc: '$5'  },
+              ].map(tier => (
+                <View key={tier.section} style={styles.skunksPriceTile}>
+                  <Text style={styles.skunksPriceAdult}>{tier.adult}</Text>
+                  <Text style={styles.skunksPriceSection}>{tier.section}</Text>
+                  <Text style={styles.skunksPriceDisc}>{tier.disc} Sr/Mil/Child</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.skunksBoxOfficeNote}>
+              <Ionicons name="ticket-outline" size={12} color={`${ACC.skunks}60`} />
+              <Text style={styles.skunksBoxOfficeText}>Box office only · Not available online</Text>
+            </View>
+          </View>
+
+          <Text style={[styles.innerLabel, { color: `${ACC.skunks}80` }]}>Upcoming Home Games</Text>
+          {/* @ts-ignore */}
+          <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const upcoming = SKUNKS_SCHEDULE
+                .filter(g => g.isHome && g.date >= todayStr)
+                .slice(0, 5);
+              return upcoming.map((game, i) => {
+                const d = new Date(game.date + 'T12:00:00');
+                const dayNum = d.toLocaleDateString('en-US', { day: 'numeric' });
+                const month  = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                return (
+                  <View key={i} style={[styles.skunksRow, i < upcoming.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                    <View style={styles.skunksDateCol}>
+                      <Text style={[styles.skunksDay, { color: ACC.skunks }]}>{dayNum}</Text>
+                      <Text style={styles.skunksMonth}>{month}</Text>
+                    </View>
+                    <Text style={styles.skunksOpponent}>{game.opponent}</Text>
+                    <Text style={[styles.skunksTime, { color: dark.text.subtle }]}>{game.time}</Text>
+                  </View>
+                );
+              });
+            })()}
+          </View>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7} style={styles.moreLink}>
+              <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
+            </TouchableOpacity>
+            {!openingNightBadge && (
+              <TouchableOpacity onPress={() => openLink('https://www.jamestowntarpskunks.com/tickets')} activeOpacity={0.7} style={styles.moreLink}>
+                <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Get Tickets →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TeamCard>
+
         {/* JCC Jayhawks */}
         <TeamCard
           accentColor={ACC.jcc}
@@ -1070,69 +1232,6 @@ export default function SportsScreen() {
           ) : (
             <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
           )}
-        </TeamCard>
-
-        {/* Tarp Skunks */}
-        <TeamCard
-          accentColor={ACC.skunks}
-          gradStart="rgba(132,204,22,0.22)"
-          gradEnd="rgba(15,23,42,0.9)"
-          iconContent={
-            <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-              <Image source={require('../assets/tarpskunk.png')} style={{ width: 28, height: 28 }} resizeMode="contain" />
-            </View>
-          }
-          name="Tarp Skunks"
-          subtitle="PGCBL · Diethrick Park"
-          defaultOpen={false}
-          glassWeb={glassWeb}
-          bgImage={Platform.OS === 'web' ? { uri: '/tspark.jpg' } : require('../assets/tspark.jpg')}
-          glanceRow={
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.glanceText, { color: dark.text.muted }]}>Season opens</Text>
-              <Text style={[styles.glanceText, { color: ACC.skunks, fontWeight: '700' }]}>May 29</Text>
-              {daysUntilSkunks > 0 && (
-                <>
-                  <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                  <Text style={[styles.glanceText, { color: dark.text.subtle }]}>{daysUntilSkunks} days</Text>
-                </>
-              )}
-            </View>
-          }
-        >
-          <Text style={[styles.innerLabel, { color: `${ACC.skunks}80` }]}>Upcoming Home Games</Text>
-          {/* @ts-ignore */}
-          <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-            {(() => {
-              const todayStr = new Date().toISOString().split('T')[0];
-              const upcoming = SKUNKS_SCHEDULE
-                .filter(g => g.isHome && g.date >= todayStr)
-                .slice(0, 5);
-              return upcoming.map((game, i) => {
-                const d = new Date(game.date + 'T12:00:00');
-                const dayNum = d.toLocaleDateString('en-US', { day: 'numeric' });
-                const month  = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-                return (
-                  <View key={i} style={[styles.skunksRow, i < upcoming.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                    <View style={styles.skunksDateCol}>
-                      <Text style={[styles.skunksDay, { color: ACC.skunks }]}>{dayNum}</Text>
-                      <Text style={styles.skunksMonth}>{month}</Text>
-                    </View>
-                    <Text style={styles.skunksOpponent}>{game.opponent}</Text>
-                    <Text style={[styles.skunksTime, { color: dark.text.subtle }]}>{game.time}</Text>
-                  </View>
-                );
-              });
-            })()}
-          </View>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7} style={styles.moreLink}>
-              <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => openLink('https://www.milb.com/jamestown/tickets')} activeOpacity={0.7} style={styles.moreLink}>
-              <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Get Tickets →</Text>
-            </TouchableOpacity>
-          </View>
         </TeamCard>
 
         {/* ── Regional ────────────────────────────────────────── */}
@@ -1522,66 +1621,6 @@ export default function SportsScreen() {
 
       </ScrollView>
 
-      {/* ── Tarp Skunks Full Schedule Modal ─────────────────────── */}
-      <Modal
-        visible={showSkunksSchedule}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowSkunksSchedule(false)}
-      >
-        <View style={schedModal.container}>
-          <SafeAreaView edges={['top']}>
-            <View style={schedModal.header}>
-              <View style={schedModal.headerLeft}>
-                <Text style={schedModal.headerTitle}>Tarp Skunks</Text>
-                <Text style={schedModal.headerSub}>2026 Schedule · PGCBL</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setShowSkunksSchedule(false)}
-                activeOpacity={0.7}
-                style={schedModal.closeBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Ionicons name="close" size={22} color="rgba(255,255,255,0.8)" />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-
-          <ScrollView contentContainerStyle={schedModal.list} showsVerticalScrollIndicator={false}>
-            {SKUNKS_SCHEDULE.map((g, i) => {
-              const d = new Date(g.date + 'T12:00:00');
-              const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-              const day   = d.getDate();
-              const dow   = d.toLocaleDateString('en-US', { weekday: 'short' });
-              return (
-                <View key={i} style={[schedModal.row, i < SKUNKS_SCHEDULE.length - 1 && schedModal.rowBorder]}>
-                  {/* Date col */}
-                  <View style={schedModal.dateCol}>
-                    <Text style={[schedModal.dateDay, { color: ACC.skunks }]}>{day}</Text>
-                    <Text style={schedModal.dateMonth}>{month}</Text>
-                  </View>
-                  {/* Info col */}
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                      <View style={[schedModal.badge, g.isHome ? schedModal.badgeHome : schedModal.badgeAway]}>
-                        <Text style={[schedModal.badgeText, { color: g.isHome ? ACC.skunks : 'rgba(255,255,255,0.4)' }]}>
-                          {g.isHome ? 'HOME' : 'AWAY'}
-                        </Text>
-                      </View>
-                      <Text style={schedModal.dow}>{dow}</Text>
-                      <Text style={schedModal.time}>{g.time}</Text>
-                    </View>
-                    <Text style={schedModal.opponent}>{g.isHome ? 'vs. ' : '@ '}{g.opponent}</Text>
-                    {g.promotion ? (
-                      <Text style={[schedModal.promo, { color: `${ACC.skunks}80` }]}>{g.promotion}</Text>
-                    ) : null}
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
 
       {/* ── Game Detail Sheet — carousel, in-tree overlay ── */}
       {!!detailGame && (() => {
@@ -1698,12 +1737,6 @@ export default function SportsScreen() {
 }
 
 const schedModal = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: '#060e18' },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
-  headerLeft:  { gap: 2 },
-  headerTitle: { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
-  headerSub:   { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: ACC.skunks, letterSpacing: 1.2, textTransform: 'uppercase' },
-  closeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
   list:        { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48 },
   row:         { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 12 },
   rowBorder:   { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
@@ -1811,6 +1844,24 @@ const styles = StyleSheet.create({
   jccSport:    { fontFamily: 'Outfit', fontSize: 10 },
   jccScore:    { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
   jccDate:     { fontFamily: 'Outfit', fontSize: 10 },
+
+  // Opening Night banner
+  openingNightBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    borderRadius: 12, borderWidth: 1, padding: 12,
+    backgroundColor: 'rgba(132,204,22,0.08)', borderColor: 'rgba(132,204,22,0.3)',
+  },
+  openingNightTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#84cc16', lineHeight: 17 },
+  openingNightDetail:{ fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2, lineHeight: 15 },
+
+  // Single game pricing
+  skunksPricingRow:   { flexDirection: 'row', gap: 8 },
+  skunksPriceTile:    { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(132,204,22,0.07)', borderWidth: 1, borderColor: 'rgba(132,204,22,0.15)' },
+  skunksPriceAdult:   { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#84cc16', lineHeight: 22 },
+  skunksPriceSection: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  skunksPriceDisc:    { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 1, textAlign: 'center' },
+  skunksBoxOfficeNote:{ flexDirection: 'row', alignItems: 'center', gap: 5, justifyContent: 'center' },
+  skunksBoxOfficeText:{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)' },
 
   // Tarp Skunks schedule
   skunksRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10 },
