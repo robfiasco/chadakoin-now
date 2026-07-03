@@ -32,8 +32,6 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        {/* Syne/Outfit/Cormorant Garamond all aliased to local DM Sans — no Google Fonts needed */}
-        {/* Preload the web hero image so it starts downloading before JS executes */}
         <link rel="preload" as="image" href="/JTNY1.jpg" fetchPriority="high" />
         <style>{`
           * { box-sizing: border-box; }

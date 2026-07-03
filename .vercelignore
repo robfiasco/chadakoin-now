@@ -1,0 +1,13 @@
+# Build artifacts
+*.aab
+*.apk
+
+# Store assets and scripts
+store-assets/
+scripts/
+
+# Docs
+docs/
+
+# PDFs
+*.pdf

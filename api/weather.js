@@ -1,127 +1,275 @@
-const LAT = 42.097;
-const LON = -79.2353;
+// WeatherKit REST API — Apple Weather (500k calls/month included with Apple Developer account).
+// Attribution required in UI: "Weather data provided by Apple Weather™"
+//
+// Datasets: currentWeather, forecastHourly, forecastDaily, weatherAlerts, forecastNextHour
+// Returns the same base shape as the old OWM endpoint plus new fields.
 
-function codeToIcon(id, icon) {
-  if (icon?.endsWith('n')) {
-    if (id === 800) return '🌙';
-    if (id >= 801) return '☁️';
+import { sign } from 'crypto';
+
+const LAT        = 42.097;
+const LON        = -79.2353;
+const TIMEZONE   = 'America/New_York';
+const TEAM_ID    = '3UM77ULJKQ';
+const KEY_ID     = 'FC9FH9P8FQ';
+const SERVICE_ID = 'com.chadakoinnow.weatherkit';
+
+// Cache the signed JWT for 25 min (token expires in 30 min)
+let _jwt = null;
+let _jwtExp = 0;
+
+function getJWT() {
+  const now = Math.floor(Date.now() / 1000);
+  if (_jwt && now < _jwtExp - 300) return _jwt;
+
+  const b64 = process.env.WEATHERKIT_PRIVATE_KEY;
+  if (!b64) throw new Error('WEATHERKIT_PRIVATE_KEY not set');
+  const pem = Buffer.from(b64, 'base64').toString('utf8');
+
+  const header = Buffer.from(JSON.stringify({
+    alg: 'ES256', kid: KEY_ID, id: `${TEAM_ID}.${SERVICE_ID}`,
+  })).toString('base64url');
+
+  const exp = now + 30 * 60;
+  const payload = Buffer.from(JSON.stringify({
+    iss: TEAM_ID, iat: now, exp, sub: SERVICE_ID,
+  })).toString('base64url');
+
+  const signingInput = `${header}.${payload}`;
+  const sig = sign(null, Buffer.from(signingInput), {
+    key: pem, dsaEncoding: 'ieee-p1363',
+  }).toString('base64url');
+
+  _jwt = `${signingInput}.${sig}`;
+  _jwtExp = exp;
+  return _jwt;
+}
+
+// WeatherKit conditionCode → emoji
+const ICONS = {
+  Clear:                 { d: '☀️', n: '🌙' },
+  MostlyClear:          { d: '🌤️', n: '🌙' },
+  PartlyCloudy:         { d: '⛅',  n: '☁️' },
+  MostlyCloudy:         { d: '🌥️', n: '☁️' },
+  Cloudy:               { d: '☁️', n: '☁️' },
+  Drizzle:              { d: '🌦️', n: '🌦️' },
+  DrizzleLight:         { d: '🌦️', n: '🌦️' },
+  DrizzleModerate:      { d: '🌦️', n: '🌦️' },
+  DrizzleHeavy:         { d: '🌧️', n: '🌧️' },
+  RainWithSunshine:     { d: '🌦️', n: '🌦️' },
+  Rain:                 { d: '🌧️', n: '🌧️' },
+  HeavyRain:            { d: '🌧️', n: '🌧️' },
+  IsolatedThunderstorms:{ d: '⛈️', n: '⛈️' },
+  Thunderstorms:        { d: '⛈️', n: '⛈️' },
+  SevereThunderstorm:   { d: '⛈️', n: '⛈️' },
+  HailAndThunderstorms: { d: '⛈️', n: '⛈️' },
+  Snow:                 { d: '❄️', n: '❄️' },
+  Flurries:             { d: '🌨️', n: '🌨️' },
+  HeavySnow:            { d: '❄️', n: '❄️' },
+  Blizzard:             { d: '❄️', n: '❄️' },
+  Sleet:                { d: '🌨️', n: '🌨️' },
+  FreezingDrizzle:      { d: '🌨️', n: '🌨️' },
+  FreezingRain:         { d: '🌨️', n: '🌨️' },
+  Hail:                 { d: '🌧️', n: '🌧️' },
+  // Fog emoji missing from many Android Noto fonts; use cloud
+  Fog:                  { d: '☁️', n: '☁️' },
+  Haze:                 { d: '☁️', n: '☁️' },
+  Smoky:                { d: '☁️', n: '☁️' },
+  Dust:                 { d: '☁️', n: '☁️' },
+  Breezy:               { d: '🌤️', n: '🌙' },
+  Windy:                { d: '💨', n: '💨' },
+  TropicalStorm:        { d: '🌀', n: '🌀' },
+  Hurricane:            { d: '🌀', n: '🌀' },
+  Tornado:              { d: '🌀', n: '🌀' },
+};
+
+function conditionIcon(code, day = true) {
+  const e = ICONS[code];
+  if (!e) return day ? '🌤️' : '🌙';
+  return day ? e.d : e.n;
+}
+
+function conditionLabel(code) {
+  return code.replace(/([A-Z])/g, ' $1').trim();
+}
+
+const toF = c => Math.round(c * 9 / 5 + 32);
+
+function degToCompass(deg) {
+  if (deg == null) return null;
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function uvLabel(uv) {
+  if (uv <= 2) return 'Low';
+  if (uv <= 5) return 'Moderate';
+  if (uv <= 7) return 'High';
+  if (uv <= 10) return 'Very High';
+  return 'Extreme';
+}
+
+function formatLocalTime(iso) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleTimeString('en-US', {
+    timeZone: TIMEZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+// Build a human-readable "Rain in ~X min" / "Rain ending ~X min" string
+// from the forecastNextHour summary segments.
+function nextHourSummary(nextHourData, isWetNow) {
+  const summary = nextHourData?.summary;
+  if (!summary?.length) return null;
+  const now = Date.now();
+
+  if (isWetNow) {
+    const clearSeg = summary.find(s => s.condition === 'clear' && new Date(s.startTime) > now);
+    if (clearSeg) {
+      const mins = Math.round((new Date(clearSeg.startTime) - now) / 60_000);
+      if (mins > 0 && mins <= 60) return `Rain ending ~${mins} min`;
+    }
+  } else {
+    const wetSeg = summary.find(s => s.condition === 'precipitation' && new Date(s.startTime) > now);
+    if (wetSeg) {
+      const mins = Math.round((new Date(wetSeg.startTime) - now) / 60_000);
+      if (mins > 0 && mins <= 60) return `Rain in ~${mins} min`;
+    }
   }
-  if (id === 800) return '☀️';
-  if (id >= 801 && id <= 804) return id === 801 ? '⛅' : '☁️';
-  if (id >= 200 && id < 300) return '⛈️';
-  if (id >= 300 && id < 400) return '🌦️';
-  if (id >= 500 && id < 600) return id >= 511 ? '🌨️' : '🌧️';
-  if (id >= 600 && id < 700) return '❄️';
-  // Fog emoji 🌫️ is missing from many Android Noto Emoji fonts and renders as tofu.
-  if (id >= 700 && id < 800) return '☁️';
-  return '🌤️';
+  return null;
 }
 
 export default async function handler(req, res) {
-  const key = process.env.OPEN_WEATHER;
-  if (!key) return res.status(401).json({ error: 'API key not configured' });
-
   try {
-    const [currentRes, forecastRes] = await Promise.all([
-      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&units=imperial&appid=${key}`),
-      fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&units=imperial&appid=${key}`),
-    ]);
+    const jwt = getJWT();
 
-    if (!currentRes.ok) throw new Error('OWM current fetch failed');
+    const url = `https://weatherkit.apple.com/api/v1/weather/en/${LAT}/${LON}`
+      + `?dataSets=currentWeather,forecastHourly,forecastDaily,weatherAlerts,forecastNextHour`
+      + `&timezone=${TIMEZONE}`
+      + `&countryCode=US`;
 
-    const current = await currentRes.json();
-    const forecastJson = forecastRes.ok ? await forecastRes.json() : null;
+    const wkRes = await fetch(url, {
+      headers: { Authorization: `Bearer ${jwt}` },
+      signal: AbortSignal.timeout(10_000),
+    });
 
-    const temp    = Math.round(current.main.temp);
-    const feels   = Math.round(current.main.feels_like);
-    const humidity = current.main.humidity;
-    const windMph = Math.round(current.wind.speed);
-    const condition = current.weather[0].main;
-    const description = current.weather[0].description
-      .split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
-    const icon = codeToIcon(current.weather[0].id, current.weather[0].icon);
-
-    const periods = forecastJson?.list ?? [];
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayPeriods = periods.filter(f => f.dt_txt.startsWith(todayStr));
-    // Fall back to next 8 periods when today's data is sparse (e.g. late-night call)
-    const hlPeriods = todayPeriods.length ? todayPeriods : periods.slice(0, 8);
-    const high = hlPeriods.length
-      ? Math.round(Math.max(...hlPeriods.map(f => f.main.temp_max)))
-      : Math.round(current.main.temp_max ?? temp);
-    const low = hlPeriods.length
-      ? Math.round(Math.min(...hlPeriods.map(f => f.main.temp_min)))
-      : Math.round(current.main.temp_min ?? temp);
-    // Use today-only periods for rain % so it doesn't bleed into tomorrow
-    const precip = hlPeriods.length
-      ? Math.round(Math.max(...hlPeriods.map(f => (f.pop ?? 0) * 100)))
-      : 0;
-
-    const dailyMap = {};
-    for (const p of periods) {
-      const date = p.dt_txt.split(' ')[0]; // "2026-03-11"
-      if (!dailyMap[date]) {
-        dailyMap[date] = { temps: [], pops: [], codes: [], icons: [] };
-      }
-      dailyMap[date].temps.push(p.main.temp_max, p.main.temp_min);
-      dailyMap[date].pops.push(p.pop ?? 0);
-      dailyMap[date].codes.push(p.weather[0].id);
-      dailyMap[date].icons.push(p.weather[0].icon);
+    if (!wkRes.ok) {
+      const body = await wkRes.text();
+      throw new Error(`WeatherKit ${wkRes.status}: ${body.slice(0, 200)}`);
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const forecast = Object.entries(dailyMap)
-      .filter(([date]) => date >= today)
-      .slice(0, 5)
-      .map(([date, d]) => {
-        const dayIcon = d.icons.find(i => i.endsWith('d')) ?? d.icons[0];
-        const dominantCode = d.codes.length
-          ? d.codes.reduce((a, b) =>
-              d.codes.filter(c => c === a).length >= d.codes.filter(c => c === b).length ? a : b
-            )
-          : 800;
+    const wk     = await wkRes.json();
+    const cur    = wk.currentWeather;
+    const daily  = wk.forecastDaily?.days  ?? [];
+    const hours  = wk.forecastHourly?.hours ?? [];
+
+    // ── Current ──────────────────────────────────────────────────
+    const isDay    = cur.daylight ?? true;
+    const temp     = toF(cur.temperature);
+    const feels    = toF(cur.temperatureApparent);
+    const humidity = Math.round((cur.humidity ?? 0) * 100);
+    const windMph  = Math.round((cur.windSpeed ?? 0) * 0.621371);
+    const gustMph  = cur.windGust != null ? Math.round(cur.windGust * 0.621371) : null;
+    const windDir  = degToCompass(cur.windDirection);
+    const icon     = conditionIcon(cur.conditionCode, isDay);
+    const condition = conditionLabel(cur.conditionCode);
+    const uvIndex  = cur.uvIndex ?? null;
+    const isWetNow = (cur.precipitationIntensity ?? 0) > 0;
+
+    // ── Today's forecast ─────────────────────────────────────────
+    const todayForecast = daily[0];
+    const high   = todayForecast ? toF(todayForecast.temperatureMax) : temp;
+    const low    = todayForecast ? toF(todayForecast.temperatureMin) : temp;
+    const precip = todayForecast ? Math.round((todayForecast.precipitationChance ?? 0) * 100) : 0;
+    const sunrise = todayForecast ? formatLocalTime(todayForecast.sunrise) : null;
+    const sunset  = todayForecast ? formatLocalTime(todayForecast.sunset)  : null;
+
+    // ── 5-day forecast ────────────────────────────────────────────
+    const todayStr = new Date().toISOString().split('T')[0];
+    const forecast = daily.slice(0, 5).map(d => ({
+      date:   d.forecastStart.split('T')[0],
+      high:   toF(d.temperatureMax),
+      low:    toF(d.temperatureMin),
+      precip: Math.round((d.precipitationChance ?? 0) * 100),
+      icon:   conditionIcon(d.conditionCode, true),
+    }));
+
+    // ── Hourly strip (next 10 hours) ──────────────────────────────
+    const nowMs = Date.now();
+    const hourly = hours
+      .filter(h => new Date(h.forecastStart).getTime() > nowMs)
+      .slice(0, 10)
+      .map(h => {
+        const dt  = new Date(h.forecastStart);
+        const hr  = dt.getHours();
+        const ampm = hr >= 12 ? 'PM' : 'AM';
         return {
-          date,
-          high: Math.round(Math.max(...d.temps)),
-          low:  Math.round(Math.min(...d.temps)),
-          precip: Math.round(Math.max(...d.pops) * 100),
-          icon: codeToIcon(dominantCode),
+          time:  `${hr % 12 || 12} ${ampm}`,
+          temp:  toF(h.temperature),
+          icon:  conditionIcon(h.conditionCode, h.daylight ?? (hr >= 6 && hr < 20)),
+          precip: Math.round((h.precipitationChance ?? 0) * 100),
         };
       });
 
+    // ── precipAt (hourly fallback) ────────────────────────────────
     let precipAt = null;
-    const currentWeatherId = current.weather[0].id;
-    const isRainingNow = currentWeatherId >= 200 && currentWeatherId < 700;
-
-    if (!isRainingNow && periods.length) {
-      const firstWetPeriod = periods.find(f => (f.pop ?? 0) >= 0.4);
-      if (firstWetPeriod) {
-        const dt = new Date(firstWetPeriod.dt * 1000);
-        const hour = dt.getHours();
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const h = hour % 12 || 12;
-        const dayStr = firstWetPeriod.dt_txt.split(' ')[0];
-        const dayPrefix = dayStr > todayStr ? 'Tmrw ' : '';
-        precipAt = `${dayPrefix}${h} ${ampm}`;
+    if (!isWetNow) {
+      const nextWet = hours.find(h =>
+        new Date(h.forecastStart).getTime() > nowMs &&
+        (h.precipitationChance ?? 0) >= 0.4
+      );
+      if (nextWet) {
+        const dt    = new Date(nextWet.forecastStart);
+        const hr    = dt.getHours();
+        const dayStr = nextWet.forecastStart.split('T')[0];
+        precipAt = `${dayStr > todayStr ? 'Tmrw ' : ''}${hr % 12 || 12} ${hr >= 12 ? 'PM' : 'AM'}`;
       }
     }
+
+    // ── Next-hour precision ───────────────────────────────────────
+    const nextHour = nextHourSummary(wk.forecastNextHour, isWetNow);
+
+    // ── Weather alerts ────────────────────────────────────────────
+    const now = new Date();
+    const alerts = (wk.weatherAlerts?.alerts ?? [])
+      .filter(a => !a.expireTime || new Date(a.expireTime) > now)
+      .map(a => ({
+        name:     a.name,
+        severity: a.severity ?? 'moderate',
+        summary:  (a.summary ?? a.description ?? '').slice(0, 300),
+        expires:  a.expireTime ? formatLocalTime(a.expireTime) : null,
+      }));
 
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({
-      temp: `${temp}°`,
+      // Base fields (same as before)
+      temp:      `${temp}°`,
       feelsLike: `${feels}°`,
-      condition: description,
-      high: `${high}°`,
-      low: `${low}°`,
-      precip: `${precip}%`,
+      condition,
+      high:      `${high}°`,
+      low:       `${low}°`,
+      precip:    `${precip}%`,
       precipAt,
       forecast,
-      wind: `${windMph} mph`,
-      humidity: `${humidity}%`,
+      wind:      `${windMph} mph`,
+      humidity:  `${humidity}%`,
       icon,
+      // New fields
+      windDir,
+      windGust:  gustMph != null ? `${gustMph} mph` : null,
+      uvIndex,
+      uvLabel:   uvIndex != null ? uvLabel(uvIndex) : null,
+      sunrise,
+      sunset,
+      hourly,
+      nextHour,
+      alerts,
     });
   } catch (err) {
+    console.error('WeatherKit error:', err.message);
     res.status(502).json({ error: 'Weather fetch failed' });
   }
 }

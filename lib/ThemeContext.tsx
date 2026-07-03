@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { THEMES, Theme, ThemeId, DEFAULT_THEME_ID } from './themes';
+
+const APP_GROUP = 'group.com.chadakoindigital.chadakoinnow';
+
+async function writeThemeToWidget(id: ThemeId) {
+  if (Platform.OS !== 'ios') return;
+  try {
+    const SharedGroupPreferences = require('react-native-shared-group-preferences').default;
+    await SharedGroupPreferences.setItem('theme_id', id, APP_GROUP);
+  } catch {}
+}
 
 const STORAGE_KEY = 'selectedThemeId';
 
@@ -29,6 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   function setThemeId(id: ThemeId) {
     setThemeIdState(id);
     AsyncStorage.setItem(STORAGE_KEY, id).catch(() => {});
+    writeThemeToWidget(id);
   }
 
   function cycleTheme() {

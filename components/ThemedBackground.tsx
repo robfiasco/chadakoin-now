@@ -7,10 +7,10 @@ interface OrbProps {
   color: string;
   width: number;
   height: number;
-  top?: number | string;
-  bottom?: number | string;
-  left?: number | string;
-  right?: number | string;
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
   duration: number;
   delay?: number;
   reverse?: boolean;

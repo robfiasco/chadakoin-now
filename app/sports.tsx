@@ -14,6 +14,8 @@ import { PulsingDot } from '../components/PulsingDot';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import { apiUrl } from '../lib/api';
+import { SkunksGame, SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
+import { useCivicData, NewsItem } from '../hooks/useCivicData';
 
 interface NextUpItem {
   ts: number; sport: string; emoji: string; matchup: string;
@@ -115,55 +117,7 @@ const ACC = {
   label:  '#22d3ee',  // cyan-400 — section headers
 } as const;
 
-interface SkunksGame {
-  date: string; time: string; isHome: boolean; opponent: string; promotion?: string | null;
-}
-const SKUNKS_SCHEDULE: SkunksGame[] = [
-  { date: '2026-05-29', time: '6:30 PM', isHome: true,  opponent: 'Olean Oilers',          promotion: 'Opening Night Tailgate' },
-  { date: '2026-05-30', time: '6:30 PM', isHome: false, opponent: 'Olean Oilers',          promotion: null },
-  { date: '2026-06-02', time: '6:30 PM', isHome: true,  opponent: 'Olean Oilers',          promotion: '$2 Night' },
-  { date: '2026-06-03', time: '6:30 PM', isHome: false, opponent: 'Batavia Muckdogs',      promotion: null },
-  { date: '2026-06-04', time: '6:30 PM', isHome: false, opponent: 'Newark Pilots',         promotion: null },
-  { date: '2026-06-05', time: '6:30 PM', isHome: false, opponent: 'Niagara Ironbacks',     promotion: null },
-  { date: '2026-06-06', time: '6:30 PM', isHome: false, opponent: 'Niagara Falls Americans', promotion: null },
-  { date: '2026-06-09', time: '11:00 AM', isHome: true, opponent: 'Olean Oilers',          promotion: 'School Kids Game' },
-  { date: '2026-06-10', time: '6:30 PM', isHome: true,  opponent: 'Niagara Falls Americans', promotion: 'Bark at the Park' },
-  { date: '2026-06-11', time: '6:30 PM', isHome: false, opponent: 'Batavia Muckdogs',      promotion: null },
-  { date: '2026-06-12', time: '6:30 PM', isHome: false, opponent: 'Geneva Red Wings',      promotion: null },
-  { date: '2026-06-13', time: '6:30 PM', isHome: true,  opponent: 'Niagara Ironbacks',     promotion: 'Kids Carnival Night' },
-  { date: '2026-06-14', time: '4:00 PM', isHome: true,  opponent: 'Elmira Pioneers',       promotion: 'Electrovaya Night' },
-  { date: '2026-06-14', time: '6:30 PM', isHome: true,  opponent: 'Elmira Pioneers',       promotion: 'Electrovaya Night' },
-  { date: '2026-06-16', time: '6:30 PM', isHome: false, opponent: 'Newark Pilots',         promotion: null },
-  { date: '2026-06-17', time: '6:30 PM', isHome: true,  opponent: 'Olean Oilers',          promotion: 'Lawley Night' },
-  { date: '2026-06-18', time: '6:30 PM', isHome: true,  opponent: 'Niagara Falls Americans', promotion: 'First Responders Night' },
-  { date: '2026-06-19', time: '6:30 PM', isHome: true,  opponent: 'Niagara Ironbacks',     promotion: 'Youth Baseball & Softball Night' },
-  { date: '2026-06-23', time: '6:30 PM', isHome: false, opponent: 'Niagara Falls Americans', promotion: null },
-  { date: '2026-06-25', time: '6:30 PM', isHome: true,  opponent: 'Batavia Muckdogs',      promotion: 'JCC Free Ticket Night' },
-  { date: '2026-06-27', time: '6:30 PM', isHome: true,  opponent: 'Niagara Falls Americans', promotion: 'Kids Camp Day/Night' },
-  { date: '2026-06-28', time: '4:00 PM', isHome: false, opponent: 'Auburn Doubledays',     promotion: null },
-  { date: '2026-06-28', time: '7:00 PM', isHome: false, opponent: 'Auburn Doubledays',     promotion: null },
-  { date: '2026-06-30', time: '6:30 PM', isHome: false, opponent: 'Olean Oilers',          promotion: null },
-  { date: '2026-07-01', time: '6:30 PM', isHome: false, opponent: 'Batavia Muckdogs',      promotion: null },
-  { date: '2026-07-02', time: '6:30 PM', isHome: false, opponent: 'Olean Oilers',          promotion: null },
-  { date: '2026-07-03', time: '6:30 PM', isHome: true,  opponent: 'Olean Oilers',          promotion: 'Fireworks Night' },
-  { date: '2026-07-04', time: '6:30 PM', isHome: false, opponent: 'Niagara Ironbacks',     promotion: null },
-  { date: '2026-07-05', time: '2:05 PM', isHome: false, opponent: 'Elmira Pioneers',       promotion: null },
-  { date: '2026-07-05', time: '4:30 PM', isHome: false, opponent: 'Elmira Pioneers',       promotion: null },
-  { date: '2026-07-07', time: '6:30 PM', isHome: true,  opponent: 'Newark Pilots',         promotion: '$2 Night' },
-  { date: '2026-07-10', time: '6:30 PM', isHome: true,  opponent: 'Batavia Muckdogs',      promotion: 'Wegmans Free Ticket Night' },
-  { date: '2026-07-11', time: '6:30 PM', isHome: false, opponent: 'Geneva Red Wings',      promotion: null },
-  { date: '2026-07-12', time: '4:00 PM', isHome: true,  opponent: 'Auburn Doubledays',     promotion: 'GCFCU Free Ticket Night' },
-  { date: '2026-07-12', time: '6:30 PM', isHome: true,  opponent: 'Auburn Doubledays',     promotion: 'GCFCU Free Ticket Night' },
-  { date: '2026-07-13', time: '6:30 PM', isHome: false, opponent: 'Batavia Muckdogs',      promotion: null },
-  { date: '2026-07-15', time: '6:30 PM', isHome: true,  opponent: 'Batavia Muckdogs',      promotion: 'Superhero Night' },
-  { date: '2026-07-16', time: '6:30 PM', isHome: false, opponent: 'Niagara Falls Americans', promotion: null },
-  { date: '2026-07-17', time: '6:30 PM', isHome: true,  opponent: 'Newark Pilots',         promotion: 'Strike Out Cancer Night' },
-  { date: '2026-07-19', time: '4:00 PM', isHome: true,  opponent: 'Geneva Red Wings',      promotion: 'United Way Night' },
-  { date: '2026-07-21', time: '6:30 PM', isHome: true,  opponent: 'Niagara Ironbacks',     promotion: '$2 Night' },
-  { date: '2026-07-23', time: '6:30 PM', isHome: false, opponent: 'Olean Oilers',          promotion: null },
-  { date: '2026-07-24', time: '6:30 PM', isHome: false, opponent: 'Olean Oilers',          promotion: null },
-  { date: '2026-07-25', time: '6:30 PM', isHome: true,  opponent: 'Geneva Red Wings',      promotion: 'Xmas in July' },
-];
+
 
 function sportEmoji(sport: string): string {
   const s = sport.toLowerCase();
@@ -582,6 +536,12 @@ function TeamCard({
 }
 
 export default function SportsScreen() {
+  const { news: civicNews } = useCivicData();
+  const skunksNews = useMemo(
+    () => civicNews.filter(n => /tarp skunks|jamestown tarp|pgcbl|diethrick/i.test(n.title + ' ' + (n.excerpt ?? ''))),
+    [civicNews],
+  );
+
   const [data, setData]           = useState<SabresData | null>(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -649,12 +609,46 @@ export default function SportsScreen() {
 
   // All upcoming games sorted by time — powers the Next Up carousel
   const nextUpItems = useMemo(() => {
-    if (!data) return [];
     const candidates: NextUpItem[] = [];
     const seenGamePairs = new Set<string>(); // dedup games where both teams are tracked
     const now = new Date();
     const today = new Date(); today.setHours(0,0,0,0);
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+
+    // Tarp Skunks — always available from static schedule
+    const nextSkunksGame = SKUNKS_SCHEDULE.find(g => {
+      const [timeStr, ampm] = g.time.split(' ');
+      const [h, m] = timeStr.split(':').map(Number);
+      let hours = h;
+      if (ampm === 'PM' && h !== 12) hours += 12;
+      if (ampm === 'AM' && h === 12) hours = 0;
+      return new Date(`${g.date}T${String(hours).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) > now;
+    });
+    if (nextSkunksGame) {
+      const [timeStr, ampm] = nextSkunksGame.time.split(' ');
+      const [h, m] = timeStr.split(':').map(Number);
+      let hours = h;
+      if (ampm === 'PM' && h !== 12) hours += 12;
+      if (ampm === 'AM' && h === 12) hours = 0;
+      const gameDate = new Date(`${nextSkunksGame.date}T${String(hours).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+      candidates.push({
+        ts: gameDate.getTime(),
+        sport: 'Tarp Skunks · PGCBL',
+        emoji: '⚾',
+        matchup: `Tarp Skunks ${nextSkunksGame.isHome ? 'vs' : '@'} ${nextSkunksGame.opponent}`,
+        dateLabel: '',
+        time: nextSkunksGame.time,
+        accent: ACC.skunks,
+        gradStart: 'rgba(132,204,22,0.22)',
+        gradEnd: 'rgba(6,14,24,0.7)',
+        bgKey: 'baseball',
+        isHome: nextSkunksGame.isHome,
+        opponentName: nextSkunksGame.opponent,
+        venue: nextSkunksGame.isHome ? (nextSkunksGame.promotion ? `Diethrick Park · ${nextSkunksGame.promotion}` : 'Diethrick Park') : nextSkunksGame.opponent.replace(' ', ' @ '),
+      });
+    }
+
+    if (data) {
 
     if (data.liveGame?.status === 'live') {
       const lg = data.liveGame;
@@ -743,6 +737,7 @@ export default function SportsScreen() {
         }
       }
     }
+    } // end if (data)
     if (candidates.length === 0) return [];
     // If any game is live, show only live games. Otherwise show upcoming.
     const liveOnly = candidates.filter(c => c.isLive);
@@ -779,6 +774,18 @@ export default function SportsScreen() {
     if (daysUntilSkunks === 2) return 'THIS FRIDAY';
     return null;
   }, [daysUntilSkunks]);
+
+  // Next Skunks home game — used in expanded card
+  const nextSkunksHome = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return SKUNKS_SCHEDULE.find(g => g.isHome && g.date >= todayStr) ?? null;
+  }, []);
+
+  // Next Skunks game (any) — used in glance row
+  const nextSkunksAny = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return SKUNKS_SCHEDULE.find(g => g.date >= todayStr) ?? null;
+  }, []);
 
   // JCC glance: last result per sport (up to 2 distinct sports), within 7 days
   const jccGlance = useMemo(() => {
@@ -1037,7 +1044,19 @@ export default function SportsScreen() {
           glassWeb={glassWeb}
           bgImage={Platform.OS === 'web' ? { uri: '/tspark.jpg' } : require('../assets/tspark.jpg')}
           glanceRow={
-            openingNightBadge ? (
+            nextSkunksAny ? (() => {
+              const d = new Date(nextSkunksAny.date + 'T12:00:00');
+              const dow = d.toLocaleDateString('en-US', { weekday: 'short' });
+              const mon = d.toLocaleDateString('en-US', { month: 'short' });
+              const day = d.getDate();
+              return (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Text style={[styles.glanceText, { color: dark.text.muted }]}>Next {nextSkunksAny.isHome ? 'home' : 'away'}</Text>
+                  <Text style={{ color: dark.text.subtle, fontSize: 10 }}>·</Text>
+                  <Text style={[styles.glanceText, { color: ACC.skunks, fontWeight: '700' }]}>{dow} {mon} {day}</Text>
+                </View>
+              );
+            })() : openingNightBadge ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
                 <Text style={[styles.glanceText, { color: ACC.skunks, fontWeight: '700' }]}>Opening Night</Text>
                 <View style={{ backgroundColor: `${ACC.skunks}28`, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 }}>
@@ -1067,7 +1086,73 @@ export default function SportsScreen() {
               </View>
             </View>
           )}
-          <Text style={[styles.innerLabel, { color: `${ACC.skunks}80` }]}>Single Game Tickets</Text>
+
+          {/* Next home game — featured */}
+          {nextSkunksHome && (() => {
+            const next = nextSkunksHome;
+            const d   = new Date(next.date + 'T12:00:00');
+            const dow = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+            const mon = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            const day = d.getDate();
+            return (
+              <>
+                <Text style={[styles.innerLabel, { color: `${ACC.skunks}60` }]}>Next Home Game</Text>
+                <View style={sk.nextHomeCard}>
+                  <View style={sk.nextHomeDate}>
+                    <Text style={sk.nextHomeDow}>{dow}</Text>
+                    <Text style={sk.nextHomeDay} numberOfLines={1} adjustsFontSizeToFit>{day}</Text>
+                    <Text style={sk.nextHomeMon}>{mon}</Text>
+                  </View>
+                  <View style={sk.nextHomeInfo}>
+                    <Text style={sk.nextHomeTime}>{next.time}</Text>
+                    <Text style={sk.nextHomeOpp}>vs. {next.opponent}</Text>
+                    {next.promotion && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                        <Ionicons name="star-outline" size={10} color={`${ACC.skunks}70`} />
+                        <Text style={sk.nextHomePromo}>{next.promotion}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </>
+            );
+          })()}
+
+          {/* More home games */}
+          {(() => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const more = SKUNKS_SCHEDULE.filter(g => g.isHome && g.date > (nextSkunksHome?.date ?? '')).slice(0, 4);
+            if (!more.length) return null;
+            return (
+              <>
+                <Text style={[styles.innerLabel, { color: `${ACC.skunks}60` }]}>More at Diethrick Park</Text>
+                {/* @ts-ignore */}
+                <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
+                  {more.map((game, i) => {
+                    const d    = new Date(game.date + 'T12:00:00');
+                    const dayN = d.toLocaleDateString('en-US', { day: 'numeric' });
+                    const mon  = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                    return (
+                      <View key={i} style={[styles.skunksRow, i < more.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                        <View style={styles.skunksDateCol}>
+                          <Text style={[styles.skunksDay, { color: ACC.skunks }]}>{dayN}</Text>
+                          <Text style={styles.skunksMonth}>{mon}</Text>
+                        </View>
+                        <Text style={styles.skunksOpponent} numberOfLines={1}>{game.opponent}</Text>
+                        {game.promotion
+                          ? <Text style={[styles.skunksTime, { color: `${ACC.skunks}55`, flex: 1, textAlign: 'right' }]} numberOfLines={1}>{game.promotion}</Text>
+                          : <Text style={[styles.skunksTime, { color: dark.text.subtle }]}>{game.time}</Text>
+                        }
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            );
+          })()}
+
+          {/* Single game pricing */}
+          <Text style={[styles.innerLabel, { color: `${ACC.skunks}60` }]}>Single Game Tickets</Text>
           {/* @ts-ignore */}
           <View style={[innerCard, { padding: 12, gap: 8 }]}>
             <View style={styles.skunksPricingRow}>
@@ -1089,40 +1174,49 @@ export default function SportsScreen() {
             </View>
           </View>
 
-          <Text style={[styles.innerLabel, { color: `${ACC.skunks}80` }]}>Upcoming Home Games</Text>
-          {/* @ts-ignore */}
-          <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-            {(() => {
-              const todayStr = new Date().toISOString().split('T')[0];
-              const upcoming = SKUNKS_SCHEDULE
-                .filter(g => g.isHome && g.date >= todayStr)
-                .slice(0, 5);
-              return upcoming.map((game, i) => {
-                const d = new Date(game.date + 'T12:00:00');
-                const dayNum = d.toLocaleDateString('en-US', { day: 'numeric' });
-                const month  = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+          {skunksNews.length > 0 && (
+            <>
+              <Text style={[styles.innerLabel, { color: `${ACC.skunks}60` }]}>News & Recaps</Text>
+              {skunksNews.slice(0, 3).map((item, i) => {
+                const ago = (() => {
+                  const diff = Date.now() - new Date(item.pubDate).getTime();
+                  const h = Math.floor(diff / 3_600_000);
+                  const d = Math.floor(diff / 86_400_000);
+                  if (h < 1) return 'Just now';
+                  if (h < 24) return `${h}h ago`;
+                  if (d < 7) return `${d}d ago`;
+                  return new Date(item.pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                })();
                 return (
-                  <View key={i} style={[styles.skunksRow, i < upcoming.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                    <View style={styles.skunksDateCol}>
-                      <Text style={[styles.skunksDay, { color: ACC.skunks }]}>{dayNum}</Text>
-                      <Text style={styles.skunksMonth}>{month}</Text>
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => openLink(item.link)}
+                    activeOpacity={0.72}
+                    style={[styles.skunksNewsRow, i < Math.min(skunksNews.length, 3) - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}
+                  >
+                    <View style={[styles.skunksNewsBar, { backgroundColor: ACC.skunks }]} />
+                    <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 12 }}>
+                      <Text style={styles.skunksNewsTitle}>{item.title}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                        {item.source ? <Text style={styles.skunksNewsMeta}>{item.source}</Text> : null}
+                        {item.source ? <Text style={styles.skunksNewsDot}>·</Text> : null}
+                        <Text style={styles.skunksNewsMeta}>{ago}</Text>
+                      </View>
                     </View>
-                    <Text style={styles.skunksOpponent}>{game.opponent}</Text>
-                    <Text style={[styles.skunksTime, { color: dark.text.subtle }]}>{game.time}</Text>
-                  </View>
+                    <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.2)" style={{ alignSelf: 'center', marginRight: 10 }} />
+                  </TouchableOpacity>
                 );
-              });
-            })()}
-          </View>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7} style={styles.moreLink}>
+              })}
+            </>
+          )}
+
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 16, paddingTop: 4 }}>
+            <TouchableOpacity onPress={() => openLink('https://tarp-skunks-2026.vercel.app/')} activeOpacity={0.7}>
+              <Text style={[styles.moreLinkText, { color: `${ACC.skunks}80` }]}>Fan Guide →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowSkunksSchedule(true)} activeOpacity={0.7}>
               <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
             </TouchableOpacity>
-            {!openingNightBadge && (
-              <TouchableOpacity onPress={() => openLink('https://www.jamestowntarpskunks.com/tickets')} activeOpacity={0.7} style={styles.moreLink}>
-                <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Get Tickets →</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </TeamCard>
 
@@ -1736,6 +1830,56 @@ export default function SportsScreen() {
   );
 }
 
+const sk = StyleSheet.create({
+  // Stat strip
+  statStrip: {
+    flexDirection: 'row',
+    borderRadius: 14, borderWidth: 1,
+    borderColor: 'rgba(132,204,22,0.15)',
+    backgroundColor: 'rgba(132,204,22,0.06)',
+    overflow: 'hidden',
+  },
+  statCell: { flex: 1, alignItems: 'center', paddingVertical: 13 },
+  statCellBorder: { borderRightWidth: 1, borderRightColor: 'rgba(132,204,22,0.12)' },
+  statValue: { fontFamily: 'Syne', fontSize: 17, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
+  statLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginTop: 3 },
+
+  // Game scoreboard cards
+  resultRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  resultWL:      { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  resultWLText:  { fontFamily: 'Syne', fontSize: 11, fontWeight: '800' },
+  resultTeamUs:  { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fff', flex: 1 },
+  resultScoreUs: { fontFamily: 'Syne', fontSize: 17, fontWeight: '800', letterSpacing: -0.5, width: 30, textAlign: 'right' },
+  resultTeamThem:{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.6)', flex: 1 },
+  resultScoreThem:{ fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.45)', width: 30, textAlign: 'right' },
+  resultDate:    { fontFamily: 'Outfit', fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.25)', letterSpacing: 0.4 },
+  resultLoc:     { fontFamily: 'Outfit', fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
+
+  // Next home game
+  nextHomeCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    borderRadius: 14, borderWidth: 1,
+    borderColor: 'rgba(132,204,22,0.4)',
+    backgroundColor: 'rgba(132,204,22,0.07)',
+    padding: 14,
+  },
+  nextHomeDate: { alignItems: 'center', width: 42 },
+  nextHomeDow:  { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: `${ACC.skunks}90` },
+  nextHomeDay:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '800', color: ACC.skunks, lineHeight: 30, marginTop: 1 },
+  nextHomeMon:  { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8, textTransform: 'uppercase' },
+  nextHomeInfo: { flex: 1, gap: 2 },
+  nextHomeTime: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  nextHomeOpp:  { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.2 },
+  nextHomePromo:{ fontFamily: 'Outfit', fontSize: 10, color: `${ACC.skunks}70` },
+  ticketBtn: {
+    alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(132,204,22,0.13)',
+    borderRadius: 11, borderWidth: 1, borderColor: 'rgba(132,204,22,0.32)',
+    paddingHorizontal: 12, paddingVertical: 10,
+  },
+  ticketBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: ACC.skunks },
+});
+
 const schedModal = StyleSheet.create({
   list:        { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48 },
   row:         { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 12 },
@@ -1862,6 +2006,13 @@ const styles = StyleSheet.create({
   skunksPriceDisc:    { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 1, textAlign: 'center' },
   skunksBoxOfficeNote:{ flexDirection: 'row', alignItems: 'center', gap: 5, justifyContent: 'center' },
   skunksBoxOfficeText:{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)' },
+
+  // Tarp Skunks news rows
+  skunksNewsRow:   { flexDirection: 'row', alignItems: 'stretch', backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 12, overflow: 'hidden', marginBottom: 6 },
+  skunksNewsBar:   { width: 3, flexShrink: 0 },
+  skunksNewsTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fff', lineHeight: 18, letterSpacing: -0.1 },
+  skunksNewsMeta:  { fontFamily: 'Outfit', fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
+  skunksNewsDot:   { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.2)' },
 
   // Tarp Skunks schedule
   skunksRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10 },

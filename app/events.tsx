@@ -10,6 +10,7 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { useTheme } from '../lib/ThemeContext';
 import { EventItem } from '../hooks/useCivicData';
+import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
@@ -22,6 +23,8 @@ function categoryColor(cat: string): string {
   if (/music|concert|jazz|band|blues|rock/i.test(c))       return dark.category.music;
   if (/film|cinema|movie|screen/i.test(c))                 return dark.category.film;
   if (/arts?|theater|theatre|gallery|exhibit/i.test(c))    return dark.category.arts;
+  if (/baseball/i.test(c))                                 return '#84cc16'; // skunks lime
+  if (/pride/i.test(c))                                    return '#e879f9'; // fuchsia
   if (/sport|athletic|hockey|basketball|soccer/i.test(c))  return dark.category.activity;
   if (/jcc|library|education/i.test(c))                    return dark.category.jcc;
   if (/civic|lecture|forum|summit/i.test(c))               return dark.category.city;
@@ -34,6 +37,7 @@ function categoryIcon(cat: string): IoniconName {
   if (/music|concert|jazz|band/i.test(c))         return 'musical-notes-outline';
   if (/film|cinema|movie/i.test(c))               return 'film-outline';
   if (/arts?|theater|theatre|gallery/i.test(c))   return 'color-palette-outline';
+  if (/pride/i.test(c))                           return 'heart-outline';
   if (/sport|athletic|hockey|basketball/i.test(c))return 'trophy-outline';
   if (/jcc|library|education/i.test(c))           return 'school-outline';
   if (/civic|lecture|forum/i.test(c))             return 'mic-outline';
@@ -68,7 +72,7 @@ function formatFeaturedDate(iso: string): { date: string; time: string } {
 }
 
 // ── Filter helpers ────────────────────────────────────────────────
-type FilterKey = 'all' | 'weekend' | 'week' | string; // string = month name
+type FilterKey = 'all' | 'weekend' | 'week' | 'pride' | string; // string = month name
 
 function getWeekendRange(): [Date, Date] {
   const today = new Date();
@@ -105,6 +109,15 @@ const MONTH_NAMES = [
   'July','August','September','October','November','December',
 ];
 
+function skunksTimeToISO(date: string, time: string): string {
+  const [timeStr, ampm] = time.split(' ');
+  const [h, m] = timeStr.split(':').map(Number);
+  let hours = h;
+  if (ampm === 'PM' && h !== 12) hours += 12;
+  if (ampm === 'AM' && h === 12) hours = 0;
+  return `${date}T${String(hours).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+}
+
 function buildMonthFilters(): { key: string; label: string }[] {
   const now = new Date();
   return Array.from({ length: 5 }, (_, i) => {
@@ -130,8 +143,6 @@ function groupByDay(events: EventItem[]): DayGroup[] {
   });
 }
 
-// ── Canadian flag gradient helper ────────────────────────────────
-// Interpolates each character's color: red on edges, white in center
 function flagCharColor(pos: number, total: number, accentHex: string): string {
   const r1 = parseInt(accentHex.slice(1, 3), 16);
   const g1 = parseInt(accentHex.slice(3, 5), 16);
@@ -144,18 +155,29 @@ function flagCharColor(pos: number, total: number, accentHex: string): string {
   return `rgb(${r},${g},${b})`;
 }
 
+function rainbowCharColor(pos: number, total: number): string {
+  const hue = (pos / Math.max(total - 1, 1)) * 270;
+  return `hsl(${hue}, 100%, 65%)`;
+}
+
 // ── Sponsored event card ─────────────────────────────────────────
 interface SponsoredShow {
   id: string;
-  line1: string;        // "WE SPEAK"
-  line2: string;        // "CANADIAN"
-  accentColor: string;  // brand red
+  line1: string;
+  line2: string;
+  accentColor: string;
   venue: string;
   location: string;
   date: string;         // ISO — used to auto-hide after show passes
-  displayDate: string;  // "SAT MAY 30"
-  displayTime: string;  // "10 PM"
-  image: any;
+  displayDate: string;
+  displayTime: string;
+  image?: any;  // required for photo-mode cards, unused for logoMode
+  logoMode?: boolean;   // true = centered logo on dark gradient, not full-bleed photo
+  rainbowMode?: boolean; // true = pride rainbow text + multi-color glows instead of single accent
+  tagline?: string;      // short slogan rendered above highlights/bio
+  highlights?: string[]; // renders as bullet list instead of bio paragraph
+  footerNote?: string;   // subtle "scroll to see events" cue at card bottom
+  ctaLabel?: string;    // overrides default CTA icon/label
   bio?: string;
   link?: string;
   youtubeLink?: string;
@@ -164,6 +186,49 @@ interface SponsoredShow {
 }
 
 const SPONSORED_SHOWS: SponsoredShow[] = [
+  {
+    id: 'jamestown-pride-2026',
+    line1: 'JAMESTOWN',
+    line2: 'PRIDE',
+    accentColor: '#e879f9',
+    venue: 'Multiple Venues',
+    location: 'Downtown Jamestown, NY',
+    date: '2026-06-14T23:59:00',
+    displayDate: 'JUN 5–14',
+    displayTime: '10 DAYS',
+    image: Platform.OS === 'web' ? { uri: '/pride logo.PNG' } : require('../assets/pride-logo.png'),
+    logoMode: true,
+    rainbowMode: true,
+    tagline: 'Courageous Together. Proud Forever.',
+    highlights: [
+      'Jun 5 — Miss Pearl City Gay Pride Pageant',
+      'Jun 6 — Pride Flag Raising & Opening Ceremony',
+      'Jun 10 — Movie Night at the Reg (pre-show 6pm, film 7pm)',
+      'Jun 13 — Rainbow Walk & Pride Festival · Noon · Winter Garden Plaza',
+      'Jun 13 — Pride 3rd Annual Variety Show · 4pm · Wicked Warren\'s',
+      'Jun 13 — Pride After Dark · 8:30pm · Sneakers Bar · 21+ · $10',
+      'Jun 14 — Pride Sunday Service',
+    ],
+    footerNote: 'All Pride events listed below',
+    mapLink: 'https://maps.google.com/?q=Winter+Garden+Plaza+Jamestown+NY',
+  },
+  {
+    id: 'givebig-chq-0611',
+    line1: 'GIVE BIG',
+    line2: 'CHQ 2026',
+    accentColor: '#7c3aed',
+    venue: 'Reg Lenna Center for The Arts',
+    location: 'Jamestown, NY',
+    date: '2026-06-11T23:59:00',
+    displayDate: 'THU JUN 11',
+    displayTime: 'ALL DAY',
+    image: Platform.OS === 'web' ? { uri: '/givebig.png' } : require('../assets/givebig.png'),
+    logoMode: true,
+    ctaLabel: 'Give Now',
+    bio: 'Give Big CHQ is Chautauqua County\'s 24-hour online giving event — a chance to rally around local nonprofits and make your dollars go further. Hosted at the Reg Lenna Center for The Arts.',
+    link: 'https://www.givebigchq.org',
+    mapLink: 'https://maps.google.com/?q=Reg+Lenna+Center+116+E+3rd+St+Jamestown+NY',
+  },
   {
     id: 'wsc-shawbucks-0530',
     line1: 'WE SPEAK',
@@ -184,31 +249,193 @@ const SPONSORED_SHOWS: SponsoredShow[] = [
 
 function SponsoredCard({ show }: { show: SponsoredShow }) {
   const red = show.accentColor;
-  return (
-    <View style={sp.card}>
-      {/* Photo + gradient */}
-      <View style={sp.photoWrap}>
-        <Image source={show.image} style={StyleSheet.absoluteFill} contentFit="cover" />
-        {/* Bottom fade — heavy so logo text reads */}
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.72)', 'rgba(0,0,0,0.95)'] as any}
-          start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-          style={[StyleSheet.absoluteFill, { top: '25%' }]}
-        />
+  const [collapsed, setCollapsed] = useState(false);
 
-        {/* Band name — bottom of photo, each character flag-gradient colored */}
-        <View style={sp.nameBlock}>
-          <Text style={sp.nameLine1}>
-            {show.line1.split('').map((char, i, arr) => (
-              <Text key={i} style={{ color: flagCharColor(i, arr.length, show.accentColor) }}>{char}</Text>
-            ))}
-          </Text>
-          <Text style={sp.nameLine2}>
-            {show.line2.split('').map((char, i, arr) => (
-              <Text key={i} style={{ color: flagCharColor(i, arr.length, show.accentColor) }}>{char}</Text>
-            ))}
-          </Text>
-        </View>
+  if (collapsed) {
+    const rainbowBarColors = ['#FF2020', '#FF8C00', '#FFE000', '#00B340', '#1A66FF', '#9B2FC9'] as any;
+    const titleChars = `${show.line1} ${show.line2}`.split('');
+    return (
+      <TouchableOpacity
+        onPress={() => setCollapsed(false)}
+        activeOpacity={0.8}
+        style={[sp.card, { borderColor: `${red}40`, flexDirection: 'row', alignItems: 'stretch', overflow: 'hidden' }]}
+      >
+        {/* Accent bar — rainbow gradient for pride, solid accent otherwise */}
+        {show.rainbowMode ? (
+          <LinearGradient
+            colors={rainbowBarColors}
+            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+            style={{ width: 4 }}
+          />
+        ) : (
+          <View style={{ width: 4, backgroundColor: red }} />
+        )}
+
+        {/* Dark background tint matching the card theme */}
+        <LinearGradient
+          colors={show.rainbowMode
+            ? ['#0d082180', '#130a2e80'] as any
+            : [`${red}12`, `${red}06`] as any}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13 }}
+        >
+          <View style={{ flex: 1 }}>
+            {/* Title with per-character coloring */}
+            <Text style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: '900', letterSpacing: -0.3, lineHeight: 20 }}>
+              {titleChars.map((char, i) => (
+                <Text key={i} style={{ color: show.rainbowMode ? rainbowCharColor(i, titleChars.length) : flagCharColor(i, titleChars.length, red) }}>
+                  {char}
+                </Text>
+              ))}
+            </Text>
+            <Text style={{ fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>
+              {show.displayDate} · {show.displayTime}
+            </Text>
+          </View>
+          <Ionicons name="chevron-down-outline" size={16} color="rgba(255,255,255,0.25)" />
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={[sp.card, { borderColor: `${show.accentColor}40` }]}>
+      {/* Photo / hero area */}
+      <View style={sp.photoWrap}>
+        {show.logoMode ? (
+          // ── Full graphic treatment — no logo image ──────────────────
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            {/* Deep dark base */}
+            <LinearGradient
+              colors={show.rainbowMode
+                ? ['#1e4a8a', '#2a5aa0', '#163872'] as any
+                : ['#0d0821', '#130a2e', '#080612'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            {/* Glows — rainbow scatter or single-accent */}
+            {show.rainbowMode ? (
+              <>
+                <View style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: '#9B2FC920' }} />
+                <View style={{ position: 'absolute', top: -30, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: '#FF202018' }} />
+                <View style={{ position: 'absolute', bottom: -50, right: 30, width: 180, height: 180, borderRadius: 90, backgroundColor: '#1A66FF18' }} />
+                <View style={{ position: 'absolute', bottom: -30, left: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: '#00B34014' }} />
+              </>
+            ) : (
+              <>
+                <View style={{ position: 'absolute', top: -70, right: -70, width: 220, height: 220, borderRadius: 110, backgroundColor: `${red}1c` }} />
+                <View style={{ position: 'absolute', bottom: -50, left: -50, width: 160, height: 160, borderRadius: 80, backgroundColor: `${red}0e` }} />
+              </>
+            )}
+
+            {/* Minimize button — top left */}
+            <TouchableOpacity
+              onPress={() => setCollapsed(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{
+                position: 'absolute', top: 12, left: 12,
+                backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 6,
+                padding: 5,
+              }}
+            >
+              <Ionicons name="chevron-up-outline" size={13} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
+
+            {/* Date chip — top right */}
+            <View style={{
+              position: 'absolute', top: 14, right: 14,
+              backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.1)', borderRadius: 6,
+              paddingHorizontal: 8, paddingVertical: 4,
+            }}>
+              <Text style={{ fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: 0.5 }}>
+                {show.displayDate}
+              </Text>
+            </View>
+
+            {/* Hero: logo image for rainbowMode cards, otherwise text */}
+            {show.image && show.rainbowMode ? (
+              <Image
+                source={show.image}
+                style={{ width: 260, height: 130, marginBottom: 28 }}
+                contentFit="contain"
+              />
+            ) : (
+              <View style={{ alignItems: 'center', marginBottom: 28 }}>
+                <Text style={{ fontFamily: 'Syne', fontSize: 40, fontWeight: '900', letterSpacing: -1, lineHeight: 44, textAlign: 'center' }}>
+                  {show.line1.split('').map((char, i, arr) => {
+                    const c = show.rainbowMode ? rainbowCharColor(i, arr.length) : flagCharColor(i, arr.length, red);
+                    return <Text key={i} style={{ color: c, textShadowColor: c, textShadowRadius: 16, textShadowOffset: { width: 0, height: 0 } }}>{char}</Text>;
+                  })}
+                </Text>
+                <Text style={{ fontFamily: 'Syne', fontSize: 40, fontWeight: '900', letterSpacing: -1, lineHeight: 44, textAlign: 'center' }}>
+                  {show.line2.split('').map((char, i, arr) => {
+                    const c = show.rainbowMode ? rainbowCharColor(i, arr.length) : flagCharColor(i, arr.length, red);
+                    return <Text key={i} style={{ color: c, textShadowColor: c, textShadowRadius: 16, textShadowOffset: { width: 0, height: 0 } }}>{char}</Text>;
+                  })}
+                </Text>
+              </View>
+            )}
+
+            {show.tagline && (
+              <Text style={{
+                position: 'absolute', bottom: 14, left: 0, right: 0,
+                textAlign: 'center', paddingHorizontal: 20,
+                fontFamily: 'Syne', fontSize: 12, fontWeight: '800', letterSpacing: 1,
+              }}>
+                {show.rainbowMode
+                  ? show.tagline.toUpperCase().split('').map((char, i, arr) => (
+                      <Text key={i} style={{ color: rainbowCharColor(i, arr.length) }}>{char}</Text>
+                    ))
+                  : <Text style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.55)' }}>{show.tagline}</Text>
+                }
+              </Text>
+            )}
+
+            {/* Bottom separator — rainbow stripe or accent */}
+            <LinearGradient
+              colors={show.rainbowMode
+                ? ['#FF2020', '#FF8C00', '#FFE000', '#00B340', '#1A66FF', '#9B2FC9'] as any
+                : ['transparent', `${red}35`, 'transparent'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: show.rainbowMode ? 3 : 1 }}
+            />
+          </View>
+        ) : (
+          // ── Photo card ─────────────────────────────────────────────
+          <>
+            <Image source={show.image} style={StyleSheet.absoluteFill} contentFit="cover" />
+            {/* Minimize button */}
+            <TouchableOpacity
+              onPress={() => setCollapsed(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{ position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 6, padding: 5 }}
+            >
+              <Ionicons name="chevron-up-outline" size={13} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
+            {/* Bottom fade — heavy so text reads */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.72)', 'rgba(0,0,0,0.95)'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+              style={[StyleSheet.absoluteFill, { top: '25%' }]}
+            />
+            {/* Band name at bottom of photo */}
+            <View style={sp.nameBlock}>
+              <Text style={sp.nameLine1}>
+                {show.line1.split('').map((char, i, arr) => (
+                  <Text key={i} style={{ color: flagCharColor(i, arr.length, red) }}>{char}</Text>
+                ))}
+              </Text>
+              <Text style={sp.nameLine2}>
+                {show.line2.split('').map((char, i, arr) => (
+                  <Text key={i} style={{ color: flagCharColor(i, arr.length, red) }}>{char}</Text>
+                ))}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Body */}
@@ -237,8 +464,33 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
           )}
         </View>
 
-        {/* Bio */}
-        {show.bio && <Text style={sp.bio}>{show.bio}</Text>}
+        {/* Bio or highlights list */}
+        {show.highlights ? (
+          <View style={{ gap: 4 }}>
+            {show.highlights.filter(h => {
+              const m = h.match(/^(\w+)\s+(\d+)/);
+              if (!m) return true;
+              const today = new Date(); today.setHours(0, 0, 0, 0);
+              const d = new Date(`${m[1]} ${m[2]}, ${today.getFullYear()}`);
+              return isNaN(d.getTime()) || d >= today;
+            }).map((h, i) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: red, lineHeight: 19, marginTop: 0 }}>·</Text>
+                <Text style={[sp.bio, { flex: 1, fontSize: 12, lineHeight: 19 }]}>{h}</Text>
+              </View>
+            ))}
+          </View>
+        ) : show.bio ? (
+          <Text style={sp.bio}>{show.bio}</Text>
+        ) : null}
+
+        {/* Footer scroll cue */}
+        {show.footerNote && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)', paddingTop: 10 }}>
+            <Text style={{ fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.3 }}>{show.footerNote}</Text>
+            <Ionicons name="chevron-down-outline" size={11} color="rgba(255,255,255,0.3)" />
+          </View>
+        )}
 
         {/* CTAs */}
         <View style={sp.ctaRow}>
@@ -248,8 +500,8 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
               activeOpacity={0.75}
               style={[sp.ctaBtn, { backgroundColor: `${red}18`, borderColor: `${red}44`, flex: 1 }]}
             >
-              <Ionicons name="musical-notes-outline" size={13} color={red} />
-              <Text style={[sp.ctaText, { color: red }]}>Bandcamp</Text>
+              <Ionicons name={show.ctaLabel ? 'heart-outline' : 'musical-notes-outline'} size={13} color={red} />
+              <Text style={[sp.ctaText, { color: red }]}>{show.ctaLabel ?? 'Bandcamp'}</Text>
             </TouchableOpacity>
           )}
           {show.youtubeLink && (
@@ -269,7 +521,7 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
 }
 
 const sp = StyleSheet.create({
-  card:       { backgroundColor: dark.surface, borderWidth: 1, borderColor: 'rgba(204,20,20,0.25)', borderRadius: 18, overflow: 'hidden', marginBottom: 12 },
+  card:       { backgroundColor: dark.surface, borderWidth: 1, borderRadius: 18, overflow: 'hidden', marginBottom: 12 },
   photoWrap:  { height: 240, position: 'relative', justifyContent: 'flex-end', overflow: 'hidden' },
   featPill:   { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   featPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
@@ -332,7 +584,7 @@ function FeaturedCard({ event }: { event: EventItem }) {
             </View>
           </View>
           <View style={feat.body}>
-            <Text style={feat.title} numberOfLines={2}>{event.title}</Text>
+            <Text style={feat.title}>{event.title}</Text>
             {event.location ? (
               <View style={feat.venueRow}>
                 <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
@@ -343,21 +595,36 @@ function FeaturedCard({ event }: { event: EventItem }) {
         </>
       ) : (
         <>
-          {/* No-image banner — compact, like Top Story card */}
-          <View style={feat.banner}>
+          {/* No-image banner — venue photo or fallback city photo */}
+          <View style={feat.header}>
+            <Image
+              source={
+                event.location?.includes('Labyrinth')
+                  ? (Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'))
+                  : require('../assets/jamestown.jpg')
+              }
+              style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
+              contentFit="cover"
+            />
             <LinearGradient
-              colors={['rgba(12,22,48,0.98)', 'rgba(6,12,30,0.99)'] as any}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              colors={['rgba(0,0,0,0.35)', 'transparent', 'rgba(0,0,0,0.55)'] as any}
+              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
             <View style={[feat.accentBar, { backgroundColor: color }]} />
-            <Text style={feat.watermark}>{event.category.toUpperCase()}</Text>
-            <Text style={feat.bannerMeta}>
-              {date}{time ? `  ·  ${time}` : ''}
-            </Text>
+            <View style={feat.topRow}>
+              <View style={feat.pill}>
+                <Text style={feat.pillText}>{date}</Text>
+              </View>
+              {time ? (
+                <View style={feat.pill}>
+                  <Text style={feat.pillText}>{time}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
           <View style={feat.body}>
-            <Text style={feat.title} numberOfLines={2}>{event.title}</Text>
+            <Text style={feat.title}>{event.title}</Text>
             {event.location ? (
               <View style={feat.venueRow}>
                 <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
@@ -451,18 +718,21 @@ function EventCard({ event }: { event: EventItem }) {
         {clock ? (
           <View style={ec.timeCol}>
             <Text style={[ec.timeAmpm, { color: `${color}99` }]}>{ampm}</Text>
-            <Text style={[ec.timeClock, { color }]}>{clock}</Text>
+            <Text style={[ec.timeClock, { color }]} numberOfLines={1} adjustsFontSizeToFit>{clock}</Text>
           </View>
         ) : <View style={ec.timeCol} />}
 
         {/* Content */}
         <View style={ec.body}>
-          <Text style={ec.title} numberOfLines={2}>{event.title}</Text>
+          <Text style={ec.title}>{event.title}</Text>
           {event.location ? (
             <View style={ec.venueRow}>
               <Ionicons name="location-outline" size={11} color="rgba(255,255,255,0.3)" />
-              <Text style={ec.venue} numberOfLines={1}>{event.location}</Text>
+              <Text style={ec.venue} numberOfLines={2}>{event.location}</Text>
             </View>
+          ) : null}
+          {event.note ? (
+            <Text style={ec.note} numberOfLines={1}>{event.note}</Text>
           ) : null}
           <Text style={[ec.category, { color }]}>{event.category.toUpperCase()}</Text>
         </View>
@@ -478,13 +748,14 @@ const ec = StyleSheet.create({
   },
   bar:      { width: 3, flexShrink: 0 },
   inner:    { flexDirection: 'row', gap: 12, padding: 12, flex: 1, alignItems: 'flex-start' },
-  timeCol:  { width: 40, flexShrink: 0, alignItems: 'center', paddingTop: 2 },
+  timeCol:  { width: 44, flexShrink: 0, alignItems: 'center', paddingTop: 2 },
   timeAmpm: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
   timeClock:{ fontFamily: 'Syne', fontSize: 15, fontWeight: '700', lineHeight: 18 },
   body:     { flex: 1, gap: 4 },
   title:    { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.2, lineHeight: 20 },
   venueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   venue:    { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)', flex: 1 },
+  note:     { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(52,211,153,0.7)', letterSpacing: 0.1 },
   category: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
 });
 
@@ -503,15 +774,31 @@ export default function EventsScreen() {
   }
 
   const now = new Date();
-  const upcoming = events.filter(e => new Date(e.startDate) >= now);
+  const skunksHomeEvents: EventItem[] = SKUNKS_SCHEDULE
+    .filter(g => g.isHome && new Date(skunksTimeToISO(g.date, g.time)) >= now)
+    .map(g => ({
+      title: `Tarp Skunks vs. ${g.opponent}`,
+      startDate: skunksTimeToISO(g.date, g.time),
+      endDate: skunksTimeToISO(g.date, g.time),
+      location: g.promotion ? `Diethrick Park · ${g.promotion}` : 'Diethrick Park',
+      category: 'Baseball',
+      tags: ['tarp-skunks', 'pgcbl'],
+      link: 'https://tarp-skunks-2026.vercel.app/',
+    } as EventItem));
+  const upcoming = [
+    ...events.filter(e => new Date(e.startDate) >= now),
+    ...skunksHomeEvents,
+  ].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   const monthFilters = useMemo(() => buildMonthFilters(), []);
   const eventMonths = useMemo(() => new Set(upcoming.map(e => getEventMonth(e.startDate))), [upcoming]);
 
+  const showPride = new Date('2026-06-14T23:59:00') > now;
   const FILTERS: { key: FilterKey; label: string }[] = [
     { key: 'all',     label: 'All'          },
     { key: 'weekend', label: 'This Weekend' },
     { key: 'week',    label: 'This Week'    },
+    ...(showPride ? [{ key: 'pride' as FilterKey, label: 'Pride' }] : []),
     ...monthFilters,
   ];
 
@@ -526,6 +813,11 @@ export default function EventsScreen() {
       } else if (key === 'week') {
         const [start, end] = getWeekRange();
         result = upcoming.filter(e => { const d = new Date(e.startDate); return d >= start && d <= end; });
+      } else if (key === 'pride') {
+        result = upcoming.filter(e =>
+          /pride/i.test(e.category) ||
+          (e.tags && e.tags.some(t => /pride/i.test(t)))
+        );
       } else {
         result = upcoming.filter(e => getEventMonth(e.startDate) === key);
       }
@@ -575,7 +867,7 @@ export default function EventsScreen() {
         >
           {FILTERS.map(f => {
             const active = f.key === activeFilter;
-            const hasEvents = f.key === 'all' || f.key === 'weekend' || f.key === 'week' || eventMonths.has(f.key);
+            const hasEvents = f.key === 'all' || f.key === 'weekend' || f.key === 'week' || f.key === 'pride' || eventMonths.has(f.key);
             return (
               <TouchableOpacity
                 key={f.key}

@@ -2,16 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image,
   TouchableOpacity, Animated, Easing, Platform, RefreshControl,
+  FlatList,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../lib/ThemeContext';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
-import { fetchWeather, WeatherData } from '../services/weather';
+import { fetchWeather, WeatherData, WeatherAlert } from '../services/weather';
 import { EventItem, NewsItem } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
+import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { openLink } from '../lib/openLink';
@@ -80,7 +83,6 @@ function LiveDot({ color }: { color: string }) {
   return <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, opacity: pulse }} />;
 }
 
-// Returns the next upcoming event (any day)
 function getNextEvent(events: EventItem[]): EventItem | null {
   const now = new Date();
   return events.find(e => new Date(e.startDate) >= now) ?? null;
@@ -145,6 +147,15 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const { radioPlaying, radioLoading, nowPlaying, toggleRadio } = useRadio();
   const [cdirExpanded, setCdirExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [widgetBanner, setWidgetBanner] = useState(false);
+  const [alertExpanded, setAlertExpanded] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    AsyncStorage.getItem('widget_promo_shown').then(v => {
+      if (!v) setWidgetBanner(true);
+    });
+  }, []);
   const civic = useCivic();
 
   const dateBadge = getDateBadge();
@@ -192,7 +203,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   // School delays/closings — scan news for delay keywords, show within school-year months (Sep–Jun)
   const schoolMonth = (() => { const m = new Date().getMonth() + 1; return m >= 9 || m <= 6; })();
   const DELAY_PATTERN = /\b(delay|delayed|closing|closed|cancel|cancellation|2.hour)\b/i;
-  const SCHOOL_POLICY_PATTERN = /\b(budget|mandate|bill|legislation|law|nys|state|federal|senate|assembly|congress|electric|ev|bpu|utility|utilities)\b/i;
+  const SCHOOL_POLICY_PATTERN = /\b(budget|mandate|bill|legislation|law|nys|state|federal|senate|assembly|congress|electric|ev|bpu|utility|utilities|homeless|hotel|shelter|housing)\b/i;
   const schoolAlert = schoolMonth
     ? civic.news.find(n => DELAY_PATTERN.test(n.title) && /\b(school|district|jamestown|chautauqua)\b/i.test(n.title) && !SCHOOL_POLICY_PATTERN.test(n.title))
     : null;
@@ -204,7 +215,26 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     !CRIME_PATTERN.test(n.title)
   ) ?? null;
   const topStory: NewsItem | null = topStoryCandidate ?? null;
-  const weekendEvent = getNextEvent(civic.events);
+  const skunksAsEvents: EventItem[] = SKUNKS_SCHEDULE
+    .filter(g => g.isHome)
+    .map(g => {
+      const [timeStr, ampm] = g.time.split(' ');
+      const [h, m] = timeStr.split(':').map(Number);
+      let hours = h;
+      if (ampm === 'PM' && h !== 12) hours += 12;
+      if (ampm === 'AM' && h === 12) hours = 0;
+      const iso = `${g.date}T${String(hours).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+      return {
+        title: `Tarp Skunks vs. ${g.opponent}`,
+        startDate: iso, endDate: iso,
+        location: g.promotion ? `Diethrick Park · ${g.promotion}` : 'Diethrick Park',
+        category: 'Baseball', tags: ['tarp-skunks'],
+        link: 'https://tarp-skunks-2026.vercel.app/',
+      } as EventItem;
+    });
+  const allUpcoming = [...civic.events, ...skunksAsEvents]
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  const weekendEvent = getNextEvent(allUpcoming);
 
   // Simplify recycling material name — strip parenthetical, shorten known long names
   const recyclingRaw = recycling.thisWeek.material;
@@ -272,6 +302,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </TouchableOpacity>
       )}
 
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -287,9 +318,39 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       >
 
         {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
-        <View style={[styles.card, glassWeb]}>
+        <View style={[styles.card, glassWeb, { minHeight: 160 }]}>
           {weather ? (
             <>
+              {(weather.alerts ?? []).length > 0 && (() => {
+                const alert = weather.alerts![0];
+                const sevColor = alert.severity === 'extreme' || alert.severity === 'severe'
+                  ? '#ef4444' : alert.severity === 'moderate' ? '#f97316' : '#eab308';
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() => setAlertExpanded(v => !v)}
+                    style={[styles.alertBanner, { borderColor: `${sevColor}40`, backgroundColor: `${sevColor}14` }]}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}>
+                      <Text style={{ fontSize: 13 }}>⚠️</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.alertName, { color: sevColor }]} numberOfLines={1}>{alert.name}</Text>
+                        {alertExpanded && alert.summary ? (
+                          <Text style={styles.alertSummary}>{alert.summary}</Text>
+                        ) : null}
+                        {alertExpanded && alert.expires ? (
+                          <Text style={[styles.alertSummary, { color: sevColor, opacity: 0.7 }]}>Until {alert.expires}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={{ color: sevColor, fontSize: 10, opacity: 0.7 }}>{alertExpanded ? '▲' : '▼'}</Text>
+                    </View>
+                    {(weather.alerts!.length > 1) && !alertExpanded && (
+                      <Text style={[styles.alertSummary, { marginTop: 2 }]}>+{weather.alerts!.length - 1} more alert{weather.alerts!.length > 2 ? 's' : ''}</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })()}
+
               <View style={styles.weatherTop}>
                 <View>
                   <Text style={styles.weatherTemp}>{weather.temp}</Text>
@@ -297,11 +358,64 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   <Text style={styles.weatherInline}>
                     H {weather.high} · L {weather.low}
                     {weather.precip !== '0%' ? ` · Rain ${weather.precip}` : ''}
-                    {weather.precipAt && parseInt(weather.precip) >= 30 ? ` · ~${weather.precipAt}` : ''}
+                    {weather.nextHour
+                      ? ` · ${weather.nextHour}`
+                      : weather.precipAt && parseInt(weather.precip) >= 30
+                        ? ` · ~${weather.precipAt}`
+                        : ''}
                   </Text>
                 </View>
                 <Text style={styles.weatherIcon}>{weather.icon}</Text>
               </View>
+
+              <View style={styles.weatherChips}>
+                {weather.uvIndex != null && (
+                  <View style={styles.weatherChip}>
+                    <Text style={styles.weatherChipLabel}>UV</Text>
+                    <Text style={styles.weatherChipValue}>{weather.uvIndex} · {weather.uvLabel}</Text>
+                  </View>
+                )}
+                <View style={styles.weatherChip}>
+                  <Text style={styles.weatherChipLabel}>Wind</Text>
+                  <Text style={styles.weatherChipValue}>
+                    {weather.windDir ? `${weather.windDir} ` : ''}{weather.wind}
+                    {weather.windGust ? ` gusts ${weather.windGust}` : ''}
+                  </Text>
+                </View>
+                {weather.feelsLike && weather.feelsLike !== weather.temp && (
+                  <View style={styles.weatherChip}>
+                    <Text style={styles.weatherChipLabel}>Feels</Text>
+                    <Text style={styles.weatherChipValue}>{weather.feelsLike}</Text>
+                  </View>
+                )}
+                {weather.humidity && (
+                  <View style={styles.weatherChip}>
+                    <Text style={styles.weatherChipLabel}>Humidity</Text>
+                    <Text style={styles.weatherChipValue}>{weather.humidity}</Text>
+                  </View>
+                )}
+              </View>
+
+              {(weather.hourly ?? []).length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.hourlyScroll}
+                  contentContainerStyle={{ gap: 4 }}
+                >
+                  {weather.hourly!.map((slot, i) => (
+                    <View key={i} style={styles.hourlySlot}>
+                      <Text style={styles.hourlyTime}>{slot.time}</Text>
+                      <Text style={styles.hourlyIcon}>{slot.icon}</Text>
+                      <Text style={styles.hourlyTemp}>{slot.temp}°</Text>
+                      {slot.precip >= 20 && (
+                        <Text style={styles.hourlyPrecip}>{slot.precip}%</Text>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+
               {weather.forecast && weather.forecast.length > 1 && (
                 <View style={styles.forecastStrip}>
                   {weather.forecast.map((day, i) => {
@@ -310,12 +424,24 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     return (
                       <View key={day.date} style={styles.forecastDay}>
                         <Text style={styles.forecastLabel}>{label}</Text>
-                        <Text style={styles.forecastIcon}>{i === 0 ? weather.icon : day.icon}</Text>
+                        <Text style={styles.forecastIcon}>{i === 0 ? weather!.icon : day.icon}</Text>
                         <Text style={styles.forecastHigh}>{day.high}°</Text>
                         <Text style={styles.forecastLow}>{day.low}°</Text>
                       </View>
                     );
                   })}
+                </View>
+              )}
+
+              {(weather.sunrise || weather.sunset) && (
+                <View style={styles.sunRow}>
+                  {weather.sunrise && (
+                    <Text style={styles.sunText}>☀️ {weather.sunrise}</Text>
+                  )}
+                  {weather.sunset && (
+                    <Text style={styles.sunText}>🌙 {weather.sunset}</Text>
+                  )}
+                  <Text style={styles.sunAttrib}>Apple Weather™</Text>
                 </View>
               )}
             </>
@@ -327,6 +453,25 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </View>
           )}
         </View>
+
+        {widgetBanner && (
+          <View style={styles.widgetBanner}>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={styles.widgetBannerTitle}>Add widgets to your Home Screen</Text>
+              <Text style={styles.widgetBannerBody}>Get parking and recycling info at a glance — no need to open the app. Long-press your Home Screen → tap + to browse widgets.</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                AsyncStorage.setItem('widget_promo_shown', '1');
+                setWidgetBanner(false);
+              }}
+              style={styles.widgetBannerDismiss}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, lineHeight: 16 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionLabel, { color: theme.acc }]}>Today in Jamestown</Text>
@@ -341,7 +486,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.todayCategoryLabel, { color: dark.category.recycling }]}>Recycling</Text>
-                {civic.loading ? (
+                {recycling.thisWeek.material === '—' ? (
                   <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="52,211,153" />
                 ) : (
                   <>
@@ -354,12 +499,12 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   </>
                 )}
               </View>
-              {!civic.loading && (
+              {recycling.thisWeek.material !== '—' && (
                 <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>{recycling.thisWeek.dateRange || '—'}</Text>
               )}
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
             </LinearGradient>
-            {!civic.loading && (recycling.holidayDelay || recycling.upcomingHoliday) && (
+            {(recycling.holidayDelay || recycling.upcomingHoliday) && (
               <LinearGradient
                 colors={['rgba(178,34,52,0.35)', 'rgba(30,30,60,0.6)', 'rgba(60,59,110,0.35)']}
                 start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
@@ -386,25 +531,19 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.todayCategoryLabel, { color: dark.category.parking }]}>Parking</Text>
-                {civic.loading ? (
-                  <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="34,211,238" />
-                ) : (
-                  <>
-                    <Text style={styles.todayCardTitle}>
-                      {parking.side === 'EVEN' ? 'Even Side' : parking.side === 'ODD' ? 'Odd Side' : '—'}
-                    </Text>
-                    <Text style={styles.todayCardSub}>
-                      {parking.side === 'EVEN' ? 'Park even-numbered' : parking.side === 'ODD' ? 'Park odd-numbered' : 'Check sign'}
-                    </Text>
-                  </>
-                )}
+                <>
+                  <Text style={styles.todayCardTitle}>
+                    {parking.side === 'EVEN' ? 'Even Side' : parking.side === 'ODD' ? 'Odd Side' : '—'}
+                  </Text>
+                  <Text style={styles.todayCardSub}>
+                    {parking.side === 'EVEN' ? 'Park even-numbered' : parking.side === 'ODD' ? 'Park odd-numbered' : 'Check sign'}
+                  </Text>
+                </>
               </View>
-              {!civic.loading && (
-                <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
-                  {parking.mode === 'daily' ? 'Daily' : 'All month'}
-                  {getParkingModeNote() ? `\n${getParkingModeNote()}` : ''}
-                </Text>
-              )}
+              <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
+                {parking.mode === 'daily' ? 'Daily' : 'All month'}
+                {getParkingModeNote() ? `\n${getParkingModeNote()}` : ''}
+              </Text>
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
             </LinearGradient>
           </TouchableOpacity>
@@ -432,20 +571,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               )}
             </View>
 
-            {civic.loading ? (
-              // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
-              <View style={[styles.card, glassWeb, { gap: 10 }]}>
-                <SkeletonPulse width="100%" height={80} borderRadius={8} accRGB={theme.accRGB} />
-                <SkeletonPulse width="90%" height={18} borderRadius={4} accRGB={theme.accRGB} />
-                <SkeletonPulse width="50%" height={12} borderRadius={4} accRGB={theme.accRGB} />
-              </View>
-            ) : topStory ? (() => {
-              const { color: sColor, label: sLabel } = storyMeta(topStory.title, topStory.source ?? '');
+            {/* Hero image always renders immediately — text overlays once news loads */}
+            {(() => {
+              const sColor = topStory ? storyMeta(topStory.title, topStory.source ?? '').color : theme.acc;
               return (
                 <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => topStory.link ? openLink(topStory.link) : null}
-                  // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
+                  activeOpacity={civic.loading ? 1 : 0.85}
+                  onPress={() => !civic.loading && topStory?.link ? openLink(topStory.link) : null}
+                  // @ts-ignore
                   style={[styles.heroCard, glassWeb]}
                 >
                   <Image
@@ -460,17 +593,28 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
-                  <View style={styles.heroContent}>
-                    <Text style={styles.heroBannerMeta} numberOfLines={1}>
-                      {relativeTime(topStory.pubDate)}
-                    </Text>
-                    <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
-                    <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'} · {relativeTime(topStory.pubDate)}</Text>
-                  </View>
+                  {civic.loading ? (
+                    <View style={[styles.heroContent, { gap: 8 }]}>
+                      <SkeletonPulse width="40%" height={11} borderRadius={3} accRGB={theme.accRGB} />
+                      <SkeletonPulse width="95%" height={18} borderRadius={4} accRGB={theme.accRGB} />
+                      <SkeletonPulse width="80%" height={18} borderRadius={4} accRGB={theme.accRGB} />
+                      <SkeletonPulse width="45%" height={11} borderRadius={3} accRGB={theme.accRGB} />
+                    </View>
+                  ) : topStory ? (
+                    <>
+                      <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
+                      <View style={styles.heroContent}>
+                        <Text style={styles.heroBannerMeta} numberOfLines={1}>
+                          {relativeTime(topStory.pubDate)}
+                        </Text>
+                        <Text style={styles.heroTitle} numberOfLines={3}>{topStory.title}</Text>
+                        <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'} · {relativeTime(topStory.pubDate)}</Text>
+                      </View>
+                    </>
+                  ) : null}
                 </TouchableOpacity>
               );
-            })() : null}
+            })()}
           </>
         )}
 
@@ -727,17 +871,43 @@ const styles = StyleSheet.create({
 
   card: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, padding: 18, overflow: 'hidden' },
 
+  alertBanner: { borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 14, flexDirection: 'column', gap: 2 },
+  alertName: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700', letterSpacing: 0.2 },
+  alertSummary: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3, lineHeight: 16 },
+
   weatherTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
   weatherTemp: { fontFamily: 'Syne', fontSize: 56, fontWeight: '700', color: '#fff', lineHeight: 60, letterSpacing: -1 },
   weatherCondition: { fontFamily: 'Outfit', fontSize: 14, fontWeight: '600', color: '#34d399', marginTop: 6 },
   weatherInline: { fontFamily: 'Outfit', fontSize: 12, color: dark.text.subtle, marginTop: 3 },
   weatherIcon: { fontSize: 52, marginTop: 4 },
-  forecastStrip: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(30,41,59,0.6)', paddingTop: 14, marginTop: 16 },
+
+  weatherChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
+  weatherChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' },
+  weatherChipLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.8, color: dark.text.muted, textTransform: 'uppercase' },
+  weatherChipValue: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.70)', fontWeight: '500' },
+
+  hourlyScroll: { marginTop: 14, marginHorizontal: -18 },
+  hourlySlot: { alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 8, minWidth: 52, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 10 },
+  hourlyTime: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.4, color: dark.text.muted, textTransform: 'uppercase' },
+  hourlyIcon: { fontSize: 18 },
+  hourlyTemp: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff' },
+  hourlyPrecip: { fontFamily: 'Outfit', fontSize: 9, color: '#60a5fa', fontWeight: '600' },
+
+  forecastStrip: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(30,41,59,0.6)', paddingTop: 14, marginTop: 14 },
   forecastDay: { flex: 1, alignItems: 'center', gap: 3 },
   forecastLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: dark.text.subtle },
   forecastIcon: { fontSize: 18 },
   forecastHigh: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#34d399' },
   forecastLow: { fontFamily: 'Outfit', fontSize: 11, color: '#475569' },
+
+  sunRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(30,41,59,0.6)' },
+  sunText: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle },
+  sunAttrib: { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.20)', marginLeft: 'auto' },
+
+  widgetBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: 'rgba(0,212,255,0.08)', borderWidth: 1, borderColor: 'rgba(0,212,255,0.18)', borderRadius: 14, padding: 14, marginTop: 12 },
+  widgetBannerTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#00d4ff' },
+  widgetBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle, lineHeight: 16, marginTop: 2 },
+  widgetBannerDismiss: { paddingTop: 2 },
 
   todayGrid: { flexDirection: 'column', marginHorizontal: -16 },
   todayCard: { paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
@@ -757,7 +927,7 @@ const styles = StyleSheet.create({
   heroAccentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2, zIndex: 2 },
   heroContent: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, gap: 4, zIndex: 2 },
   heroBannerMeta: { fontFamily: 'DMSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.50)' },
-  heroTitle: { fontFamily: 'Editorial', fontSize: 17, color: '#fff', lineHeight: 23 },
+  heroTitle: { fontFamily: 'Editorial', fontSize: 15, color: '#fff', lineHeight: 21 },
   heroMeta: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
 
   eventCard: { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden', flexDirection: 'row', alignItems: 'stretch' },

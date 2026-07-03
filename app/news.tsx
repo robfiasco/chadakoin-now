@@ -21,10 +21,10 @@ const HERO_PHOTOS = [
   require('../assets/JTNY2.png'),
   require('../assets/JTNY3.png'),
   require('../assets/JTNY4.png'),
+  require('../assets/JTNY5.png'),
 ];
 const HERO_PHOTO = HERO_PHOTOS[Math.floor(Math.random() * HERO_PHOTOS.length)];
 
-// ── Category derivation ───────────────────────────────────────────
 type NewsCategory = 'Music' | 'City' | 'State' | 'JCC' | 'Education' | 'Community' | 'Breaking' | 'Local';
 
 function deriveCategory(title: string, source: string): NewsCategory {
@@ -55,7 +55,6 @@ const CATEGORY_COLORS: Record<NewsCategory, string> = {
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-// Per-category banner: gradient stops, bg icon, accent bar color
 const CATEGORY_BANNERS: Record<NewsCategory, {
   grad: [string, string, string];
   gStart: { x: number; y: number };
@@ -105,7 +104,6 @@ const CATEGORY_BANNERS: Record<NewsCategory, {
   },
 };
 
-// ── Time helpers ──────────────────────────────────────────────────
 function relativeTime(pubDate: string): string {
   if (!pubDate) return '';
   const diff = Date.now() - new Date(pubDate).getTime();
@@ -118,7 +116,7 @@ function relativeTime(pubDate: string): string {
 }
 
 // Crime/incident keywords — all matching stories go to Police Blotter (shown last, collapsed).
-export const CRIME_PATTERN = /\b(arrest|arrested|arraigned|charged|indicted|convicted|sentence|prison|jail|fugitive|wanted|probation|appearance ticket|unlawful|trespass|harassment|dispute|domestic|assault|robbery|burglary|larceny|shoplifting|vandalism|graffiti|disorderly|drunken|dwi|dui|possession|meth|drug|gun|gunshot|shot|shooting|stabbing|homicide|murder|killed|fatal|manhunt|missing person|amber alert|sex crime|condemn|police|crime)\b/i;
+export const CRIME_PATTERN = /\b(arrest|arrested|arraigned|charged|indicted|convicted|sentenc|prison|jail|fugitive|wanted|probation|appearance ticket|unlawful|trespass|harassment|dispute|domestic|assault|robbery|burglary|larceny|shoplifting|vandalism|graffiti|disorderly|drunken|dwi|dui|possession|meth|drug|gun|gunshot|shot|shooting|stabbing|homicide|manslaughter|murder|killed|fatal|manhunt|missing person|amber alert|sex crime|condemn|police|crime|verdict|guilty|plea|felony|misdemeanor)\b/i;
 
 function isBlotter(item: NewsItem): boolean {
   return CRIME_PATTERN.test(item.title);
@@ -160,7 +158,6 @@ function bucketItems(items: NewsItem[]): Bucket[] {
   return result;
 }
 
-// ── Hero card ─────────────────────────────────────────────────────
 function shareItem(item: NewsItem) {
   Share.share({
     title: item.title,
@@ -188,7 +185,6 @@ function HeroCard({ item }: { item: NewsItem }) {
       />
       <View style={[hero.accentBar, { backgroundColor: bar }]} />
 
-      {/* TOP STORY badge pinned top-left */}
       <View style={hero.badgeWrap}>
         <View style={[hero.topBadge, { borderColor: `${bar}80`, backgroundColor: 'rgba(0,0,0,0.55)' }]}>
           <View style={[hero.badgeDot, { backgroundColor: bar }]} />
@@ -196,7 +192,6 @@ function HeroCard({ item }: { item: NewsItem }) {
         </View>
       </View>
 
-      {/* Content pinned to bottom */}
       <View style={hero.content}>
         <Text style={hero.title} numberOfLines={3}>{item.title}</Text>
         {item.excerpt ? (
@@ -246,7 +241,7 @@ const hero = StyleSheet.create({
     fontFamily: 'DMSans_800ExtraBold', fontSize: 24, letterSpacing: 1,
   },
   content:{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, gap: 6, zIndex: 2 },
-  title:  { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 24 },
+  title:  { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 20 },
   excerpt:{ fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 19 },
   metaRow:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
   source: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
@@ -254,7 +249,6 @@ const hero = StyleSheet.create({
   time:   { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.35)' },
 });
 
-// ── Compact news row ──────────────────────────────────────────────
 function NewsRow({ item }: { item: NewsItem }) {
   const { theme } = useTheme();
   const category = deriveCategory(item.title, item.source ?? '');
@@ -273,13 +267,17 @@ function NewsRow({ item }: { item: NewsItem }) {
   );
 
   if (isWJTN) {
+    // Trim body to first paragraph to avoid showing entire radio bulletins
+    const firstPara = (item.excerpt ?? '').split(/\n\n+/)[0].trim();
+    const bodySnippet = firstPara.length > 280 ? firstPara.slice(0, 280).trimEnd() + '…' : firstPara;
+
     return (
       <View style={row.card}>
         <View style={[row.bar, { backgroundColor: color }]} />
         <View style={row.inner}>
           <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.72}>
             <View style={row.topRow}>
-              <Text style={row.title}>{item.title}</Text>
+              <Text style={row.title} numberOfLines={2}>{item.title}</Text>
               <Ionicons
                 name={expanded ? 'chevron-up' : 'chevron-down'}
                 size={16}
@@ -292,7 +290,7 @@ function NewsRow({ item }: { item: NewsItem }) {
 
           {expanded && (
             <View style={row.expandBody}>
-              <Text style={row.bodyText}>{item.excerpt}</Text>
+              <Text style={row.bodyText}>{bodySnippet}</Text>
               <TouchableOpacity
                 onPress={() => openLink(item.link)}
                 activeOpacity={0.7}
@@ -349,7 +347,6 @@ const row = StyleSheet.create({
   sourceLinkText:{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
 });
 
-// ── Section header ────────────────────────────────────────────────
 function SectionHeader({ label, blotter, expanded, onToggle }: { label: string; blotter?: boolean; expanded?: boolean; onToggle?: () => void }) {
   const { theme } = useTheme();
   const color = blotter ? 'rgba(255,255,255,0.3)' : theme.acc;
@@ -383,7 +380,6 @@ const sec = StyleSheet.create({
   line:  { flex: 1, height: 1 },
 });
 
-// ── Screen ────────────────────────────────────────────────────────
 export default function NewsScreen() {
   const { theme } = useTheme();
   const civic = useCivic();

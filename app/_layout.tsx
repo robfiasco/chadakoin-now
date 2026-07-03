@@ -25,6 +25,7 @@ import {
   DMSans_700Bold,
   DMSans_800ExtraBold,
 } from '@expo-google-fonts/dm-sans';
+import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 
 // Screens imported as components so PagerView can render them natively
 import HomeScreen from './index';
@@ -116,7 +117,7 @@ function AppLayout() {
         ref={pagerRef}
         style={{ flex: 1 }}
         initialPage={0}
-        onPageSelected={(e) => setActivePage(e.nativeEvent.position)}
+        onPageSelected={(e: { nativeEvent: { position: number } }) => setActivePage(e.nativeEvent.position)}
         overdrag
       >
         <View key="home"   style={{ flex: 1 }}><HomeScreen onNavigateToTab={goToPage} /></View>
@@ -225,6 +226,7 @@ export default function RootLayout() {
     DMSans_600SemiBold,
     DMSans_700Bold,
     DMSans_800ExtraBold,
+    SpaceGrotesk_700Bold,
     // All three aliases point to DM Sans — single typeface throughout the app
     Syne: DMSans_700Bold,        // display headers, UI chrome
     Outfit: DMSans_500Medium,    // body text, labels, meta

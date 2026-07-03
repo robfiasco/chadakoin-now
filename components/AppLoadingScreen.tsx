@@ -1,23 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, StyleSheet, Platform, Dimensions } from 'react-native';
-import { THEMES } from '../lib/themes';
+import { View, Text, Animated, StyleSheet, Platform } from 'react-native';
 
-const TARGET_TITLE = 'CHADAKOIN NOW';
-const TARGET_SUB   = 'JAMESTOWN · NEW YORK';
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%&';
-const SCRAMBLE_STEPS = 32;
+const TARGET_TITLE_1 = 'CHADAKOIN';
+const TARGET_TITLE_2 = 'NOW';
+const TARGET_SUB     = 'JAMESTOWN · NEW YORK';
+const CHARS          = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%&';
+const PHASE1_STEPS = 22;  // CHADAKOIN resolves first
+const TOTAL_STEPS  = 33;  // then NOW resolves
 
-// Shown in rotation while waiting on slow networks so the screen doesn't look stuck.
-const WAITING_MESSAGES = [
-  'LOADING NEWS...',
-  'LOADING WEATHER...',
-  'LOADING SCORES...',
-  'LOADING EVENTS...',
-  'ALMOST THERE...',
+const PILL_MESSAGES = [
+  'Scanning local feeds...',
+  'Checking the weather...',
+  'Tuning in to Jamestown...',
+  'Loading city pulse...',
+  'Almost ready...',
 ];
 
-// Pick once per session — stable across re-renders
-const SESSION_THEME = THEMES[Math.floor(Math.random() * THEMES.length)];
+const CIRCLE     = 234;
+const MID_RING   = 272;
+const OUTER_RING = 314;
+const ARC_RING   = OUTER_RING + 10;
+
+// Glowing dot positions on outer ring (degrees from top, clockwise)
+const DOT_ANGLES = [35, 165, 258];
+const DOT_SIZE   = 11;
+
+function dotPos(angleDeg: number, r: number, size: number) {
+  const rad = (angleDeg - 90) * (Math.PI / 180);
+  return {
+    position: 'absolute' as const,
+    left:  r + r * Math.cos(rad) - size / 2,
+    top:   r + r * Math.sin(rad) - size / 2,
+    width: size,
+    height: size,
+  };
+}
 
 export function AppLoadingScreen({
   isAppReady = false,
@@ -26,182 +43,204 @@ export function AppLoadingScreen({
   isAppReady?: boolean;
   onFinished?: () => void;
 }) {
-  const theme = SESSION_THEME;
-
-  const [titleText, setTitleText]     = useState('');
-  const [subText, setSubText]         = useState('');
-  const [progress, setProgress]       = useState(0);
-  const [sequenceDone, setSequenceDone] = useState(false);
-  const [statusReady, setStatusReady] = useState(false);
-  const [waitingIdx, setWaitingIdx]   = useState(0);
+  const [title1, setTitle1]               = useState('');
+  const [title2, setTitle2]               = useState('');
+  const [subText, setSubText]             = useState('');
+  const [titleColor, setTitleColor]       = useState('#e8f6ff');
+  const [sequenceDone, setSequenceDone]   = useState(false);
+  const [pillIdx, setPillIdx]             = useState(0);
+  const [statusReady, setStatusReady]     = useState(false);
 
   const fadeAnim  = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim  = useRef(new Animated.Value(0.5)).current;
-  const sweepAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim  = useRef(new Animated.Value(0.4)).current;
+  const ringAnim  = useRef(new Animated.Value(0.2)).current;
+  const spinAnim  = useRef(new Animated.Value(0)).current;
+  const dotSpin   = useRef(new Animated.Value(0)).current;
+  const pillFade  = useRef(new Animated.Value(0)).current;
 
   const isWaiting = sequenceDone && !isAppReady;
 
-  // Glow pulse
+  // Ambient glow pulse
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(glowAnim, { toValue: 1,   duration: 2400, useNativeDriver: true }),
+      Animated.timing(glowAnim, { toValue: 0.3, duration: 2400, useNativeDriver: true }),
+    ])).start();
+  }, []);
+
+  // Outer ring pulse — offset phase from glow so they don't move in sync
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(ringAnim, { toValue: 0.55, duration: 1800, useNativeDriver: true }),
+      Animated.timing(ringAnim, { toValue: 0.15, duration: 1800, useNativeDriver: true }),
+    ])).start();
+  }, []);
+
+  // Spinning sweep arc
   useEffect(() => {
     Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1,   duration: 2200, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0.5, duration: 2200, useNativeDriver: true }),
-      ])
+      Animated.timing(spinAnim, { toValue: 1, duration: 3400, useNativeDriver: true })
     ).start();
   }, []);
 
-  // Text scramble
+  // Dot nodes orbit (very slow — ~20s per revolution)
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(dotSpin, { toValue: 1, duration: 20000, useNativeDriver: true })
+    ).start();
+  }, []);
+
+  // Pill fade in after scramble resolves
+  useEffect(() => {
+    if (!sequenceDone) return;
+    Animated.timing(pillFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  }, [sequenceDone]);
+
+  // Two-phase scramble: CHADAKOIN locks first, then NOW, then teal flash payoff
   useEffect(() => {
     let step = 0;
-    const interval = setInterval(() => {
-      const frac = step / SCRAMBLE_STEPS;
-      const scramble = (target: string) =>
-        target.split('').map((ch, idx) => {
-          if (ch === ' ' || ch === '·') return ch;
-          if (idx < frac * target.length) return target[idx];
-          return CHARS[Math.floor(Math.random() * CHARS.length)];
-        }).join('');
+    const rnd = () => CHARS[Math.floor(Math.random() * CHARS.length)];
+    const scramble = (target: string, frac: number) =>
+      target.split('').map((ch, idx) => {
+        if (ch === '·') return ch;
+        return idx < frac * target.length ? target[idx] : rnd();
+      }).join('');
 
-      setTitleText(scramble(TARGET_TITLE));
-      setSubText(scramble(TARGET_SUB));
-      setProgress(Math.min(100, frac * 100));
+    const interval = setInterval(() => {
+      // Phase 1: CHADAKOIN scrambles and locks; NOW hidden; subtitle scrambles
+      if (step <= PHASE1_STEPS) {
+        const f1 = step / PHASE1_STEPS;
+        setTitle1(scramble(TARGET_TITLE_1, f1));
+        setTitle2('');
+        setSubText(scramble(TARGET_SUB, step / TOTAL_STEPS));
+      }
+      // Phase 2: CHADAKOIN locked; NOW scrambles; subtitle finishes
+      else if (step <= TOTAL_STEPS) {
+        const f2 = (step - PHASE1_STEPS) / (TOTAL_STEPS - PHASE1_STEPS);
+        setTitle1(TARGET_TITLE_1);
+        setTitle2(scramble(TARGET_TITLE_2, f2));
+        setSubText(scramble(TARGET_SUB, step / TOTAL_STEPS));
+      }
+
       step++;
 
-      if (step > SCRAMBLE_STEPS) {
+      if (step > TOTAL_STEPS) {
         clearInterval(interval);
-        setTitleText(TARGET_TITLE);
+        setTitle1(TARGET_TITLE_1);
+        setTitle2(TARGET_TITLE_2);
         setSubText(TARGET_SUB);
-        setProgress(100);
-        setSequenceDone(true);
+
+        // Teal flash payoff — 3 quick pulses then settle to white
+        let flashes = 0;
+        const flash = setInterval(() => {
+          setTitleColor(flashes % 2 === 0 ? '#00e5ff' : '#e8f6ff');
+          flashes++;
+          if (flashes >= 6) {
+            clearInterval(flash);
+            setTitleColor('#e8f6ff');
+            setSequenceDone(true);
+          }
+        }, 110);
       }
-    }, 45);
+    }, 50);
     return () => clearInterval(interval);
   }, []);
 
-  // While waiting on data after scramble: sweep the bar and rotate status text
-  // so the screen reads as alive on slow connections.
+  // Cycle pill messages while waiting on data
   useEffect(() => {
     if (!isWaiting) return;
-    sweepAnim.setValue(0);
-    const loop = Animated.loop(
-      Animated.timing(sweepAnim, { toValue: 1, duration: 1400, useNativeDriver: true })
-    );
-    loop.start();
     const interval = setInterval(() => {
-      setWaitingIdx(i => (i + 1) % WAITING_MESSAGES.length);
-    }, 2000);
-    return () => {
-      loop.stop();
-      clearInterval(interval);
-    };
+      setPillIdx(i => (i + 1) % PILL_MESSAGES.length);
+    }, 2200);
+    return () => clearInterval(interval);
   }, [isWaiting]);
 
-  // Exit when both conditions met
+  // Exit sequence
   useEffect(() => {
     if (!sequenceDone || !isAppReady) return;
     setStatusReady(true);
-    const exit = setTimeout(() => {
+    const timer = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 0,    duration: 350, useNativeDriver: true }),
-        Animated.timing(scaleAnim, { toValue: 1.04, duration: 350, useNativeDriver: true }),
+        Animated.timing(fadeAnim,  { toValue: 0,    duration: 380, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1.04, duration: 380, useNativeDriver: true }),
       ]).start(() => onFinished?.());
-    }, 400);
-    return () => clearTimeout(exit);
+    }, 420);
+    return () => clearTimeout(timer);
   }, [sequenceDone, isAppReady]);
 
-  const { width } = Dimensions.get('window');
-  const barMaxWidth = Math.min(260, width * 0.62);
+  const spin   = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const dotRot = dotSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  const glowStyle = Platform.OS === 'web'
-    ? ({ boxShadow: `0 0 120px 60px rgba(${theme.accRGB},0.12)` } as any)
-    : { backgroundColor: `rgba(${theme.accRGB},0.05)` };
+  const pillText = statusReady ? 'Ready' : isWaiting ? PILL_MESSAGES[pillIdx] : 'Initializing...';
 
-  const titleStyle = Platform.OS === 'web'
-    ? ({ textShadow: `0 0 14px rgba(${theme.accRGB},0.35), 0 0 32px rgba(${theme.accRGB},0.18)` } as any)
+  const outerRingGlow = Platform.OS === 'web'
+    ? ({ boxShadow: '0 0 20px 5px rgba(0,210,235,0.28), inset 0 0 14px rgba(0,210,235,0.07)' } as any)
     : {};
-
-  const titleReadyStyle = Platform.OS === 'web'
-    ? ({ textShadow: `0 0 18px rgba(${theme.accRGB},0.7), 0 0 40px rgba(${theme.accRGB},0.35)` } as any)
+  const dotGlow = Platform.OS === 'web'
+    ? ({ boxShadow: '0 0 10px 5px rgba(0,218,255,0.65)' } as any)
     : {};
-
-  const statusReadyStyle = Platform.OS === 'web'
-    ? ({ textShadow: `0 0 10px rgba(${theme.accRGB},0.8)` } as any)
+  const arcGlow = Platform.OS === 'web'
+    ? ({ filter: 'drop-shadow(0 0 6px rgba(0,218,255,0.7))' } as any)
+    : {};
+  const pillGlow = Platform.OS === 'web'
+    ? ({ boxShadow: 'inset 0 0 20px rgba(0,200,230,0.04), 0 1px 0 rgba(255,255,255,0.06)' } as any)
+    : {};
+  const innerCircleWeb = Platform.OS === 'web'
+    ? ({ backdropFilter: 'blur(6px)' } as any)
     : {};
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: theme.bg, opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+    <Animated.View style={[
+      styles.container,
+      { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+    ]}>
 
-      {/* Subtle grid — web only */}
+      {/* Web: dot-grid background */}
       {Platform.OS === 'web' && (
-        <View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, styles.grid as any]}
-        />
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.webGrid as any]} />
       )}
 
-      {/* Radial glow */}
-      <Animated.View style={[styles.glow, glowStyle, { opacity: glowAnim }]} />
+      {/* Ambient glow behind circle */}
+      <Animated.View style={[styles.glow, { opacity: glowAnim }]} />
 
-      {/* Content */}
-      <View style={styles.content}>
+      {/* All rings centered on same point */}
+      <View style={styles.ringStack}>
 
-        {/* Title block */}
-        <View style={styles.titleBlock}>
-          <Text style={[styles.title, titleStyle, statusReady && { color: theme.acc, ...titleReadyStyle }]}>
-            {titleText || ' '}
-          </Text>
-          {!sequenceDone && (
-            <Text style={[styles.cursor, { color: `rgba(${theme.accRGB},0.7)` }]}>_</Text>
+        {/* Outer ring — pulses independently */}
+        <Animated.View style={[styles.outerRing, outerRingGlow, { opacity: ringAnim }]} />
+
+        {/* Mid ring (faint) */}
+        <View style={styles.midRing} />
+
+        {/* Spinning sweep arc */}
+        <Animated.View style={[styles.spinArc, arcGlow, { transform: [{ rotate: spin }] }]} />
+
+        {/* Dot nodes on outer ring — orbit slowly */}
+        <Animated.View style={[styles.dotLayer, { transform: [{ rotate: dotRot }] }]}>
+          {DOT_ANGLES.map((angle, i) => (
+            <View key={i} style={[styles.dot, dotPos(angle, OUTER_RING / 2, DOT_SIZE), dotGlow]} />
+          ))}
+        </Animated.View>
+
+        {/* Inner glass circle */}
+        <View style={[styles.innerCircle, innerCircleWeb]}>
+          {Platform.OS === 'web' && (
+            <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.meshOverlay as any]} />
           )}
-          <Text style={styles.subtitle}>{subText || ' '}</Text>
+          <Text style={[styles.titleLine1, { color: titleColor }]} numberOfLines={1}>{title1 || ' '}</Text>
+          <Text style={[styles.titleLine2, { color: titleColor }]} numberOfLines={1}>{title2 || ' '}</Text>
+          <View style={styles.divider} />
+          <Text style={styles.subtitle} numberOfLines={1}>{subText || ' '}</Text>
         </View>
-
-        {/* Progress bar */}
-        <View style={[styles.barTrack, { width: barMaxWidth }]}>
-          <View style={[
-            styles.barFill,
-            {
-              width: isWaiting ? barMaxWidth : (progress / 100) * barMaxWidth,
-              backgroundColor: isWaiting ? `rgba(${theme.accRGB},0.22)` : theme.acc,
-            },
-            !isWaiting && Platform.OS === 'web' ? ({ boxShadow: `0 0 8px ${theme.acc}` } as any) : {},
-          ]} />
-          {isWaiting && (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.barSweep,
-                {
-                  width: barMaxWidth * 0.3,
-                  backgroundColor: theme.acc,
-                  transform: [{
-                    translateX: sweepAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-barMaxWidth * 0.3, barMaxWidth],
-                    }),
-                  }],
-                },
-                Platform.OS === 'web' ? ({ boxShadow: `0 0 8px ${theme.acc}` } as any) : {},
-              ]}
-            />
-          )}
-        </View>
-
-        {/* Status */}
-        <Text style={[
-          styles.status,
-          statusReady && { color: theme.acc, ...statusReadyStyle },
-        ]}>
-          {statusReady
-            ? '[ READY ]  CITY DATA LOADED'
-            : isWaiting
-              ? WAITING_MESSAGES[waitingIdx]
-              : 'LOADING CITY DATA...'}
-        </Text>
 
       </View>
+
+      {/* Pill badge below the circle */}
+      <Animated.View style={[styles.pill, pillGlow, { opacity: pillFade }]}>
+        <Text style={styles.pillText}>{pillText}</Text>
+      </Animated.View>
+
     </Animated.View>
   );
 }
@@ -209,74 +248,134 @@ export function AppLoadingScreen({
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 999,
   },
-  grid: {
-    backgroundImage:
-      'linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px)',
-    backgroundSize: '40px 40px',
+  webGrid: {
+    backgroundImage: 'radial-gradient(circle, rgba(0,200,230,0.022) 1px, transparent 1px)',
+    backgroundSize: '44px 44px',
   } as any,
   glow: {
     position: 'absolute',
-    width: 340,
-    height: 340,
-    borderRadius: 170,
-    backgroundColor: 'transparent',
+    width: OUTER_RING + 220,
+    height: OUTER_RING + 220,
+    borderRadius: (OUTER_RING + 220) / 2,
+    backgroundColor: 'rgba(0, 195, 225, 0.11)',
   },
-  content: {
+
+  // Ring container
+  ringStack: {
+    width: OUTER_RING,
+    height: OUTER_RING,
     alignItems: 'center',
-    gap: 28,
-    paddingHorizontal: 32,
+    justifyContent: 'center',
   },
-  titleBlock: {
+  outerRing: {
+    position: 'absolute',
+    width: OUTER_RING,
+    height: OUTER_RING,
+    borderRadius: OUTER_RING / 2,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 210, 238, 1.0)',
+  },
+  midRing: {
+    position: 'absolute',
+    width: MID_RING,
+    height: MID_RING,
+    borderRadius: MID_RING / 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 238, 0.13)',
+  },
+  spinArc: {
+    position: 'absolute',
+    width: ARC_RING,
+    height: ARC_RING,
+    borderRadius: ARC_RING / 2,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 218, 255, 0.07)',
+    borderTopColor: 'rgba(0, 222, 255, 0.92)',
+  },
+
+  // Dot nodes
+  dotLayer: {
+    position: 'absolute',
+    width: OUTER_RING,
+    height: OUTER_RING,
+  },
+  dot: {
+    borderRadius: DOT_SIZE / 2,
+    backgroundColor: 'rgba(0, 222, 255, 0.95)',
+  },
+
+  // Inner glass circle
+  innerCircle: {
+    width: CIRCLE,
+    height: CIRCLE,
+    borderRadius: CIRCLE / 2,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(3, 12, 24, 0.87)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 238, 0.17)',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
-  title: {
-    fontFamily: 'DMSans_800ExtraBold',
-    fontSize: 26,
-    letterSpacing: 6,
-    color: '#e2f8ff',
+  meshOverlay: {
+    backgroundImage:
+      'radial-gradient(ellipse at 60% 32%, rgba(0,200,232,0.10) 0%, transparent 58%), ' +
+      'linear-gradient(130deg, rgba(0,200,232,0.05) 1px, transparent 1px), ' +
+      'linear-gradient(-50deg, rgba(0,200,232,0.05) 1px, transparent 1px), ' +
+      'linear-gradient(rgba(0,200,232,0.025) 1px, transparent 1px)',
+    backgroundSize: 'cover, 36px 62px, 36px 62px, 36px 36px',
+  } as any,
+
+  titleLine1: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 20,
+    letterSpacing: 3,
+    color: '#e8f6ff',
     textAlign: 'center',
   },
-  cursor: {
-    position: 'absolute',
-    right: -10,
-    bottom: 22,
-    fontFamily: 'DMSans_400Regular',
+  titleLine2: {
+    fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 20,
+    letterSpacing: 3,
+    color: '#e8f6ff',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  divider: {
+    width: 56,
+    height: 1,
+    backgroundColor: 'rgba(0, 210, 238, 0.28)',
+    marginTop: 12,
+    marginBottom: 10,
   },
   subtitle: {
     fontFamily: 'DMSans_500Medium',
-    fontSize: 11,
-    letterSpacing: 4,
-    color: 'rgba(180,230,255,0.5)',
+    fontSize: 9,
+    letterSpacing: 2,
+    color: 'rgba(155, 215, 238, 0.52)',
     textAlign: 'center',
     textTransform: 'uppercase',
-    marginTop: 2,
   },
-  barTrack: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    overflow: 'hidden',
+
+  // Pill badge
+  pill: {
+    marginTop: 34,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: 'rgba(5, 15, 30, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
   },
-  barFill: {
-    height: 1,
-  },
-  barSweep: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    height: 1,
-  },
-  status: {
+  pillText: {
     fontFamily: 'DMSans_500Medium',
-    fontSize: 10,
-    letterSpacing: 3,
-    color: 'rgba(255,255,255,0.25)',
-    textAlign: 'center',
-    textTransform: 'uppercase',
+    fontSize: 12,
+    color: 'rgba(185, 225, 242, 0.68)',
+    letterSpacing: 0.4,
   },
 });

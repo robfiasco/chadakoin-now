@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
+import Constants from 'expo-constants';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking, Animated, Easing, Share,
+  TouchableOpacity, Animated, Easing, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -166,11 +167,10 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
           </Text>
         </View>
 
-        {/* ── Feature CTA ────────────────────────────────── */}
         <FeatureYourBusiness onContact={() => { setFeedbackType('business'); setFeedbackOpen(true); }} />
 
-        <Text style={styles.footer}>v1.0.2 · Built by Chadakoin Digital in Jamestown, NY</Text>
-        <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via NWS</Text>
+        <Text style={styles.footer}>v{Constants.expoConfig?.version ?? '1.1.0'} · Built by Chadakoin Digital in Jamestown, NY</Text>
+        <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via Apple WeatherKit</Text>
       </ScrollView>
 
       {dollarTrailOpen && (

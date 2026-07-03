@@ -143,22 +143,6 @@ interface LocalFav {
 
 const LOCAL_FAVORITES: LocalFav[] = [
   {
-    name: 'Pit Stop Pops',
-    category: 'drink',
-    detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
-    orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
-    hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
-    phone: '7167086010',
-    rgb: '210,150,60',
-    visited: false,
-    quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
-    cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
-    image: Platform.OS === 'web' ? { uri: '/psp-logo.png' } : require('../assets/psp-logo.png'),
-    imageFit: 'contain',
-    imageBg: '#111',
-    bannerAspect: 4078 / 3400,
-  },
-  {
     name: 'Labyrinth Press Co.',
     category: 'eat',
     detail: 'Eat · Drink · Tue–Sat 8am–9pm',
@@ -183,6 +167,22 @@ const LOCAL_FAVORITES: LocalFav[] = [
     lat: 42.09467, lng: -79.24365,
     image: Platform.OS === 'web' ? { uri: '/comedy_center.jpg' } : require('../assets/comedy_center.jpg'),
     noFilter: true,
+  },
+  {
+    name: 'Pit Stop Pops',
+    category: 'drink',
+    detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
+    orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
+    hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
+    phone: '7167086010',
+    rgb: '210,150,60',
+    visited: false,
+    quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
+    cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
+    image: Platform.OS === 'web' ? { uri: '/psp-logo.png' } : require('../assets/psp-logo.png'),
+    imageFit: 'contain',
+    imageBg: '#111',
+    bannerAspect: 4078 / 3400,
   },
 ];
 

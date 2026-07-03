@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
+import SharedGroupPreferences from 'react-native-shared-group-preferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { XMLParser } from 'fast-xml-parser';
 import { fetchSourceHealth } from './useSourceHealth';
@@ -46,12 +47,13 @@ export interface AlertsData {
 export interface EventItem {
   title: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   location: string;
   category: string;
   tags: string[];
   link?: string;
   imageUrl?: string;
+  note?: string;
 }
 
 export interface NewsItem {
@@ -219,7 +221,10 @@ function stripHtml(html: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x[0-9a-fA-F]+;/g, '')
     .replace(/&#\d+;/g, '')
+    .replace(/&[a-z]+;/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -234,6 +239,18 @@ async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
     const { data, timestamp } = JSON.parse(raw);
     if (Date.now() - timestamp > ttlMs) return null;
     return data as T;
+  } catch {
+    return null;
+  }
+}
+
+// Returns cached data regardless of age — for stale-while-revalidate patterns
+async function getStaleCached<T>(key: string): Promise<T | null> {
+  try {
+    const raw = await AsyncStorage.getItem(`${CACHE_PREFIX}${key}`);
+    if (!raw) return null;
+    const { data } = JSON.parse(raw);
+    return (data as T) ?? null;
   } catch {
     return null;
   }
@@ -533,7 +550,37 @@ async function fetchAlerts(): Promise<AlertsData> {
 }
 
 // Known events that don't appear in any feed. Keep sorted by startDate.
+// Generates one compact entry per weekday through end of summer — expires naturally
+function generateMobileMarketEvents(): EventItem[] {
+  const items: EventItem[] = [];
+  const cur = new Date('2026-06-10'); // First Wednesday
+  const end = new Date('2026-08-28');
+  while (cur <= end) {
+    const dow = cur.getDay();
+    const d = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+    if (dow === 3) {
+      items.push({ title: 'Mobile Market', startDate: `${d}T11:00:00`, endDate: `${d}T14:30:00`, location: 'Prendergast Library', category: 'Community', tags: ['Mobile Market'], note: 'Prendergast 11am · Silvertree (Crane) 1:30pm · SNAP/EBT · Double Up Food Bucks', link: 'https://www.jfmny.org' });
+    } else if (dow === 4) {
+      items.push({ title: 'Mobile Market', startDate: `${d}T11:00:00`, endDate: `${d}T15:30:00`, location: 'The Chautauqua Center', category: 'Community', tags: ['Mobile Market'], note: 'Chautauqua Ctr 11am · Silvertree (Methodist) 12:30pm · Chautauqua Opp 2:30pm · SNAP/EBT', link: 'https://www.jfmny.org' });
+    } else if (dow === 5) {
+      items.push({ title: 'Mobile Market', startDate: `${d}T11:00:00`, endDate: `${d}T13:30:00`, location: 'TRC Community Health Center', category: 'Community', tags: ['Mobile Market'], note: 'TRC Health 11am · Silvertree (Carlson) 12:30pm · SNAP/EBT', link: 'https://www.jfmny.org' });
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return items;
+}
+
 const CURATED_EVENTS: EventItem[] = [
+  ...generateMobileMarketEvents(),
+  {
+    title: 'Free Screening: Nathan-ism',
+    startDate: '2026-06-06T18:00:00',
+    endDate:   '2026-06-06T21:00:00',
+    location: 'Robert H. Jackson Center, 305 E. 4th St., Jamestown',
+    category: 'Community',
+    tags: ['Jackson Center', 'Film'],
+    link: 'https://www.roberthjackson.org/events/',
+  },
 
   {
     title: 'V Boys Basketball — Far West Regionals vs. Fairport',
@@ -596,6 +643,7 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
@@ -605,6 +653,7 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
@@ -614,6 +663,7 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
@@ -623,6 +673,7 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
@@ -632,6 +683,7 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
@@ -641,24 +693,37 @@ const CURATED_EVENTS: EventItem[] = [
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
+  },
+  {
+    title: 'Jamestown Farmers Market',
+    startDate: '2026-06-06T09:00:00',
+    endDate:   '2026-06-06T13:00:00',
+    location: '3rd St & Pine St, Downtown Jamestown',
+    category: 'Community',
+    tags: ['Farmers Market', 'Community'],
+    link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
     startDate: '2026-06-13T09:00:00',
     endDate:   '2026-06-13T13:00:00',
-    location: '17 W 3rd St, Jamestown',
+    location: '3rd St & Pine St, Downtown Jamestown',
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
   {
     title: 'Jamestown Farmers Market',
     startDate: '2026-06-27T09:00:00',
     endDate:   '2026-06-27T13:00:00',
-    location: '17 W 3rd St, Jamestown',
+    location: '3rd St & Pine St, Downtown Jamestown',
     category: 'Community',
     tags: ['Farmers Market', 'Community'],
     link: 'https://jfmny.org/',
+    note: 'SNAP/EBT accepted',
   },
 
   {
@@ -983,6 +1048,145 @@ const CURATED_EVENTS: EventItem[] = [
     tags: ['Live Music'],
     link: 'https://www.tourchautauqua.com/events/the-town-pants-at-wicked-warrens',
   },
+
+  // ── Jamestown Pride 2026 (June 5–14) ──────────────────────────────
+  {
+    title: 'Miss Pearl City Gay Pride Pageant',
+    startDate: '2026-06-05T19:00:00',
+    endDate: '2026-06-05T22:00:00',
+    location: 'Knights of Enchanted Dreams, Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Pageant'],
+  },
+  {
+    title: 'Pride Month Opening Ceremony & Flag Raising',
+    startDate: '2026-06-06T10:00:00',
+    endDate: '2026-06-06T12:00:00',
+    location: 'Robert H. Jackson Center, 305 E. 4th St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Community'],
+  },
+  {
+    title: 'Live Entertainment Pre-Show: Sabrina White and Co.',
+    startDate: '2026-06-10T18:00:00',
+    endDate: '2026-06-10T19:00:00',
+    location: 'Reg Lenna Center for the Arts, 116 E. 3rd St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Live Music'],
+  },
+  {
+    title: 'LGBTQ+ Comedy, Drag & Dancing',
+    startDate: '2026-06-12T20:00:00',
+    endDate: '2026-06-12T23:59:00',
+    location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Drag', '18+'],
+  },
+  {
+    title: 'Pride Festival: Live Music & Rainbow Walk Registration',
+    startDate: '2026-06-13T10:00:00',
+    endDate: '2026-06-13T11:45:00',
+    location: 'Winter Garden Plaza, Downtown Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Festival'],
+  },
+  {
+    title: 'Pride Kickoff & Rainbow Walk',
+    startDate: '2026-06-13T12:00:00',
+    endDate: '2026-06-13T13:30:00',
+    location: 'Winter Garden Plaza, Downtown Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Festival', 'Parade'],
+  },
+  {
+    title: 'Pride Festival: Live Entertainment at Winter Garden Plaza',
+    startDate: '2026-06-13T13:30:00',
+    endDate: '2026-06-13T18:00:00',
+    location: 'Winter Garden Plaza, Downtown Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Festival', 'Family Friendly'],
+  },
+  {
+    title: 'Jtwn Pride 3rd Annual Variety Show',
+    startDate: '2026-06-13T16:00:00',
+    endDate: '2026-06-13T17:00:00',
+    location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Variety Show'],
+  },
+  {
+    title: 'Queens on the Patio',
+    startDate: '2026-06-13T17:00:00',
+    endDate: '2026-06-13T18:00:00',
+    location: 'Brazil Craft Beer & Wine, 10 E. 4th St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Drag'],
+  },
+  {
+    title: 'Pride Day Show',
+    startDate: '2026-06-13T18:00:00',
+    endDate: '2026-06-13T20:00:00',
+    location: 'Knights of Enchanted Dreams, 104 W. 2nd St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Festival', 'Family Friendly'],
+  },
+  {
+    title: 'Pride After Dark — Burlesque & Drag Review',
+    startDate: '2026-06-13T20:30:00',
+    endDate: '2026-06-13T23:59:00',
+    location: 'Sneakers Bar, 100 Harrison St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Drag', 'Burlesque', '21+'],
+    note: '21+ · $10 · Pearl City Sirens',
+  },
+  {
+    title: 'Pride Sunday Service',
+    startDate: '2026-06-14T10:00:00',
+    endDate: '2026-06-14T11:30:00',
+    location: 'St. Luke\'s Episcopal Church, 410 N. Main St., Jamestown',
+    category: 'Pride',
+    tags: ['Jamestown Pride', 'LGBTQ+', 'Community'],
+  },
+
+  // ── Additional community events — June/July 2026 ─────────────────
+  { title: 'Resistance History of the United States: A Conversation with Tad Stoermer', startDate: '2026-06-28T14:00:00', location: 'Jamestown, NY', category: 'Lecture', tags: ['Books', 'History', 'Community'] },
+
+  { title: 'Comedy Open Mic at Wicked Warren\'s', startDate: '2026-07-01T19:00:00', endDate: '2026-07-01T21:00:00', location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown', category: 'Arts & Entertainment', tags: ['Comedy', 'Live', 'Weekly'], note: 'Free · 8 min sets · No hate speech' },
+  { title: 'Comedy Open Mic at Wicked Warren\'s', startDate: '2026-07-08T19:00:00', endDate: '2026-07-08T21:00:00', location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown', category: 'Arts & Entertainment', tags: ['Comedy', 'Live', 'Weekly'], note: 'Free · 8 min sets · No hate speech' },
+  { title: 'Comedy Open Mic at Wicked Warren\'s', startDate: '2026-07-15T19:00:00', endDate: '2026-07-15T21:00:00', location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown', category: 'Arts & Entertainment', tags: ['Comedy', 'Live', 'Weekly'], note: 'Free · 8 min sets · No hate speech' },
+  { title: 'Comedy Open Mic at Wicked Warren\'s', startDate: '2026-07-22T19:00:00', endDate: '2026-07-22T21:00:00', location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown', category: 'Arts & Entertainment', tags: ['Comedy', 'Live', 'Weekly'], note: 'Free · 8 min sets · No hate speech' },
+  { title: 'Comedy Open Mic at Wicked Warren\'s', startDate: '2026-07-29T19:00:00', endDate: '2026-07-29T21:00:00', location: 'Wicked Warren\'s, 119 W. 3rd St., Jamestown', category: 'Arts & Entertainment', tags: ['Comedy', 'Live', 'Weekly'], note: 'Free · 8 min sets · No hate speech' },
+
+  { title: 'Jamestown Municipal Band in Allen Park', startDate: '2026-07-01T19:00:00', endDate: '2026-07-01T20:30:00', location: 'Allen Park, Jamestown', category: 'Arts & Entertainment', tags: ['Music', 'Free', 'Outdoor', 'Family Friendly'] },
+
+  { title: 'Cheap Skate at Northwest Arena', startDate: '2026-07-02T00:00:00', location: 'Northwest Arena, Jamestown', category: 'Sports & Recreation', tags: ['Skating', 'Family Friendly', 'Northwest Arena'] },
+
+  // ── Prendergast Library — June/July 2026 ─────────────────────────
+  { title: 'Summer Reading Kickoff / Community Block Party', startDate: '2026-06-27T11:00:00', endDate: '2026-06-27T14:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Summer Reading'], link: 'https://prendergastlibrary.org' },
+
+  { title: 'Books & Brews', startDate: '2026-07-01T17:30:00', endDate: '2026-07-01T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults'], link: 'https://prendergastlibrary.org' },
+  { title: 'Summer Music Series: "Ice Age"', startDate: '2026-07-03T16:30:00', endDate: '2026-07-03T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Music', 'Summer Series'], link: 'https://prendergastlibrary.org' },
+
+  { title: 'Curiosity Club: 5th Annual CHQ Book Read — Unearth Your Story w/ Pat Pihl', startDate: '2026-07-06T17:30:00', endDate: '2026-07-06T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults', 'Book Club'], link: 'https://prendergastlibrary.org' },
+  { title: 'Books & Brews', startDate: '2026-07-08T17:30:00', endDate: '2026-07-08T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults'], link: 'https://prendergastlibrary.org' },
+  { title: 'All-Ages Drumming', startDate: '2026-07-09T11:00:00', endDate: '2026-07-09T12:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'All Ages', 'Music'], link: 'https://prendergastlibrary.org' },
+  { title: 'Meet & Make #1: UV Dino Keychains', startDate: '2026-07-09T17:30:00', endDate: '2026-07-09T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Crafts'], link: 'https://prendergastlibrary.org' },
+  { title: 'Summer Music Series: "Ice Age: The Melt Down"', startDate: '2026-07-10T16:30:00', endDate: '2026-07-10T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Music', 'Summer Series'], link: 'https://prendergastlibrary.org' },
+  { title: 'All-Ages Crafting: Dinoprint Molds & Bookmarks', startDate: '2026-07-11T13:30:00', endDate: '2026-07-11T15:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'All Ages', 'Crafts'], link: 'https://prendergastlibrary.org' },
+
+  { title: 'Curiosity Club: Unearth Your Story w/ Pat Pihl', startDate: '2026-07-13T17:30:00', endDate: '2026-07-13T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults', 'Book Club'], link: 'https://prendergastlibrary.org' },
+  { title: 'All-Ages Drumming', startDate: '2026-07-16T11:00:00', endDate: '2026-07-16T12:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'All Ages', 'Music'], link: 'https://prendergastlibrary.org' },
+  { title: 'Summer Movie Series: "Ice Age: Dawn of the Dinosaurs" in 4D', startDate: '2026-07-17T16:30:00', endDate: '2026-07-17T18:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Film', 'Summer Series'], link: 'https://prendergastlibrary.org' },
+
+  { title: 'Curiosity Club: Unearth Your Story w/ Pat Pihl', startDate: '2026-07-20T17:30:00', endDate: '2026-07-20T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults', 'Book Club'], link: 'https://prendergastlibrary.org' },
+  { title: 'All-Ages Drumming', startDate: '2026-07-23T11:00:00', endDate: '2026-07-23T12:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'All Ages', 'Music'], link: 'https://prendergastlibrary.org' },
+  { title: 'Summer Music Series: "Ice Age: Continental Drift"', startDate: '2026-07-24T16:30:00', endDate: '2026-07-24T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Music', 'Summer Series'], link: 'https://prendergastlibrary.org' },
+  { title: 'Meet & Make #2: Dino Vinyl Stickers', startDate: '2026-07-25T13:30:00', endDate: '2026-07-25T14:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Crafts'], link: 'https://prendergastlibrary.org' },
+
+  { title: 'Dino Perler Bead Magnets', startDate: '2026-07-26T17:30:00', endDate: '2026-07-26T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Crafts'], link: 'https://prendergastlibrary.org' },
+  { title: 'Curiosity Club: Unearth Your Story w/ Pat Pihl', startDate: '2026-07-27T17:30:00', endDate: '2026-07-27T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults', 'Book Club'], link: 'https://prendergastlibrary.org' },
+  { title: 'All-Ages Drumming', startDate: '2026-07-30T11:00:00', endDate: '2026-07-30T12:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'All Ages', 'Music'], link: 'https://prendergastlibrary.org' },
+  { title: 'Summer Music Series: "Ice Age: Collision Point"', startDate: '2026-07-31T16:30:00', endDate: '2026-07-31T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Music', 'Summer Series'], link: 'https://prendergastlibrary.org' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
@@ -1067,13 +1271,30 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
   function key(e: EventItem) {
     return e.title.toLowerCase().replace(/\s+/g, '') + (e.startDate?.split('T')[0] ?? '');
   }
-  const seen = new Set(fetched.map(key));
+  const STOP_WORDS = new Set(['the','and','for','with','from','this','that','will','hold','held','may','june','july','free']);
+  function titleKeywords(e: EventItem): Set<string> {
+    return new Set(
+      e.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+        .filter(w => w.length >= 4 && !STOP_WORDS.has(w))
+    );
+  }
+  function fuzzyMatchesCurated(fetched: EventItem, curated: EventItem): boolean {
+    if (fetched.startDate?.split('T')[0] !== curated.startDate?.split('T')[0]) return false;
+    const kF = titleKeywords(fetched); const kC = titleKeywords(curated);
+    let shared = 0;
+    for (const w of kC) { if (kF.has(w)) shared++; }
+    return shared >= 2;
+  }
+
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
   const fresh = CURATED_EVENTS.filter(e => new Date(e.startDate) >= cutoff);
+  const seen = new Set(fetched.map(key));
+  // Drop fetched events superseded by a curated entry (curated has better time/location)
+  const filtered = fetched.filter(f => !fresh.some(c => fuzzyMatchesCurated(f, c)));
   const combined = [
     ...fresh.filter(e => !seen.has(key(e))),
-    ...fetched,
+    ...filtered,
   ];
   return combined.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 }
@@ -1324,7 +1545,7 @@ const EVENT_KEYWORDS = /presents|to host|to perform|concert|exhibit|show|festiva
 
 // NOT_EVENT catches headlines that look event-like but are actually news articles,
 // calls for submissions, or announcements about someone else's event
-const NOT_EVENT = /calling for|call for|seeks? (volunteers?|presenters?|applicants?)|applications? (now )?open|(now )?accepting|crime (is |are )?(down|up)|statistics|report|survey|deadline|nominations|seeking|to headline|headlines?|announces?|announced|set to (perform|appear|headline)|coming to jamestown|confirmed for|tickets? (now |go )?on sale|lineup (announced|revealed|set)/i;
+const NOT_EVENT = /calling for|call for|seeks? (volunteers?|presenters?|applicants?)|applications? (now )?open|(now )?accepting|crime (is |are )?(down|up)|statistics|report|survey|deadline|nominations|seeking|to headline|headlines?|announces?|announced|set to (perform|appear|headline)|coming to jamestown|confirmed for|tickets? (now |go )?on sale|lineup (announced|revealed|set)|rock and roll rundown|rundown|morning show|afternoon show|evening show|weekend show|daily show|begins season|opens season|kicks off season|returns (to|for)|at a new location|new location|mobile market/i;
 
 async function fetchWrfaEvents(): Promise<EventItem[]> {
   try {
@@ -1593,7 +1814,11 @@ async function fetchNews(): Promise<NewsItem[]> {
 }
 
 export function useCivicData(): CivicData {
-  const [state, setState] = useState<Omit<CivicData, 'refresh'>>(DEFAULTS);
+  // Parking is pure date math — compute it immediately so it's never skeleton-gated
+  const [state, setState] = useState<Omit<CivicData, 'refresh'>>(() => ({
+    ...DEFAULTS,
+    parking: computeParking(),
+  }));
 
   const load = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -1657,6 +1882,23 @@ export function useCivicData(): CivicData {
       news,
       latestEpisode,
       lastUpdated: new Date().toISOString(),
+    });
+
+    // Push recycling data to the iOS widget via App Group shared storage
+    if (Platform.OS === 'ios' && recycling.thisWeek.material !== '—') {
+      try {
+        const appGroup = 'group.com.chadakoindigital.chadakoinnow';
+        await SharedGroupPreferences.setItem('recycling_material',  recycling.thisWeek.material,  appGroup);
+        await SharedGroupPreferences.setItem('recycling_dateRange', recycling.thisWeek.dateRange, appGroup);
+        await SharedGroupPreferences.setItem('recycling_emoji',     recycling.thisWeek.emoji,     appGroup);
+      } catch {}
+    }
+  }, []);
+
+  // Show last known recycling data immediately (even if stale) — fresh fetch updates it in background
+  useEffect(() => {
+    getStaleCached<RecyclingData>('recycling').then(stale => {
+      if (stale) setState(prev => ({ ...prev, recycling: stale }));
     });
   }, []);
 

@@ -22,9 +22,16 @@ const TYPE_LABELS = {
   business:   'Featured Placement inquiry',
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const contentType = req.headers['content-type'] ?? '';
+  if (!contentType.includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? 'unknown';
@@ -32,7 +39,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many submissions. Try again later.' });
   }
 
-  const { type, message, replyTo, appVersion, timestamp } = req.body ?? {};
+  const { type, message, replyTo, appVersion } = req.body ?? {};
 
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
     return res.status(400).json({ error: 'Message is required' });
@@ -40,7 +47,7 @@ export default async function handler(req, res) {
   if (message.length > 1500) {
     return res.status(400).json({ error: 'Message too long' });
   }
-  if (replyTo && (typeof replyTo !== 'string' || replyTo.length > 200)) {
+  if (replyTo && (typeof replyTo !== 'string' || replyTo.length > 200 || !EMAIL_RE.test(replyTo))) {
     return res.status(400).json({ error: 'Invalid reply-to address' });
   }
 
@@ -54,7 +61,7 @@ export default async function handler(req, res) {
   const textBody  = [
     `Type: ${typeLabel}`,
     `Version: ${appVersion ?? '—'}`,
-    `Time: ${timestamp ?? new Date().toISOString()}`,
+    `Time: ${new Date().toISOString()}`,
     replyTo ? `Reply-to: ${replyTo}` : 'Reply-to: (not provided)',
     '',
     message.trim(),

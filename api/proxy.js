@@ -39,13 +39,20 @@ const ALLOWED_HOSTS = new Set([
   'www.mediaonegroupradio.com',
 ]);
 
-// In-memory rate limiter: 60 req/IP/min rolling window
 const rateLimitMap = new Map();
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
+const CLEANUP_INTERVAL = 5 * 60_000;
 
+let lastCleanup = Date.now();
 function isRateLimited(ip) {
   const now = Date.now();
+  if (now - lastCleanup > CLEANUP_INTERVAL) {
+    for (const [key, val] of rateLimitMap) {
+      if (now > val.resetAt) rateLimitMap.delete(key);
+    }
+    lastCleanup = now;
+  }
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
@@ -92,7 +99,7 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
     res.status(upstream.status).send(body);
   } catch {
     res.status(502).send('Proxy fetch failed');
