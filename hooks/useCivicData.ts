@@ -1737,9 +1737,8 @@ async function fetchNews(): Promise<NewsItem[]> {
     ? toWGRZItems(await wgrzWNYRes.value.text(), 'WGRZ')
     : [];
 
-  // Southern Tier feed is already Jamestown/Chautauqua-focused — no geo filter needed
   const wgrzSTItems = wgrzSTRes.status === 'fulfilled' && wgrzSTRes.value.ok
-    ? toNewsItems(await wgrzSTRes.value.text(), lim.wgrzST, 'WGRZ')
+    ? toWGRZItems(await wgrzSTRes.value.text(), 'WGRZ', lim.wgrzST)
     : [];
 
   const spectrumItems = spectrumRes.status === 'fulfilled' && spectrumRes.value.ok
@@ -1773,6 +1772,7 @@ async function fetchNews(): Promise<NewsItem[]> {
         const headline = blocks[i].replace(/\.{2,}$/, '').trim();
         const body     = blocks[i + 1];
         if (!headline || headline.length < 10) continue;
+        if (!JAMESTOWN_TERMS.test(headline) && !JAMESTOWN_TERMS.test(body)) continue;
         wjtnItems.push({ title: headline, link, pubDate, excerpt: body, source: 'WJTN' });
         if (wjtnItems.length >= lim.wjtn) break;
       }
