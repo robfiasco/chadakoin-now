@@ -1769,7 +1769,7 @@ async function fetchNews(): Promise<NewsItem[]> {
         .replace(/&gt;/g, '>');
       const blocks = plain.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
       for (let i = 0; i + 1 < blocks.length; i += 2) {
-        const headline = blocks[i].replace(/\.{2,}$/, '').trim();
+        const headline = blocks[i].replace(/\.{2,}/g, ' ').replace(/\s+/g, ' ').trim();
         const body     = blocks[i + 1];
         if (!headline || headline.length < 10) continue;
         if (!JAMESTOWN_TERMS.test(headline) && !JAMESTOWN_TERMS.test(body)) continue;
