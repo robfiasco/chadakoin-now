@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, StyleSheet, Platform } from 'react-native';
+import { View, Text, Animated, StyleSheet, Platform, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const TARGET_TITLE_1 = 'CHADAKOIN';
-const TARGET_TITLE_2 = 'NOW';
-const TARGET_SUB     = 'JAMESTOWN · NEW YORK';
-const CHARS          = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%&';
-const PHASE1_STEPS = 22;  // CHADAKOIN resolves first
-const TOTAL_STEPS  = 33;  // then NOW resolves
+const { width: SCREEN_W } = Dimensions.get('window');
+const RING_SIZE  = Math.min(Math.round(SCREEN_W * 0.70), 272);
+const DOT_RADIUS = 11;
 
-const PILL_MESSAGES = [
+const STATUS_MESSAGES = [
   'Scanning local feeds...',
   'Checking the weather...',
   'Tuning in to Jamestown...',
@@ -16,24 +14,9 @@ const PILL_MESSAGES = [
   'Almost ready...',
 ];
 
-const CIRCLE     = 234;
-const MID_RING   = 272;
-const OUTER_RING = 314;
-const ARC_RING   = OUTER_RING + 10;
-
-// Glowing dot positions on outer ring (degrees from top, clockwise)
-const DOT_ANGLES = [35, 165, 258];
-const DOT_SIZE   = 11;
-
-function dotPos(angleDeg: number, r: number, size: number) {
-  const rad = (angleDeg - 90) * (Math.PI / 180);
-  return {
-    position: 'absolute' as const,
-    left:  r + r * Math.cos(rad) - size / 2,
-    top:   r + r * Math.sin(rad) - size / 2,
-    width: size,
-    height: size,
-  };
+function isNight() {
+  const h = new Date().getHours();
+  return h < 6 || h >= 20;
 }
 
 export function AppLoadingScreen({
@@ -43,204 +26,122 @@ export function AppLoadingScreen({
   isAppReady?: boolean;
   onFinished?: () => void;
 }) {
-  const [title1, setTitle1]               = useState('');
-  const [title2, setTitle2]               = useState('');
-  const [subText, setSubText]             = useState('');
-  const [titleColor, setTitleColor]       = useState('#e8f6ff');
-  const [sequenceDone, setSequenceDone]   = useState(false);
-  const [pillIdx, setPillIdx]             = useState(0);
-  const [statusReady, setStatusReady]     = useState(false);
+  const night = isNight();
 
-  const fadeAnim  = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim  = useRef(new Animated.Value(0.4)).current;
-  const ringAnim  = useRef(new Animated.Value(0.2)).current;
-  const spinAnim  = useRef(new Animated.Value(0)).current;
-  const dotSpin   = useRef(new Animated.Value(0)).current;
-  const pillFade  = useRef(new Animated.Value(0)).current;
+  const [statusIdx, setStatusIdx]       = useState(0);
+  const [sequenceDone, setSequenceDone] = useState(false);
+  const [statusReady, setStatusReady]   = useState(false);
 
-  const isWaiting = sequenceDone && !isAppReady;
+  const screenFade = useRef(new Animated.Value(0)).current;
+  const exitAnim   = useRef(new Animated.Value(1)).current;
+  const orbitAnim  = useRef(new Animated.Value(0)).current;
+  const textFade   = useRef(new Animated.Value(0)).current;
+  const statusFade = useRef(new Animated.Value(0)).current;
 
-  // Ambient glow pulse
+  // Fade in on mount, mark sequence done after intro
   useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(glowAnim, { toValue: 1,   duration: 2400, useNativeDriver: true }),
-      Animated.timing(glowAnim, { toValue: 0.3, duration: 2400, useNativeDriver: true }),
-    ])).start();
+    Animated.timing(screenFade, { toValue: 1, duration: 700, useNativeDriver: true }).start();
+    Animated.timing(textFade,   { toValue: 1, duration: 900, delay: 400, useNativeDriver: true }).start();
+    const t = setTimeout(() => setSequenceDone(true), 1400);
+    return () => clearTimeout(t);
   }, []);
 
-  // Outer ring pulse — offset phase from glow so they don't move in sync
-  useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(ringAnim, { toValue: 0.55, duration: 1800, useNativeDriver: true }),
-      Animated.timing(ringAnim, { toValue: 0.15, duration: 1800, useNativeDriver: true }),
-    ])).start();
-  }, []);
-
-  // Spinning sweep arc
+  // Continuous orbital — 8s per revolution
   useEffect(() => {
     Animated.loop(
-      Animated.timing(spinAnim, { toValue: 1, duration: 3400, useNativeDriver: true })
+      Animated.timing(orbitAnim, { toValue: 1, duration: 8000, useNativeDriver: true })
     ).start();
   }, []);
 
-  // Dot nodes orbit (very slow — ~20s per revolution)
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(dotSpin, { toValue: 1, duration: 20000, useNativeDriver: true })
-    ).start();
-  }, []);
-
-  // Pill fade in after scramble resolves
+  // Status messages appear once sequence is done
   useEffect(() => {
     if (!sequenceDone) return;
-    Animated.timing(pillFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    Animated.timing(statusFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    const interval = setInterval(() => setStatusIdx(i => (i + 1) % STATUS_MESSAGES.length), 2400);
+    return () => clearInterval(interval);
   }, [sequenceDone]);
 
-  // Two-phase scramble: CHADAKOIN locks first, then NOW, then teal flash payoff
-  useEffect(() => {
-    let step = 0;
-    const rnd = () => CHARS[Math.floor(Math.random() * CHARS.length)];
-    const scramble = (target: string, frac: number) =>
-      target.split('').map((ch, idx) => {
-        if (ch === '·') return ch;
-        return idx < frac * target.length ? target[idx] : rnd();
-      }).join('');
-
-    const interval = setInterval(() => {
-      // Phase 1: CHADAKOIN scrambles and locks; NOW hidden; subtitle scrambles
-      if (step <= PHASE1_STEPS) {
-        const f1 = step / PHASE1_STEPS;
-        setTitle1(scramble(TARGET_TITLE_1, f1));
-        setTitle2('');
-        setSubText(scramble(TARGET_SUB, step / TOTAL_STEPS));
-      }
-      // Phase 2: CHADAKOIN locked; NOW scrambles; subtitle finishes
-      else if (step <= TOTAL_STEPS) {
-        const f2 = (step - PHASE1_STEPS) / (TOTAL_STEPS - PHASE1_STEPS);
-        setTitle1(TARGET_TITLE_1);
-        setTitle2(scramble(TARGET_TITLE_2, f2));
-        setSubText(scramble(TARGET_SUB, step / TOTAL_STEPS));
-      }
-
-      step++;
-
-      if (step > TOTAL_STEPS) {
-        clearInterval(interval);
-        setTitle1(TARGET_TITLE_1);
-        setTitle2(TARGET_TITLE_2);
-        setSubText(TARGET_SUB);
-
-        // Teal flash payoff — 3 quick pulses then settle to white
-        let flashes = 0;
-        const flash = setInterval(() => {
-          setTitleColor(flashes % 2 === 0 ? '#00e5ff' : '#e8f6ff');
-          flashes++;
-          if (flashes >= 6) {
-            clearInterval(flash);
-            setTitleColor('#e8f6ff');
-            setSequenceDone(true);
-          }
-        }, 110);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Cycle pill messages while waiting on data
-  useEffect(() => {
-    if (!isWaiting) return;
-    const interval = setInterval(() => {
-      setPillIdx(i => (i + 1) % PILL_MESSAGES.length);
-    }, 2200);
-    return () => clearInterval(interval);
-  }, [isWaiting]);
-
-  // Exit sequence
+  // Exit: fade out when app is ready
   useEffect(() => {
     if (!sequenceDone || !isAppReady) return;
     setStatusReady(true);
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 0,    duration: 380, useNativeDriver: true }),
-        Animated.timing(scaleAnim, { toValue: 1.04, duration: 380, useNativeDriver: true }),
-      ]).start(() => onFinished?.());
-    }, 420);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => {
+      Animated.timing(exitAnim, { toValue: 0, duration: 420, useNativeDriver: true })
+        .start(() => onFinished?.());
+    }, 350);
+    return () => clearTimeout(t);
   }, [sequenceDone, isAppReady]);
 
-  const spin   = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const dotRot = dotSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const orbitRotate = orbitAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  const pillText = statusReady ? 'Ready' : isWaiting ? PILL_MESSAGES[pillIdx] : 'Initializing...';
+  const statusText = statusReady
+    ? 'Ready'
+    : sequenceDone ? STATUS_MESSAGES[statusIdx] : 'Initializing...';
 
-  const outerRingGlow = Platform.OS === 'web'
-    ? ({ boxShadow: '0 0 20px 5px rgba(0,210,235,0.28), inset 0 0 14px rgba(0,210,235,0.07)' } as any)
-    : {};
-  const dotGlow = Platform.OS === 'web'
-    ? ({ boxShadow: '0 0 10px 5px rgba(0,218,255,0.65)' } as any)
-    : {};
-  const arcGlow = Platform.OS === 'web'
-    ? ({ filter: 'drop-shadow(0 0 6px rgba(0,218,255,0.7))' } as any)
-    : {};
-  const pillGlow = Platform.OS === 'web'
-    ? ({ boxShadow: 'inset 0 0 20px rgba(0,200,230,0.04), 0 1px 0 rgba(255,255,255,0.06)' } as any)
-    : {};
-  const innerCircleWeb = Platform.OS === 'web'
-    ? ({ backdropFilter: 'blur(6px)' } as any)
+  // Time-of-day color palette
+  const bg         = night
+    ? ['#050d1e', '#08152a', '#050d1e'] as const
+    : ['#a8ccdf', '#c4deee', '#a8ccdf'] as const;
+  const ringColor  = night ? 'rgba(0, 200, 230, 0.75)' : 'rgba(55, 135, 195, 0.55)';
+  const dotBg      = night ? '#d8eaf8' : '#fffbe0';
+  const dotGlow    = night ? 'rgba(180, 215, 248, 0.85)' : 'rgba(255, 228, 60, 0.85)';
+  const titleClr   = night ? '#e6f3ff' : '#163248';
+  const subtitleClr = night ? 'rgba(155, 205, 235, 0.55)' : 'rgba(22, 60, 95, 0.45)';
+  const dividerClr = night ? 'rgba(0, 200, 230, 0.28)' : 'rgba(35, 95, 150, 0.2)';
+  const statusClr  = night ? 'rgba(145, 200, 232, 0.5)' : 'rgba(22, 60, 95, 0.42)';
+
+  const dotWebGlow = Platform.OS === 'web'
+    ? ({ boxShadow: `0 0 20px 10px ${dotGlow}` } as any)
     : {};
 
   return (
-    <Animated.View style={[
-      styles.container,
-      { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
-    ]}>
+    <Animated.View style={[styles.container, { opacity: exitAnim }]}>
+      <LinearGradient colors={bg} style={StyleSheet.absoluteFill} />
 
-      {/* Web: dot-grid background */}
-      {Platform.OS === 'web' && (
-        <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.webGrid as any]} />
-      )}
+      <Animated.View style={[styles.inner, { opacity: screenFade }]}>
 
-      {/* Ambient glow behind circle */}
-      <Animated.View style={[styles.glow, { opacity: glowAnim }]} />
+        {/* Ring + orbiting body */}
+        <View style={{ width: RING_SIZE, height: RING_SIZE, alignItems: 'center', justifyContent: 'center' }}>
 
-      {/* All rings centered on same point */}
-      <View style={styles.ringStack}>
+          {/* Static ring */}
+          <View style={[styles.ring, {
+            width: RING_SIZE, height: RING_SIZE,
+            borderRadius: RING_SIZE / 2,
+            borderColor: ringColor,
+          }]} />
 
-        {/* Outer ring — pulses independently */}
-        <Animated.View style={[styles.outerRing, outerRingGlow, { opacity: ringAnim }]} />
+          {/* Rotating arm — dot sits at the top of the arm, traces the ring */}
+          <Animated.View style={[styles.orbitArm, {
+            width: RING_SIZE, height: RING_SIZE,
+            transform: [{ rotate: orbitRotate }],
+          }]}>
+            <View style={[styles.orbitDot, dotWebGlow, {
+              top:  -DOT_RADIUS,
+              left: RING_SIZE / 2 - DOT_RADIUS,
+              width:  DOT_RADIUS * 2,
+              height: DOT_RADIUS * 2,
+              borderRadius: DOT_RADIUS,
+              backgroundColor: dotBg,
+              shadowColor: dotGlow,
+            }]} />
+          </Animated.View>
 
-        {/* Mid ring (faint) */}
-        <View style={styles.midRing} />
+          {/* Text centered inside ring */}
+          <Animated.View style={[styles.textWrap, { opacity: textFade }]}>
+            <Text style={[styles.title, { color: titleClr }]}>CHADAKOIN</Text>
+            <Text style={[styles.title, { color: titleClr }]}>NOW</Text>
+            <View style={[styles.divider, { backgroundColor: dividerClr }]} />
+            <Text style={[styles.subtitle, { color: subtitleClr }]}>JAMESTOWN · NEW YORK</Text>
+          </Animated.View>
 
-        {/* Spinning sweep arc */}
-        <Animated.View style={[styles.spinArc, arcGlow, { transform: [{ rotate: spin }] }]} />
-
-        {/* Dot nodes on outer ring — orbit slowly */}
-        <Animated.View style={[styles.dotLayer, { transform: [{ rotate: dotRot }] }]}>
-          {DOT_ANGLES.map((angle, i) => (
-            <View key={i} style={[styles.dot, dotPos(angle, OUTER_RING / 2, DOT_SIZE), dotGlow]} />
-          ))}
-        </Animated.View>
-
-        {/* Inner glass circle */}
-        <View style={[styles.innerCircle, innerCircleWeb]}>
-          {Platform.OS === 'web' && (
-            <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.meshOverlay as any]} />
-          )}
-          <Text style={[styles.titleLine1, { color: titleColor }]} numberOfLines={1}>{title1 || ' '}</Text>
-          <Text style={[styles.titleLine2, { color: titleColor }]} numberOfLines={1}>{title2 || ' '}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.subtitle} numberOfLines={1}>{subText || ' '}</Text>
         </View>
 
-      </View>
+        {/* Status line */}
+        <Animated.Text style={[styles.status, { color: statusClr, opacity: statusFade }]}>
+          {statusText}
+        </Animated.Text>
 
-      {/* Pill badge below the circle */}
-      <Animated.View style={[styles.pill, pillGlow, { opacity: pillFade }]}>
-        <Text style={styles.pillText}>{pillText}</Text>
       </Animated.View>
-
     </Animated.View>
   );
 }
@@ -249,133 +150,56 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 999,
-    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  webGrid: {
-    backgroundImage: 'radial-gradient(circle, rgba(0,200,230,0.022) 1px, transparent 1px)',
-    backgroundSize: '44px 44px',
-  } as any,
-  glow: {
-    position: 'absolute',
-    width: OUTER_RING + 220,
-    height: OUTER_RING + 220,
-    borderRadius: (OUTER_RING + 220) / 2,
-    backgroundColor: 'rgba(0, 195, 225, 0.11)',
-  },
-
-  // Ring container
-  ringStack: {
-    width: OUTER_RING,
-    height: OUTER_RING,
+  inner: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  outerRing: {
+  ring: {
     position: 'absolute',
-    width: OUTER_RING,
-    height: OUTER_RING,
-    borderRadius: OUTER_RING / 2,
     borderWidth: 1.5,
-    borderColor: 'rgba(0, 210, 238, 1.0)',
   },
-  midRing: {
+  orbitArm: {
     position: 'absolute',
-    width: MID_RING,
-    height: MID_RING,
-    borderRadius: MID_RING / 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 238, 0.13)',
   },
-  spinArc: {
+  orbitDot: {
     position: 'absolute',
-    width: ARC_RING,
-    height: ARC_RING,
-    borderRadius: ARC_RING / 2,
-    borderWidth: 2,
-    borderColor: 'rgba(0, 218, 255, 0.07)',
-    borderTopColor: 'rgba(0, 222, 255, 0.92)',
+    shadowOffset:  { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius:  14,
+    elevation: 10,
   },
-
-  // Dot nodes
-  dotLayer: {
-    position: 'absolute',
-    width: OUTER_RING,
-    height: OUTER_RING,
-  },
-  dot: {
-    borderRadius: DOT_SIZE / 2,
-    backgroundColor: 'rgba(0, 222, 255, 0.95)',
-  },
-
-  // Inner glass circle
-  innerCircle: {
-    width: CIRCLE,
-    height: CIRCLE,
-    borderRadius: CIRCLE / 2,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(3, 12, 24, 0.87)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 238, 0.17)',
+  textWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
   },
-  meshOverlay: {
-    backgroundImage:
-      'radial-gradient(ellipse at 60% 32%, rgba(0,200,232,0.10) 0%, transparent 58%), ' +
-      'linear-gradient(130deg, rgba(0,200,232,0.05) 1px, transparent 1px), ' +
-      'linear-gradient(-50deg, rgba(0,200,232,0.05) 1px, transparent 1px), ' +
-      'linear-gradient(rgba(0,200,232,0.025) 1px, transparent 1px)',
-    backgroundSize: 'cover, 36px 62px, 36px 62px, 36px 36px',
-  } as any,
-
-  titleLine1: {
+  title: {
     fontFamily: 'SpaceGrotesk_700Bold',
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: 3,
-    color: '#e8f6ff',
     textAlign: 'center',
-  },
-  titleLine2: {
-    fontFamily: 'SpaceGrotesk_700Bold',
-    fontSize: 20,
-    letterSpacing: 3,
-    color: '#e8f6ff',
-    textAlign: 'center',
-    marginTop: 2,
+    lineHeight: 30,
   },
   divider: {
-    width: 56,
+    width: 48,
     height: 1,
-    backgroundColor: 'rgba(0, 210, 238, 0.28)',
-    marginTop: 12,
-    marginBottom: 10,
+    marginTop: 14,
+    marginBottom: 12,
   },
   subtitle: {
     fontFamily: 'DMSans_500Medium',
-    fontSize: 9,
-    letterSpacing: 2,
-    color: 'rgba(155, 215, 238, 0.52)',
+    fontSize: 9.5,
+    letterSpacing: 2.5,
     textAlign: 'center',
     textTransform: 'uppercase',
   },
-
-  // Pill badge
-  pill: {
-    marginTop: 34,
-    paddingHorizontal: 22,
-    paddingVertical: 10,
-    borderRadius: 100,
-    backgroundColor: 'rgba(5, 15, 30, 0.82)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-  },
-  pillText: {
+  status: {
+    marginTop: 52,
     fontFamily: 'DMSans_500Medium',
-    fontSize: 12,
-    color: 'rgba(185, 225, 242, 0.68)',
-    letterSpacing: 0.4,
+    fontSize: 13,
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
 });
