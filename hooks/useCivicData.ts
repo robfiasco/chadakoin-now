@@ -477,7 +477,8 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   // ICS feed is in reverse chronological order
   recyclingWeeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
   let thisIdx = -1;
   for (let i = recyclingWeeks.length - 1; i >= 0; i--) {
     if (recyclingWeeks[i].startDate <= today) {
@@ -486,6 +487,11 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
     }
   }
   if (thisIdx === -1 && recyclingWeeks.length > 0) thisIdx = 0;
+
+  // Saturday evening (6pm+): show next week so pickup day is always in the future
+  if (now.getDay() === 6 && now.getHours() >= 18 && thisIdx + 1 < recyclingWeeks.length) {
+    thisIdx += 1;
+  }
 
   const thisWeek     = recyclingWeeks[thisIdx]     ?? EMPTY_WEEK;
   const nextWeek     = recyclingWeeks[thisIdx + 1] ?? EMPTY_WEEK;
