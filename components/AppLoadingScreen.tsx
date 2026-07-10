@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, StyleSheet, Platform, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, Animated, StyleSheet, Platform, Dimensions, ImageBackground } from 'react-native';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const RING_SIZE  = Math.min(Math.round(SCREEN_W * 0.70), 272);
@@ -79,16 +78,16 @@ export function AppLoadingScreen({
     : sequenceDone ? STATUS_MESSAGES[statusIdx] : 'Initializing...';
 
   // Time-of-day color palette
-  const bg         = night
-    ? ['#050d1e', '#08152a', '#050d1e'] as const
-    : ['#a8ccdf', '#c4deee', '#a8ccdf'] as const;
-  const ringColor  = night ? 'rgba(0, 200, 230, 0.75)' : 'rgba(55, 135, 195, 0.55)';
+  const bgImage    = night
+    ? require('../assets/sky-night.jpg')
+    : require('../assets/sky-day.jpg');
+  const ringColor  = night ? 'rgba(0, 200, 230, 0.75)' : 'rgba(255, 255, 255, 0.7)';
   const dotBg      = night ? '#d8eaf8' : '#fffbe0';
   const dotGlow    = night ? 'rgba(180, 215, 248, 0.85)' : 'rgba(255, 228, 60, 0.85)';
-  const titleClr   = night ? '#e6f3ff' : '#163248';
-  const subtitleClr = night ? 'rgba(155, 205, 235, 0.55)' : 'rgba(22, 60, 95, 0.45)';
-  const dividerClr = night ? 'rgba(0, 200, 230, 0.28)' : 'rgba(35, 95, 150, 0.2)';
-  const statusClr  = night ? 'rgba(145, 200, 232, 0.5)' : 'rgba(22, 60, 95, 0.42)';
+  const titleClr   = night ? '#e6f3ff' : '#ffffff';
+  const subtitleClr = night ? 'rgba(155, 205, 235, 0.55)' : 'rgba(255, 255, 255, 0.7)';
+  const dividerClr = night ? 'rgba(0, 200, 230, 0.28)' : 'rgba(255, 255, 255, 0.4)';
+  const statusClr  = night ? 'rgba(145, 200, 232, 0.5)' : 'rgba(255, 255, 255, 0.65)';
 
   const dotWebGlow = Platform.OS === 'web'
     ? ({ boxShadow: `0 0 20px 10px ${dotGlow}` } as any)
@@ -96,7 +95,7 @@ export function AppLoadingScreen({
 
   return (
     <Animated.View style={[styles.container, { opacity: exitAnim }]}>
-      <LinearGradient colors={bg} style={StyleSheet.absoluteFill} />
+      <ImageBackground source={bgImage} style={StyleSheet.absoluteFill} resizeMode="cover" />
 
       <Animated.View style={[styles.inner, { opacity: screenFade }]}>
 
