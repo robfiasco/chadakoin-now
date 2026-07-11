@@ -1424,6 +1424,16 @@ const CURATED_EVENTS: EventItem[] = [
   { title: 'Curiosity Club: Unearth Your Story w/ Pat Pihl', startDate: '2026-07-27T17:30:00', endDate: '2026-07-27T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Community', tags: ['Library', 'Adults', 'Book Club'], link: 'https://prendergastlibrary.org' },
   { title: 'All-Ages Drumming', startDate: '2026-07-30T11:00:00', endDate: '2026-07-30T12:00:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'All Ages', 'Music'], link: 'https://prendergastlibrary.org' },
   { title: 'Summer Music Series: "Ice Age: Collision Point"', startDate: '2026-07-31T16:30:00', endDate: '2026-07-31T18:30:00', location: 'Prendergast Library, 509 Cherry St., Jamestown', category: 'Arts & Entertainment', tags: ['Library', 'Music', 'Summer Series'], link: 'https://prendergastlibrary.org' },
+
+  // — Fenton History Center Historic Walking Tours ——————————————————————————
+  { title: 'Historic Walking Tour: Ladies of Lake View', startDate: '2026-07-11T10:00:00', location: 'Lake View Cemetery, Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+  { title: 'Historic Walking Tour: Lakeview Ave.', startDate: '2026-07-18T10:00:00', location: 'Lakeview Ave., Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+  { title: 'Historic Walking Tour: Allen Park', startDate: '2026-07-25T10:00:00', location: 'Allen Park, Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+  { title: 'Historic Walking Tour: Lucy Downtown', startDate: '2026-08-08T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History', 'Lucy'], link: 'https://www.fentonhistorycenter.org' },
+  { title: 'Historic Walking Tour: Churches Tour', startDate: '2026-08-08T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+  { title: "Historic Walking Tour: Jamestown's Industrial Past", startDate: '2026-08-15T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+  { title: "Historic Walking Tour: Jamestown's Hidden Alleys", startDate: '2026-08-22T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+  { title: 'Historic Walking Tour: Military Tour at Lake View Cemetery', startDate: '2026-08-29T10:00:00', location: 'Lake View Cemetery, Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {

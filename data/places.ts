@@ -59,6 +59,17 @@ export const PLACES: Place[] = [
     lat: 42.11482, lng: -79.24780,
   },
   {
+    id: 'liscandros',
+    name: "Lisciandro's Restaurant",
+    categories: ['food'],
+    icon: 'restaurant-outline',
+    description: 'Classic Jamestown diner — retro feel, all-day breakfast, homemade lunch fare, coffee, and pie. Cash only. Packed on Saturday mornings for a reason.',
+    address: '207 N Main St, Jamestown',
+    hours: 'Mon–Sat 6am–1pm',
+    featured: false,
+    lat: 42.09770, lng: -79.24050,
+  },
+  {
     id: 'full-moon-rising-bakery',
     name: 'Full Moon Rising Bakery',
     categories: ['food'],
