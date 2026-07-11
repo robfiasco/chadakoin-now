@@ -184,6 +184,16 @@ const LOCAL_FAVORITES: LocalFav[] = [
     imageBg: '#111',
     bannerAspect: 4078 / 3400,
   },
+  {
+    name: "Lisciandro's Restaurant",
+    category: 'eat',
+    detail: 'Eat · Breakfast & Lunch · Cash Only',
+    phone: '7164878925',
+    hours: 'Mon–Sat 6am–1pm',
+    rgb: '220,100,60',
+    visited: false,
+    quote: "Classic Jamestown diner — retro feel, all-day breakfast, homemade lunch fare, coffee, and pie. Cash only. The kind of spot that's been around forever and still packed on Saturday mornings for a reason.",
+  },
 ];
 
 // ─── Also in Jamestown (hotels / lodging) ────────────────────────
