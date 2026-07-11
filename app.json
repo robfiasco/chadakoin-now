@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chadakoin Now",
     "slug": "chadakoin-now",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
@@ -14,12 +14,14 @@
     "ios": {
       "bundleIdentifier": "com.chadakoinnow",
       "appleTeamId": "3UM77ULJKQ",
-      "buildNumber": "5",
+      "buildNumber": "7",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.chadakoindigital.chadakoinnow"]
+        "com.apple.security.application-groups": [
+          "group.com.chadakoindigital.chadakoinnow"
+        ]
       }
     },
     "android": {
@@ -27,7 +29,7 @@
         "foregroundImage": "./assets/files/icon-chadakoin-android.png",
         "backgroundColor": "#0f0b08"
       },
-      "versionCode": 25,
+      "versionCode": 26,
       "package": "com.chadakoinnow",
       "permissions": [
         "android.permission.RECORD_AUDIO",
