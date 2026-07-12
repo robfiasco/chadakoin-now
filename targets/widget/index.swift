@@ -60,7 +60,22 @@ struct RecyclingInfo {
     let emoji:     String
 
     static func current() -> RecyclingInfo {
-        RecyclingInfo(
+        let cal     = Calendar.current
+        let now     = Date()
+        let weekday = cal.component(.weekday, from: now) // 1=Sun … 7=Sat
+        let hour    = cal.component(.hour,    from: now)
+        // Saturday after 6 pm: flip to next week so pickup day is always upcoming
+        if weekday == 7 && hour >= 18 {
+            let next = sharedDefaults?.string(forKey: "recycling_next_material") ?? ""
+            if !next.isEmpty {
+                return RecyclingInfo(
+                    material:  next,
+                    dateRange: sharedDefaults?.string(forKey: "recycling_next_dateRange") ?? "—",
+                    emoji:     sharedDefaults?.string(forKey: "recycling_next_emoji")     ?? "♻️"
+                )
+            }
+        }
+        return RecyclingInfo(
             material:  sharedDefaults?.string(forKey: "recycling_material")  ?? "—",
             dateRange: sharedDefaults?.string(forKey: "recycling_dateRange") ?? "—",
             emoji:     sharedDefaults?.string(forKey: "recycling_emoji")     ?? "♻️"
@@ -84,11 +99,23 @@ struct ChadakoinProvider: TimelineProvider {
         completion(ChadakoinEntry(date: Date(), parking: .current(), recycling: .current()))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<ChadakoinEntry>) -> Void) {
-        let now      = Date()
-        let entry    = ChadakoinEntry(date: now, parking: .current(for: now), recycling: .current())
-        let cal      = Calendar.current
-        let tomorrow = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now)!)
-        completion(Timeline(entries: [entry], policy: .after(tomorrow)))
+        let now     = Date()
+        let entry   = ChadakoinEntry(date: now, parking: .current(for: now), recycling: .current())
+        let cal     = Calendar.current
+        let weekday = cal.component(.weekday, from: now)
+        let hour    = cal.component(.hour,    from: now)
+        let nextRefresh: Date
+        // If it's Saturday before 6 pm, wake at exactly 6 pm to apply the recycling flip
+        if weekday == 7 && hour < 18 {
+            var comps        = cal.dateComponents([.year, .month, .day], from: now)
+            comps.hour       = 18
+            comps.minute     = 0
+            comps.second     = 0
+            nextRefresh = cal.date(from: comps) ?? cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now)!)
+        } else {
+            nextRefresh = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now)!)
+        }
+        completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
     }
 }
 

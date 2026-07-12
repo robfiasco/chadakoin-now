@@ -2136,9 +2136,12 @@ export function useCivicData(): CivicData {
     if (Platform.OS === 'ios' && recycling.thisWeek.material !== '—') {
       try {
         const appGroup = 'group.com.chadakoindigital.chadakoinnow';
-        await SharedGroupPreferences.setItem('recycling_material',  recycling.thisWeek.material,  appGroup);
-        await SharedGroupPreferences.setItem('recycling_dateRange', recycling.thisWeek.dateRange, appGroup);
-        await SharedGroupPreferences.setItem('recycling_emoji',     recycling.thisWeek.emoji,     appGroup);
+        await SharedGroupPreferences.setItem('recycling_material',       recycling.thisWeek.material,  appGroup);
+        await SharedGroupPreferences.setItem('recycling_dateRange',      recycling.thisWeek.dateRange, appGroup);
+        await SharedGroupPreferences.setItem('recycling_emoji',          recycling.thisWeek.emoji,     appGroup);
+        await SharedGroupPreferences.setItem('recycling_next_material',  recycling.nextWeek.material,  appGroup);
+        await SharedGroupPreferences.setItem('recycling_next_dateRange', recycling.nextWeek.dateRange, appGroup);
+        await SharedGroupPreferences.setItem('recycling_next_emoji',     recycling.nextWeek.emoji,     appGroup);
       } catch {}
     }
   }, []);
