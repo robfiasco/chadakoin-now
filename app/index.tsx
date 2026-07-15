@@ -357,10 +357,13 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           <View style={styles.fentonModalCard}>
             <Text style={styles.fentonModalTitle}>About This Campaign</Text>
             <Text style={styles.fentonModalBody}>
-              The Fenton History Center is applying for a New York State preservation grant to replace the roof on the historic Fenton Mansion — built in 1863 as the home of Governor Reuben E. Fenton.{'\n\n'}
-              They need community names in support of the application by{' '}
-              <Text style={{ fontWeight: '700', color: '#fff' }}>July 23, 2026</Text>.{'\n\n'}
-              Tapping "Email Your Name" opens a pre-addressed email. Just say you support the project — no cost, no commitment.
+              <Text style={{ fontWeight: '700', color: '#fff' }}>The building{'\n'}</Text>
+              The Fenton Mansion was built in 1863 as the home of Governor Reuben E. Fenton. It's been a museum since 1963 — over 60 years of preserving Jamestown and Chautauqua County history. The roof needs to be replaced to protect the building and the collections inside.{'\n\n'}
+              <Text style={{ fontWeight: '700', color: '#fff' }}>Why they need names{'\n'}</Text>
+              The City of Jamestown is submitting a New York State preservation grant application on their behalf. State grant reviewers weigh community support — a list of local residents who care about the building strengthens the case that this is worth funding.{'\n\n'}
+              <Text style={{ fontWeight: '700', color: '#fff' }}>What you actually do{'\n'}</Text>
+              Send one email saying you support the roof replacement. Your name goes on a list submitted to Albany with the grant application. No money, no follow-up, no commitment beyond that one email.{'\n\n'}
+              <Text style={{ fontWeight: '700', color: '#fff' }}>Deadline: July 23, 2026</Text>
             </Text>
             <TouchableOpacity style={styles.fentonModalBtn} onPress={() => { setFentonInfoOpen(false); openLink('mailto:info@fentonhistorycenter.org'); }}>
               <Text style={styles.fentonModalBtnText}>Email Your Name</Text>
