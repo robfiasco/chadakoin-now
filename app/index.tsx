@@ -310,15 +310,15 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             imageStyle={{ resizeMode: 'cover' }}
           >
             <LinearGradient
-              colors={['transparent', 'rgba(4,8,16,0.55)', 'rgba(4,8,16,0.92)']}
-              locations={[0, 0.45, 1]}
+              colors={['transparent', 'rgba(4,8,16,0.6)', 'rgba(4,8,16,0.94)']}
+              locations={[0, 0.4, 1]}
               style={styles.fentonBannerGradient}
             >
               <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={styles.fentonBannerBody}>Built 1863 · Email your support by July 23</Text>
+              <Text style={styles.fentonBannerBody}>Built 1863 · Email your support by July 23</Text>
+              <View style={{ alignItems: 'center', marginTop: 6 }}>
                 <View style={styles.fentonBannerCTA}>
-                  <Text style={styles.fentonBannerCTAText}>Send Support</Text>
+                  <Text style={styles.fentonBannerCTAText}>Send Your Support</Text>
                   <Ionicons name="arrow-forward" size={11} color="#0a0e18" />
                 </View>
               </View>
@@ -887,23 +887,24 @@ const styles = StyleSheet.create({
   schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
 
   fentonBanner: {
-    height: 130,
+    height: 150,
     borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(212,168,75,0.25)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   fentonBannerGradient: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingHorizontal: 18,
-    paddingBottom: 14,
-    gap: 4,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    gap: 3,
   },
-  fentonBannerTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#e8c97a', letterSpacing: 0.1 },
-  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 15, flex: 1 },
+  fentonBannerTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#ffffff', letterSpacing: 0.1, textAlign: 'center' },
+  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15, textAlign: 'center' },
   fentonBannerCTA: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#d4a84b', borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 4,
+    paddingHorizontal: 12, paddingVertical: 5,
   },
   fentonBannerCTAText: { fontFamily: 'Syne', fontSize: 10, fontWeight: '700', color: '#0a0e18' },
 
