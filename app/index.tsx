@@ -302,6 +302,21 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </TouchableOpacity>
       )}
 
+      {new Date() < new Date('2026-07-24') && (
+        <TouchableOpacity
+          style={styles.fentonBanner}
+          activeOpacity={0.85}
+          onPress={() => openLink('mailto:info@fentonhistorycenter.org')}
+        >
+          <Ionicons name="home-outline" size={18} color="#d4a84b" />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
+            <Text style={styles.fentonBannerBody}>Email your support by July 23 — tap to send</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={14} color="rgba(212,168,75,0.6)" />
+        </TouchableOpacity>
+      )}
+
 
       <ScrollView
         style={styles.scroll}
@@ -860,6 +875,14 @@ const styles = StyleSheet.create({
   },
   schoolBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fde047' },
   schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
+
+  fentonBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(180,130,40,0.12)', borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(212,168,75,0.28)', paddingHorizontal: 18, paddingVertical: 14,
+  },
+  fentonBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#d4a84b' },
+  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 15 },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 8, paddingBottom: 48 },
