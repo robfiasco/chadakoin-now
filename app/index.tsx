@@ -973,7 +973,8 @@ const styles = StyleSheet.create({
   },
   fentonModalCard: {
     backgroundColor: '#0d1824', borderRadius: 16, padding: 24,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 12, width: '100%',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 12,
+    width: '100%', maxWidth: 400,
   },
   fentonModalTitle: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff' },
   fentonModalBody:  { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 21 },
