@@ -315,11 +315,11 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             style={styles.fentonBannerGradient}
           >
             <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
-            <Text style={styles.fentonBannerBody}>Built 1863 · Email your support by July 23</Text>
+            <Text style={styles.fentonBannerBody}>Add your name to the support list — just send an email by July 23</Text>
             <View style={{ alignItems: 'center', marginTop: 6 }}>
               <View style={styles.fentonBannerCTA}>
-                <Text style={styles.fentonBannerCTAText}>Send Your Support</Text>
-                <Ionicons name="arrow-forward" size={11} color="#0a0e18" />
+                <Text style={styles.fentonBannerCTAText}>Email Your Name</Text>
+                <Ionicons name="mail-outline" size={12} color="#0a0e18" />
               </View>
             </View>
           </LinearGradient>
