@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Image,
+  View, Text, ScrollView, StyleSheet, Image, ImageBackground,
   TouchableOpacity, Animated, Easing, Platform, RefreshControl,
   FlatList,
 } from 'react-native';
@@ -303,17 +303,21 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       )}
 
       {new Date() < new Date('2026-07-24') && (
-        <TouchableOpacity
-          style={styles.fentonBanner}
-          activeOpacity={0.85}
-          onPress={() => openLink('mailto:info@fentonhistorycenter.org')}
-        >
-          <Ionicons name="home-outline" size={18} color="#d4a84b" />
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
-            <Text style={styles.fentonBannerBody}>Email your support by July 23 — tap to send</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={14} color="rgba(212,168,75,0.6)" />
+        <TouchableOpacity activeOpacity={0.85} onPress={() => openLink('mailto:info@fentonhistorycenter.org')} style={{ overflow: 'hidden' }}>
+          <ImageBackground
+            source={Platform.OS === 'web' ? { uri: '/fenton-mansion.jpg' } : require('../assets/fenton-mansion.jpg')}
+            style={styles.fentonBanner}
+            imageStyle={{ resizeMode: 'cover' }}
+          >
+            <View style={styles.fentonBannerOverlay}>
+              <Ionicons name="home-outline" size={18} color="#d4a84b" />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
+                <Text style={styles.fentonBannerBody}>Email your support by July 23 — tap to send</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={14} color="rgba(212,168,75,0.7)" />
+            </View>
+          </ImageBackground>
         </TouchableOpacity>
       )}
 
@@ -877,12 +881,16 @@ const styles = StyleSheet.create({
   schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
 
   fentonBanner: {
+    borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(212,168,75,0.3)',
+  },
+  fentonBannerOverlay: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: 'rgba(180,130,40,0.12)', borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(212,168,75,0.28)', paddingHorizontal: 18, paddingVertical: 14,
+    backgroundColor: 'rgba(5,10,18,0.72)',
+    paddingHorizontal: 18, paddingVertical: 14,
   },
   fentonBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#d4a84b' },
-  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 15 },
+  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 15 },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 8, paddingBottom: 48 },
