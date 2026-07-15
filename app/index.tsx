@@ -303,20 +303,26 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       )}
 
       {new Date() < new Date('2026-07-24') && (
-        <TouchableOpacity activeOpacity={0.85} onPress={() => openLink('mailto:info@fentonhistorycenter.org')} style={{ overflow: 'hidden' }}>
+        <TouchableOpacity activeOpacity={0.88} onPress={() => openLink('mailto:info@fentonhistorycenter.org')} style={{ overflow: 'hidden' }}>
           <ImageBackground
             source={Platform.OS === 'web' ? { uri: '/fenton-mansion.jpg' } : require('../assets/fenton-mansion.jpg')}
             style={styles.fentonBanner}
             imageStyle={{ resizeMode: 'cover' }}
           >
-            <View style={styles.fentonBannerOverlay}>
-              <Ionicons name="home-outline" size={18} color="#d4a84b" />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
-                <Text style={styles.fentonBannerBody}>Email your support by July 23 — tap to send</Text>
+            <LinearGradient
+              colors={['transparent', 'rgba(4,8,16,0.55)', 'rgba(4,8,16,0.92)']}
+              locations={[0, 0.45, 1]}
+              style={styles.fentonBannerGradient}
+            >
+              <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.fentonBannerBody}>Built 1863 · Email your support by July 23</Text>
+                <View style={styles.fentonBannerCTA}>
+                  <Text style={styles.fentonBannerCTAText}>Send Support</Text>
+                  <Ionicons name="arrow-forward" size={11} color="#0a0e18" />
+                </View>
               </View>
-              <Ionicons name="chevron-forward" size={14} color="rgba(212,168,75,0.7)" />
-            </View>
+            </LinearGradient>
           </ImageBackground>
         </TouchableOpacity>
       )}
@@ -881,16 +887,25 @@ const styles = StyleSheet.create({
   schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
 
   fentonBanner: {
+    height: 130,
     borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(212,168,75,0.3)',
+    borderColor: 'rgba(212,168,75,0.25)',
   },
-  fentonBannerOverlay: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: 'rgba(5,10,18,0.72)',
-    paddingHorizontal: 18, paddingVertical: 14,
+  fentonBannerGradient: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+    gap: 4,
   },
-  fentonBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#d4a84b' },
-  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 15 },
+  fentonBannerTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#e8c97a', letterSpacing: 0.1 },
+  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 15, flex: 1 },
+  fentonBannerCTA: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#d4a84b', borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
+  fentonBannerCTAText: { fontFamily: 'Syne', fontSize: 10, fontWeight: '700', color: '#0a0e18' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 8, paddingBottom: 48 },
