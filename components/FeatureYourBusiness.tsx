@@ -12,7 +12,7 @@ const INCLUDES = [
   { icon: 'people-outline' as const,              text: 'Only 5 slots available' },
 ];
 
-const ADDONS = [
+export const ADDONS = [
   {
     title: 'Event Boost',
     prices: ['$25 / 2 wks', '$45 / 30 days'],

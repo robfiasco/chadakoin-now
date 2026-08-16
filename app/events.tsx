@@ -8,12 +8,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
+import { ADDONS } from '../components/FeatureYourBusiness';
 import { useTheme } from '../lib/ThemeContext';
 import { EventItem } from '../hooks/useCivicData';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
+import FeedbackScreen from './feedback';
+
+const EVENT_BOOST = ADDONS.find(a => a.title === 'Event Boost')!;
 
 // ── Category colors & icons ───────────────────────────────────────
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -62,13 +66,6 @@ function formatDayHeader(dateStr: string): { dow: string; label: string } {
   const dow = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const mon = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
   return { dow, label: `${dow} · ${mon} ${d.getDate()}` };
-}
-
-function formatFeaturedDate(iso: string): { date: string; time: string } {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const { ampm, clock } = formatTime(iso);
-  return { date: date.toUpperCase(), time: clock ? `${clock} ${ampm}` : '' };
 }
 
 // ── Filter helpers ────────────────────────────────────────────────
@@ -542,137 +539,49 @@ const sp = StyleSheet.create({
   ctaText:    { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
 });
 
-// ── Featured event card ───────────────────────────────────────────
-function FeaturedCard({ event }: { event: EventItem }) {
+// ── Ad slot CTA — sells the Featured spot instead of auto-filling it ──
+function EventAdCTA({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
-  const color = categoryColor(event.category);
-  const { date, time } = formatFeaturedDate(event.startDate);
-
   return (
     <TouchableOpacity
-      onPress={() => openLink(event.link)}
-      activeOpacity={0.75}
-      style={feat.card}
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[adCta.card, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
     >
-      {event.imageUrl ? (
-        <>
-          {/* Image header — tall version */}
-          <View style={feat.header}>
-            <Image
-              source={{ uri: event.imageUrl }}
-              style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
-              contentFit="cover"
-            />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.1)', 'transparent', 'rgba(0,0,0,0.4)'] as any}
-              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={feat.topRow}>
-              <View style={feat.pill}>
-                <Text style={feat.pillText}>{date}</Text>
-              </View>
-              {time ? (
-                <View style={feat.pill}>
-                  <Text style={feat.pillText}>{time}</Text>
-                </View>
-              ) : null}
-            </View>
-            <View style={[feat.catPill, { backgroundColor: `${color}22`, borderColor: `${color}44` }]}>
-              <View style={[feat.catDot, { backgroundColor: color }]} />
-              <Text style={[feat.catText, { color }]}>{event.category.toUpperCase()}</Text>
-            </View>
+      <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+        <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
+        <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
+      </View>
+      <Text style={adCta.title}>Your Event, Front and Center</Text>
+      <Text style={adCta.body}>
+        This spot is the first thing people see when they open Events — top of the list, every filter, every day.
+      </Text>
+      <View style={adCta.pricingRow}>
+        {EVENT_BOOST.prices.map(p => (
+          <View key={p} style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+            <Text style={[adCta.priceText, { color: theme.acc }]}>{p}</Text>
           </View>
-          <View style={feat.body}>
-            <Text style={feat.title}>{event.title}</Text>
-            {event.location ? (
-              <View style={feat.venueRow}>
-                <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
-                <Text style={feat.venue} numberOfLines={1}>{event.location}</Text>
-              </View>
-            ) : null}
-          </View>
-        </>
-      ) : (
-        <>
-          {/* No-image banner — venue photo or fallback city photo */}
-          <View style={feat.header}>
-            <Image
-              source={
-                event.location?.includes('Labyrinth')
-                  ? (Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'))
-                  : event.location?.includes('Diethrick') || event.category?.toLowerCase() === 'baseball'
-                  ? (Platform.OS === 'web' ? { uri: '/diethrick-park.jpg' } : require('../assets/diethrick-park.jpg'))
-                  : require('../assets/jamestown.jpg')
-              }
-              style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
-              contentFit="cover"
-            />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.35)', 'transparent', 'rgba(0,0,0,0.55)'] as any}
-              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={[feat.accentBar, { backgroundColor: color }]} />
-            <View style={feat.topRow}>
-              <View style={feat.pill}>
-                <Text style={feat.pillText}>{date}</Text>
-              </View>
-              {time ? (
-                <View style={feat.pill}>
-                  <Text style={feat.pillText}>{time}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-          <View style={feat.body}>
-            <Text style={feat.title}>{event.title}</Text>
-            {event.location ? (
-              <View style={feat.venueRow}>
-                <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.35)" />
-                <Text style={feat.venue} numberOfLines={1}>{event.location}</Text>
-              </View>
-            ) : null}
-            <View style={[feat.catPill, { backgroundColor: `${color}22`, borderColor: `${color}44`, marginTop: 4 }]}>
-              <View style={[feat.catDot, { backgroundColor: color }]} />
-              <Text style={[feat.catText, { color }]}>{event.category.toUpperCase()}</Text>
-            </View>
-          </View>
-        </>
-      )}
+        ))}
+      </View>
+      <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
+        <Text style={adCta.ctaBtnText}>Feature My Event</Text>
+        <Ionicons name="arrow-forward" size={13} color="#000" />
+      </View>
     </TouchableOpacity>
   );
 }
 
-const feat = StyleSheet.create({
-  card:   {
-    backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
-    borderRadius: 18, overflow: 'hidden', marginBottom: 12,
-  },
-  header: { height: 200, justifyContent: 'space-between', padding: 14 },
-  banner: { height: 96, justifyContent: 'center', paddingHorizontal: 18, position: 'relative', overflow: 'hidden' },
-  accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
-  watermark: {
-    position: 'absolute', right: 0, bottom: -8,
-    fontFamily: 'Syne', fontSize: 48, letterSpacing: 3, opacity: 0.06, color: '#fff', textAlign: 'right',
-  },
-  bannerMeta: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.3 },
-  topRow: { flexDirection: 'row', gap: 6, alignSelf: 'flex-end' },
-  pill:   {
-    backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 7, paddingHorizontal: 10, paddingVertical: 5,
-  },
-  pillText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.8 },
-  catPill:  {
-    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderWidth: 1, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4,
-  },
-  catDot:   { width: 5, height: 5, borderRadius: 3 },
-  catText:  { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
-  body:   { padding: 16, gap: 8 },
-  title:  { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
-  venueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  venue:  { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.4)', flex: 1 },
+const adCta = StyleSheet.create({
+  card:      { borderWidth: 1, borderRadius: 18, padding: 18, marginBottom: 12, gap: 10 },
+  badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },
+  badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
+  title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
+  body:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19 },
+  pricingRow:{ flexDirection: 'row', gap: 8 },
+  pricePill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
+  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
+  ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
 });
 
 // ── Day header ────────────────────────────────────────────────────
@@ -768,6 +677,7 @@ export default function EventsScreen() {
   const { events, loading } = civic;
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [adFeedbackOpen, setAdFeedbackOpen] = useState(false);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -849,10 +759,9 @@ export default function EventsScreen() {
   const now2 = new Date();
   const activeSponsored = SPONSORED_SHOWS.filter(s => new Date(s.date) > now2);
 
-  const featuredEvent = filtered[0] ?? null;
-  // When a sponsored show is in the featured slot, don't skip the first regular event
-  const restEvents = activeSponsored.length > 0 ? filtered : filtered.slice(1);
-  const dayGroups  = groupByDay(restEvents);
+  // The Featured slot is either a paid sponsored show or the ad-slot CTA —
+  // never an auto-picked event — so the full list always renders below it.
+  const dayGroups = groupByDay(filtered);
 
   return (
     <ThemedBackground>
@@ -914,18 +823,19 @@ export default function EventsScreen() {
           </>
         )}
 
+        {/* Ad slot CTA — takes the Featured spot when no paid sponsored show is active */}
+        {activeSponsored.length === 0 && (
+          <>
+            <View style={styles.sectionRow}>
+              <Ionicons name="star-outline" size={12} color={theme.acc} />
+              <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured</Text>
+            </View>
+            <EventAdCTA onPress={() => setAdFeedbackOpen(true)} />
+          </>
+        )}
+
         {loading ? (
           <>
-            {/* Featured skeleton — only when no sponsored show */}
-            {activeSponsored.length === 0 && (
-              <View style={sk.featCard}>
-                <SkeletonPulse width="100%" height={160} borderRadius={0} accRGB={theme.accRGB} />
-                <View style={{ padding: 16, gap: 8 }}>
-                  <SkeletonPulse width="80%" height={19} borderRadius={5} accRGB={theme.accRGB} />
-                  <SkeletonPulse width="50%" height={12} borderRadius={4} accRGB={theme.accRGB} />
-                </View>
-              </View>
-            )}
             {[1, 2, 3].map(i => (
               <View key={i} style={sk.rowCard}>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -951,17 +861,6 @@ export default function EventsScreen() {
           </View>
         ) : (
           <>
-            {/* Featured event — only when no sponsored show is active */}
-            {activeSponsored.length === 0 && featuredEvent && (
-              <>
-                <View style={styles.sectionRow}>
-                  <Ionicons name="star-outline" size={12} color={theme.acc} />
-                  <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured</Text>
-                </View>
-                <FeaturedCard event={featuredEvent} />
-              </>
-            )}
-
             {/* Day groups */}
             {dayGroups.map(group => (
               <View key={group.dateKey} style={{ marginBottom: 6 }}>
@@ -982,11 +881,18 @@ export default function EventsScreen() {
             : 'Loading…'}
         </Text>
       </ScrollView>
+
+      {adFeedbackOpen && (
+        <View style={styles.fullOverlay}>
+          <FeedbackScreen onClose={() => setAdFeedbackOpen(false)} initialType="event" />
+        </View>
+      )}
     </ThemedBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 9999, elevation: 9999, flex: 1 },
   safe:     { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 16 },
   title:    { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subtitle: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 },

@@ -18,6 +18,7 @@ const TYPES = [
   { key: 'suggestion', label: 'Suggestion' },
   { key: 'correction', label: 'Correction (wrong hours, bad link, etc.)' },
   { key: 'business',   label: 'Featured Placement inquiry' },
+  { key: 'event',      label: 'Event Boost inquiry' },
 ];
 
 const PLACEHOLDERS: Record<string, string> = {
@@ -26,6 +27,7 @@ const PLACEHOLDERS: Record<string, string> = {
   suggestion: 'What would you like to see in the app?',
   correction: "Which business or event? What's wrong, and what should it be?",
   business:   "Tell us about your business and what you'd like to know about Featured Placement.",
+  event:      "What's the event, and when? We'll get it featured at the top of the Events tab.",
 };
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
