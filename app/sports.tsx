@@ -79,10 +79,24 @@ interface SabresData {
   record: string; standing: string; points?: number;
   wins?: number; losses?: number; otLosses?: number;
   recentGame?: GameResult; nextGame?: GameResult; liveGame?: GameResult | null;
-  topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[];
+  topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[]; nfl?: NFLTeam[];
   playoffSeries?: PlayoffSeries | null;
   news: any[];
 }
+
+interface NFLGame     { date: string; week: string; opponent: string; opponentAbbr: string; ourScore: string; theirScore: string; isHome: boolean; won: boolean; }
+interface NFLNextGame { date: string; week: string; opponent: string; opponentAbbr: string; opponentLogo: string; isHome: boolean; venue: string; broadcast: string; }
+interface NFLLiveGame { week: string; opponent: string; opponentAbbr: string; opponentLogo: string; ourScore: string; theirScore: string; isHome: boolean; clock: string; }
+interface NFLTeam {
+  abbr: string; name: string; logo: string; record: string;
+  games: NFLGame[]; nextGame: NFLNextGame | null; liveGame: NFLLiveGame | null;
+}
+
+const NFL_TEAMS = [
+  { espnAbbr: 'buf', abbr: 'BUF', name: 'Bills' },
+  { espnAbbr: 'pit', abbr: 'PIT', name: 'Steelers' },
+  { espnAbbr: 'cle', abbr: 'CLE', name: 'Browns' },
+];
 
 const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
@@ -114,6 +128,7 @@ const ACC = {
   skunks: '#84cc16',  // lime-500
   sabres: '#60a5fa',  // blue-400
   mlb:    '#a78bfa',  // violet-400
+  nfl:    '#fb923c',  // orange-400
   label:  '#22d3ee',  // cyan-400 — section headers
 } as const;
 
@@ -315,6 +330,71 @@ async function fetchMLB(): Promise<MLBTeam[]> {
   } catch { return []; }
 }
 
+async function fetchNFL(): Promise<NFLTeam[]> {
+  try {
+    if (Platform.OS === 'web') {
+      const res = await fetch(apiUrl('/api/nfl'));
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.teams ?? []) as NFLTeam[];
+    }
+    const results = await Promise.all(NFL_TEAMS.map(async t => {
+      const logo = `https://a.espncdn.com/i/teamlogos/nfl/500/${t.espnAbbr}.png`;
+      try {
+        const [recRes, schedRes] = await Promise.all([
+          fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${t.espnAbbr}`),
+          fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${t.espnAbbr}/schedule`),
+        ]);
+        const record = recRes.ok ? ((await recRes.json())?.team?.record?.items?.[0]?.summary ?? '') : '';
+        const games: NFLGame[] = [];
+        let nextGame: NFLNextGame | null = null;
+        let liveGame: NFLLiveGame | null = null;
+        if (schedRes.ok) {
+          const schedJson = await schedRes.json();
+          for (const event of (schedJson.events ?? [])) {
+            const comp = event.competitions?.[0]; if (!comp) continue;
+            const state = comp.status?.type?.state ?? '';
+            const competitors: any[] = comp.competitors ?? [];
+            const us   = competitors.find(c => c.team?.abbreviation === t.espnAbbr.toUpperCase());
+            const them = competitors.find(c => c.team?.abbreviation !== t.espnAbbr.toUpperCase());
+            if (!us || !them) continue;
+            const isHome = us.homeAway === 'home';
+            if (state === 'post') {
+              games.push({
+                date: event.date, week: event.week?.text ?? '',
+                opponent: them.team?.displayName ?? '???', opponentAbbr: them.team?.abbreviation ?? '???',
+                ourScore: us.score?.displayValue ?? '0', theirScore: them.score?.displayValue ?? '0',
+                isHome, won: us.winner === true,
+              });
+            } else if (state === 'in') {
+              liveGame = {
+                week: event.week?.text ?? '',
+                opponent: them.team?.displayName ?? '???', opponentAbbr: them.team?.abbreviation ?? '???',
+                opponentLogo: them.team?.logo ?? '',
+                ourScore: us.score?.displayValue ?? '0', theirScore: them.score?.displayValue ?? '0',
+                isHome, clock: comp.status?.type?.shortDetail ?? '',
+              };
+            } else if (!nextGame && state === 'pre' && new Date(event.date) > new Date()) {
+              nextGame = {
+                date: event.date, week: event.week?.text ?? '',
+                opponent: them.team?.displayName ?? '???', opponentAbbr: them.team?.abbreviation ?? '???',
+                opponentLogo: them.team?.logo ?? '',
+                isHome, venue: comp.venue?.fullName ?? '', broadcast: comp.broadcasts?.[0]?.media?.shortName ?? '',
+              };
+            }
+          }
+        }
+        return {
+          abbr: t.abbr, name: t.name, logo, record,
+          games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5),
+          nextGame, liveGame,
+        };
+      } catch { return { abbr: t.abbr, name: t.name, logo, record: '', games: [], nextGame: null, liveGame: null }; }
+    }));
+    return results;
+  } catch { return []; }
+}
+
 async function fetchJCCNative(): Promise<JCCData> {
   const empty: JCCData = { results: [], upcoming: [], records: {} };
   try {
@@ -403,21 +483,22 @@ async function fetchPlayoffSeries(): Promise<PlayoffSeries | null> {
 
 async function fetchSabres(): Promise<SabresData> {
   if (Platform.OS === 'web') {
-    const [sabresRes, mlbRes] = await Promise.all([fetch(apiUrl('/api/sabres')), fetchMLB()]);
+    const [sabresRes, mlbRes, nflRes] = await Promise.all([fetch(apiUrl('/api/sabres')), fetchMLB(), fetchNFL()]);
     if (!sabresRes.ok) throw new Error('Sabres API failed');
     const json = await sabresRes.json();
     const rawJcc = json.jcc;
     const jcc: JCCData = rawJcc && typeof rawJcc === 'object' && !Array.isArray(rawJcc)
       ? rawJcc
       : { results: [], upcoming: [], records: {} };
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, playoffSeries: json.playoffSeries ?? null, news: [] };
+    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, nfl: nflRes, playoffSeries: json.playoffSeries ?? null, news: [] };
   }
-  const [schedRes, standRes, statsRes, jcc, mlb, playoffSeries] = await Promise.all([
+  const [schedRes, standRes, statsRes, jcc, mlb, nfl, playoffSeries] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
     fetch('https://api-web.nhle.com/v1/standings/now'),
     fetch('https://api-web.nhle.com/v1/club-stats/BUF/now'),
     fetchJCCNative(),
     fetchMLB(),
+    fetchNFL(),
     fetchPlayoffSeries(),
   ]);
   const schedJson = await schedRes.json();
@@ -451,7 +532,7 @@ async function fetchSabres(): Promise<SabresData> {
     }));
   const liveGames: any[] = games.filter((g: any) => g.gameState === 'LIVE' || g.gameState === 'CRIT');
   const liveGame: GameResult | null = liveGames[0] ? (parseNHLGame(liveGames[0]) ?? null) : null;
-  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, liveGame, topScorers, jcc, mlb, playoffSeries, news: [] };
+  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, liveGame, topScorers, jcc, mlb, nfl, playoffSeries, news: [] };
 }
 
 function ordinal(n: number): string {
@@ -587,7 +668,7 @@ export default function SportsScreen() {
   }, []);
 
   // Auto-poll every 60s when any live game is in progress
-  const hasLive = !!(data?.liveGame?.status === 'live' || data?.mlb?.some(t => t.liveGame));
+  const hasLive = !!(data?.liveGame?.status === 'live' || data?.mlb?.some(t => t.liveGame) || data?.nfl?.some(t => t.liveGame));
   useEffect(() => {
     if (hasLive) {
       if (!pollRef.current) {
@@ -737,6 +818,41 @@ export default function SportsScreen() {
         }
       }
     }
+    for (const team of (data.nfl ?? [])) {
+      if (team.liveGame) {
+        const lg = team.liveGame;
+        if (seenGamePairs.has(`nfl-${team.abbr}`)) continue;
+        seenGamePairs.add(`nfl-${team.abbr}`);
+        candidates.push({
+          ts: Date.now(), // live — always first
+          sport: `${team.name} · NFL`, emoji: '🏈',
+          matchup: `${team.abbr} ${lg.isHome ? 'vs' : '@'} ${lg.opponentAbbr}`,
+          dateLabel: lg.week,
+          time: `${lg.ourScore}–${lg.theirScore} · ${lg.clock}`,
+          accent: ACC.nfl, gradStart: 'rgba(251,146,60,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
+          ourLogoUrl: team.logo, oppLogoUrl: lg.opponentLogo || undefined,
+          isLive: true,
+        });
+      } else if (team.nextGame) {
+        const ng = team.nextGame;
+        if (seenGamePairs.has(`nfl-${team.abbr}`)) continue;
+        seenGamePairs.add(`nfl-${team.abbr}`);
+        const d = new Date(ng.date);
+        if (d > now) {
+          candidates.push({
+            ts: d.getTime(), sport: `${team.name} · NFL`, emoji: '🏈',
+            matchup: `${team.abbr} ${ng.isHome ? 'vs' : '@'} ${ng.opponentAbbr}`,
+            dateLabel: '',
+            time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+            accent: ACC.nfl, gradStart: 'rgba(251,146,60,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
+            ourLogoUrl: team.logo, oppLogoUrl: ng.opponentLogo || undefined,
+            record: team.record,
+            opponentName: ng.opponent, isHome: ng.isHome,
+            venue: ng.venue || undefined, broadcast: ng.broadcast || undefined,
+          });
+        }
+      }
+    }
     } // end if (data)
     if (candidates.length === 0) return [];
     // If any game is live, show only live games. Otherwise show upcoming.
@@ -774,6 +890,13 @@ export default function SportsScreen() {
     if (daysUntilSkunks === 2) return 'THIS FRIDAY';
     return null;
   }, [daysUntilSkunks]);
+
+  // Tarp Skunks season is active only while future games remain in the schedule —
+  // auto-hides once the season ends, auto-reappears when next year's dates are added
+  const skunksSeasonActive = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return SKUNKS_SCHEDULE.some(g => g.date >= todayStr);
+  }, []);
 
   // Next Skunks home game — used in expanded card
   const nextSkunksHome = useMemo(() => {
@@ -1028,8 +1151,8 @@ export default function SportsScreen() {
         {/* ── Local Teams ─────────────────────────────────────── */}
         <SectionLabel label="Local Teams" />
 
-        {/* Tarp Skunks */}
-        <TeamCard
+        {/* Tarp Skunks — hidden once the season ends until next year's schedule is added */}
+        {skunksSeasonActive && <TeamCard
           accentColor={ACC.skunks}
           gradStart="rgba(132,204,22,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
@@ -1218,7 +1341,7 @@ export default function SportsScreen() {
               <Text style={[styles.moreLinkText, { color: ACC.skunks }]}>Full Schedule →</Text>
             </TouchableOpacity>
           </View>
-        </TeamCard>
+        </TeamCard>}
 
         {/* JCC Jayhawks */}
         <TeamCard
@@ -1706,6 +1829,86 @@ export default function SportsScreen() {
               </View>
               <TouchableOpacity onPress={() => Linking.openURL('https://www.mlb.com')} activeOpacity={0.7} style={styles.moreLink}>
                 <Text style={[styles.moreLinkText, { color: `${ACC.mlb}70` }]}>More on MLB.com →</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
+          )}
+        </TeamCard>
+
+        {/* Regional NFL */}
+        <TeamCard
+          accentColor={ACC.nfl}
+          gradStart="rgba(251,146,60,0.22)"
+          gradEnd="rgba(15,23,42,0.9)"
+          iconContent={
+            <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
+          }
+          name="Regional NFL"
+          subtitle="BUF · PIT · CLE"
+          defaultOpen={false}
+          glassWeb={glassWeb}
+          glanceRow={
+            loading ? (
+              <SkeletonPulse width="55%" height={14} borderRadius={4} accRGB="251,146,60" />
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 14 }}>
+                {(data?.nfl ?? []).map(t => (
+                  <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
+                    <Image source={{ uri: t.logo }} style={{ width: 20, height: 20 }} resizeMode="contain" />
+                    <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record || t.abbr}</Text>
+                  </View>
+                ))}
+              </View>
+            )
+          }
+        >
+          {loading ? (
+            <SkeletonPulse width="100%" height={140} borderRadius={12} accRGB="251,146,60" />
+          ) : (data?.nfl ?? []).length > 0 ? (
+            <>
+              {/* @ts-ignore */}
+              <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
+                {(data?.nfl ?? []).map((t, i) => {
+                  let nextStr = '';
+                  if (t.nextGame) {
+                    const d = new Date(t.nextGame.date);
+                    const timeStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    nextStr = `${t.nextGame.isHome ? 'vs' : '@'} ${t.nextGame.opponentAbbr} · ${timeStr}`;
+                  }
+                  return (
+                    <View key={t.abbr} style={[i < (data?.nfl?.length ?? 0) - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                      <View style={styles.mlbTeamRow}>
+                        <View style={styles.mlbLogoWrap}>
+                          <Image source={{ uri: t.logo }} style={styles.mlbLogo} resizeMode="contain" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.mlbTeamName}>{t.name}</Text>
+                          {t.liveGame ? (
+                            <Text style={[styles.mlbNext, { color: dark.text.muted }]}>
+                              {`${t.abbr} ${t.liveGame.isHome ? 'vs' : '@'} ${t.liveGame.opponentAbbr} · ${t.liveGame.ourScore}–${t.liveGame.theirScore}`}
+                            </Text>
+                          ) : nextStr ? (
+                            <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text>
+                          ) : t.games[0] ? (
+                            <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>
+                              {t.games[0].won ? 'W' : 'L'} {t.games[0].ourScore}–{t.games[0].theirScore} {t.games[0].isHome ? 'vs' : '@'} {t.games[0].opponentAbbr}
+                            </Text>
+                          ) : null}
+                        </View>
+                        {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
+                        {t.liveGame ? (
+                          <View style={styles.mlbLiveBadge}>
+                            <Text style={styles.mlbLiveBadgeText}>● LIVE</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              <TouchableOpacity onPress={() => Linking.openURL('https://www.espn.com/nfl/')} activeOpacity={0.7} style={styles.moreLink}>
+                <Text style={[styles.moreLinkText, { color: `${ACC.nfl}70` }]}>More on ESPN →</Text>
               </TouchableOpacity>
             </>
           ) : (

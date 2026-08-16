@@ -107,7 +107,15 @@ const FEEDS = {
   chautauquaAlerts: 'https://chautauquacountyny.gov/rss.xml',
   jackson: 'https://www.roberthjackson.org/feed/',
   fenton: 'https://fentonhistorycenter.org/?post_type=mec-events&feed=rss2',
+  mychq: 'https://mychq.org/wp-json/tribe/events/v1/events',
 };
+
+// Chautauqua County towns close enough to Jamestown to be relevant —
+// mychq.org covers the whole county, so this keeps the feed local.
+const LOCAL_TOWNS = new Set([
+  'jamestown', 'lakewood', 'falconer', 'celoron', 'busti', 'ashville',
+  'bemus point', 'mayville', 'frewsburg', 'gerry', 'chautauqua', 'stow',
+]);
 
 const TTL = {
   recycling: 24 * 60 * 60 * 1000,   // 24h
@@ -488,8 +496,10 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   }
   if (thisIdx === -1 && recyclingWeeks.length > 0) thisIdx = 0;
 
-  // Saturday evening (6pm+): show next week so pickup day is always in the future
-  if (now.getDay() === 6 && now.getHours() >= 18 && thisIdx + 1 < recyclingWeeks.length) {
+  // Saturday evening (6pm+) through end of Sunday: show next week so pickup day
+  // is always in the future, not last week's already-passed collection.
+  const isWeekendPreview = (now.getDay() === 6 && now.getHours() >= 18) || now.getDay() === 0;
+  if (isWeekendPreview && thisIdx + 1 < recyclingWeeks.length) {
     thisIdx += 1;
   }
 
@@ -1441,11 +1451,12 @@ async function fetchEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('events_v2', TTL.events);
   if (cached) return cached;
 
-  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents] = await Promise.all([
+  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, mychqEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
     fetchRegLennaEvents(),
     fetchFentonEvents(),
+    fetchMychqEvents(),
   ]);
   const libraryEvents = libraryContent.events;
 
@@ -1494,8 +1505,8 @@ async function fetchEvents(): Promise<EventItem[]> {
   const seen = new Set<string>();
   const merged: EventItem[] = [];
 
-  // Priority: Reg Lenna (structured) → Fenton → Library → WRFA → BPU
-  for (const e of [...regLennaEvents, ...fentonEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
+  // Priority: Reg Lenna (structured) → Fenton → mychq → Library → WRFA → BPU
+  for (const e of [...regLennaEvents, ...fentonEvents, ...mychqEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
     const key = dedupeKey(e);
     if (seen.has(key)) continue;
     if (merged.some(m => isSameEvent(m, e))) continue; // fuzzy same-day title match
@@ -1545,6 +1556,45 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
     ...filtered,
   ];
   return combined.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+}
+
+async function fetchMychqEvents(): Promise<EventItem[]> {
+  const cached = await getCached<EventItem[]>('mychq', TTL.events);
+  if (cached) return cached;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const url = `${FEEDS.mychq}?per_page=100&start_date=${today}`;
+    const res = await feedFetch(proxyUrl(url));
+    if (!res.ok) throw new Error('mychq fetch failed');
+    const json = await res.json();
+
+    const events: EventItem[] = (json.events ?? [])
+      .filter((e: any) => LOCAL_TOWNS.has((e.venue?.city ?? '').toLowerCase().trim()))
+      .map((e: any) => {
+        const category = e.categories?.[0]?.name ? stripHtml(e.categories[0].name) : 'Community';
+        const venueName = e.venue?.venue ? stripHtml(e.venue.venue) : '';
+        const city = e.venue?.city ? stripHtml(e.venue.city) : '';
+        return {
+          title: stripHtml(e.title ?? ''),
+          startDate: (e.start_date ?? '').replace(' ', 'T'),
+          endDate: (e.end_date ?? e.start_date ?? '').replace(' ', 'T'),
+          location: [venueName, city].filter(Boolean).join(', ') || 'Chautauqua County',
+          category,
+          tags: [category],
+          link: e.url || undefined,
+          imageUrl: e.image?.url || undefined,
+        } as EventItem;
+      })
+      .filter((e: EventItem) => e.title && e.startDate)
+      .slice(0, 25);
+
+    await setCache('mychq', events);
+    return events;
+  } catch {
+    const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}mychq`);
+    if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
+    return [];
+  }
 }
 
 async function fetchFentonEvents(): Promise<EventItem[]> {

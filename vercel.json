@@ -18,6 +18,7 @@
     { "source": "/api/cdir",          "destination": "/api/cdir" },
     { "source": "/api/sabres",        "destination": "/api/sabres" },
     { "source": "/api/mlb",           "destination": "/api/mlb" },
+    { "source": "/api/nfl",           "destination": "/api/nfl" },
     { "source": "/api/feedback",      "destination": "/api/feedback" },
     { "source": "/api/source-health", "destination": "/api/source-health" },
     { "source": "/api/gas",           "destination": "/api/gas" }

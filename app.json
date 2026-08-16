@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chadakoin Now",
     "slug": "chadakoin-now",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
@@ -14,7 +14,7 @@
     "ios": {
       "bundleIdentifier": "com.chadakoinnow",
       "appleTeamId": "3UM77ULJKQ",
-      "buildNumber": "8",
+      "buildNumber": "15",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },

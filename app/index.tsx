@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Image, ImageBackground,
+  View, Text, ScrollView, StyleSheet, Image,
   TouchableOpacity, Animated, Easing, Platform, RefreshControl,
-  FlatList, Modal,
+  FlatList,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -149,8 +149,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [refreshing, setRefreshing] = useState(false);
   const [widgetBanner, setWidgetBanner] = useState(false);
   const [alertExpanded, setAlertExpanded] = useState(false);
-  const [fentonBannerDismissed, setFentonBannerDismissed] = useState(false);
-  const [fentonInfoOpen, setFentonInfoOpen] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -159,11 +157,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     });
   }, []);
 
-  useEffect(() => {
-    AsyncStorage.getItem('fenton_banner_dismissed').then(v => {
-      if (v) setFentonBannerDismissed(true);
-    });
-  }, []);
   const civic = useCivic();
 
   const dateBadge = getDateBadge();
@@ -310,68 +303,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </TouchableOpacity>
       )}
 
-      {new Date() < new Date('2026-07-24') && !fentonBannerDismissed && (
-        <TouchableOpacity activeOpacity={0.88} onPress={() => openLink('mailto:info@fentonhistorycenter.org')} style={styles.fentonBanner}>
-          <Image
-            source={Platform.OS === 'web' ? { uri: '/fenton-mansion.jpg' } : require('../assets/fenton-mansion.jpg')}
-            style={styles.fentonBannerImage}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(4,8,16,0.6)', 'rgba(4,8,16,0.94)']}
-            locations={[0, 0.4, 1]}
-            style={styles.fentonBannerGradient}
-          >
-            <Text style={styles.fentonBannerTitle}>Help Save the Fenton Mansion Roof</Text>
-            <Text style={styles.fentonBannerBody}>Add your name to the support list — just send an email by July 23</Text>
-            <View style={{ alignItems: 'center', marginTop: 6 }}>
-              <View style={styles.fentonBannerCTA}>
-                <Text style={styles.fentonBannerCTAText}>Email Your Name</Text>
-                <Ionicons name="mail-outline" size={12} color="#0a0e18" />
-              </View>
-            </View>
-          </LinearGradient>
-          <TouchableOpacity
-            style={styles.fentonBannerInfo}
-            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-            onPress={e => { e.stopPropagation(); setFentonInfoOpen(true); }}
-          >
-            <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.55)" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.fentonBannerDismiss}
-            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-            onPress={e => {
-              e.stopPropagation();
-              setFentonBannerDismissed(true);
-              AsyncStorage.setItem('fenton_banner_dismissed', '1');
-            }}
-          >
-            <Ionicons name="close" size={16} color="rgba(255,255,255,0.6)" />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      )}
-
-      <Modal visible={fentonInfoOpen} transparent animationType="fade" onRequestClose={() => setFentonInfoOpen(false)}>
-        <TouchableOpacity style={styles.fentonModalBackdrop} activeOpacity={1} onPress={() => setFentonInfoOpen(false)}>
-          <View style={styles.fentonModalCard}>
-            <Text style={styles.fentonModalTitle}>About This Campaign</Text>
-            <Text style={styles.fentonModalBody}>
-              <Text style={{ fontWeight: '700', color: '#fff' }}>The building{'\n'}</Text>
-              The Fenton Mansion was built in 1863 as the home of Governor Reuben E. Fenton. It's been a museum since 1963 — over 60 years of preserving Jamestown and Chautauqua County history. The roof needs to be replaced to protect the building and the collections inside.{'\n\n'}
-              <Text style={{ fontWeight: '700', color: '#fff' }}>Why they need names{'\n'}</Text>
-              The City of Jamestown is submitting a New York State preservation grant application on their behalf. State grant reviewers weigh community support — a list of local residents who care about the building strengthens the case that this is worth funding.{'\n\n'}
-              <Text style={{ fontWeight: '700', color: '#fff' }}>What you actually do{'\n'}</Text>
-              Send one email saying you support the roof replacement. Your name goes on a list submitted to Albany with the grant application. No money, no follow-up, no commitment beyond that one email.{'\n\n'}
-              <Text style={{ fontWeight: '700', color: '#fff' }}>Deadline: July 23, 2026</Text>
-            </Text>
-            <TouchableOpacity style={styles.fentonModalBtn} onPress={() => { setFentonInfoOpen(false); openLink('mailto:info@fentonhistorycenter.org'); }}>
-              <Text style={styles.fentonModalBtnText}>Email Your Name</Text>
-              <Ionicons name="mail-outline" size={13} color="#0a0e18" />
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
 
       <ScrollView
@@ -932,61 +863,6 @@ const styles = StyleSheet.create({
   schoolBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fde047' },
   schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
 
-  fentonBanner: {
-    height: 150,
-    overflow: 'hidden',
-    borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  fentonBannerImage: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    height: 220, // taller than container — shows top of photo (roof + sky)
-  },
-  fentonBannerGradient: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 18,
-    gap: 6,
-  },
-  fentonBannerTitle: { fontFamily: 'Syne', fontSize: 18, fontWeight: '700', color: '#ffffff', letterSpacing: 0, textAlign: 'center', lineHeight: 24 },
-  fentonBannerBody:  { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 18, textAlign: 'center' },
-  fentonBannerCTA: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#d4a84b', borderRadius: 20,
-    paddingHorizontal: 16, paddingVertical: 7,
-    marginTop: 2,
-  },
-  fentonBannerCTAText: { fontFamily: 'Syne', fontSize: 12, fontWeight: '700', color: '#0a0e18' },
-  fentonBannerInfo: {
-    position: 'absolute', top: 10, left: 12,
-    backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 12,
-    padding: 4,
-  },
-  fentonBannerDismiss: {
-    position: 'absolute', top: 10, right: 12,
-    backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 12,
-    padding: 4,
-  },
-  fentonModalBackdrop: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center', alignItems: 'center', padding: 28,
-  },
-  fentonModalCard: {
-    backgroundColor: '#0d1824', borderRadius: 16, padding: 24,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 12,
-    width: '100%', maxWidth: 400,
-  },
-  fentonModalTitle: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff' },
-  fentonModalBody:  { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 21 },
-  fentonModalBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: '#d4a84b', borderRadius: 20,
-    paddingVertical: 10, paddingHorizontal: 20, marginTop: 4,
-  },
-  fentonModalBtnText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#0a0e18' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 8, paddingBottom: 48 },

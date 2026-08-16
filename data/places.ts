@@ -218,6 +218,16 @@ export const PLACES: Place[] = [
     lat: 42.10733, lng: -79.26450,
   },
   {
+    id: 'puzzle-lounge',
+    name: 'The Puzzle Lounge',
+    categories: ['drinks', 'food'],
+    icon: 'beer-outline',
+    description: 'Casual bar serving chicken wings, beer, wine, and cocktails, plus pool and sports on TV.',
+    address: '1065 E 2nd St, Jamestown, NY 14701',
+    hours: 'Tue–Sat 5pm–2am · Sun–Mon Closed',
+    featured: false,
+  },
+  {
     id: 'cherry-lounge',
     name: 'The Cherry Lounge',
     categories: ['drinks', 'food'],

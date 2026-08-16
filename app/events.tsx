@@ -601,6 +601,8 @@ function FeaturedCard({ event }: { event: EventItem }) {
               source={
                 event.location?.includes('Labyrinth')
                   ? (Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'))
+                  : event.location?.includes('Diethrick') || event.category?.toLowerCase() === 'baseball'
+                  ? (Platform.OS === 'web' ? { uri: '/diethrick-park.jpg' } : require('../assets/diethrick-park.jpg'))
                   : require('../assets/jamestown.jpg')
               }
               style={[StyleSheet.absoluteFill, { top: 0, bottom: 0 }]}
@@ -970,6 +972,10 @@ export default function EventsScreen() {
           </>
         )}
 
+        <Text style={styles.disclaimer}>
+          Events may be cancelled or changed without notice. Always check with the organizer before heading out.
+        </Text>
+
         <Text style={[styles.footer, { color: `rgba(${theme.accRGB},0.2)` }]}>
           {civic.lastUpdated
             ? `Updated ${new Date(civic.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -1000,7 +1006,8 @@ const styles = StyleSheet.create({
   emptyWrap: { paddingTop: 48, alignItems: 'center' },
   emptyText: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.3)' },
 
-  footer:   { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 20 },
+  disclaimer: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', color: 'rgba(255,255,255,0.25)', lineHeight: 17, marginTop: 24, marginHorizontal: 16 },
+  footer:   { fontFamily: 'Outfit', fontSize: 10, textAlign: 'center', marginTop: 8 },
 });
 
 const sk = StyleSheet.create({

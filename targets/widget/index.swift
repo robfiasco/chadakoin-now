@@ -64,8 +64,10 @@ struct RecyclingInfo {
         let now     = Date()
         let weekday = cal.component(.weekday, from: now) // 1=Sun … 7=Sat
         let hour    = cal.component(.hour,    from: now)
-        // Saturday after 6 pm: flip to next week so pickup day is always upcoming
-        if weekday == 7 && hour >= 18 {
+        // Saturday after 6 pm through end of Sunday: flip to next week so pickup day
+        // is always upcoming, not last week's already-passed collection.
+        let isWeekendPreview = (weekday == 7 && hour >= 18) || weekday == 1
+        if isWeekendPreview {
             let next = sharedDefaults?.string(forKey: "recycling_next_material") ?? ""
             if !next.isEmpty {
                 return RecyclingInfo(
@@ -169,6 +171,7 @@ private struct PillBadge: View {
             .padding(.vertical, 5)
             .background(Capsule().fill(Color.white.opacity(0.12)))
             .lineLimit(1)
+            .minimumScaleFactor(0.6)
     }
 }
 

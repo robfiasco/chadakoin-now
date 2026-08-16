@@ -277,7 +277,7 @@ function NewsRow({ item }: { item: NewsItem }) {
         <View style={row.inner}>
           <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.72}>
             <View style={row.topRow}>
-              <Text style={row.title} numberOfLines={2}>{item.title}</Text>
+              <Text style={row.title}>{item.title}</Text>
               <Ionicons
                 name={expanded ? 'chevron-up' : 'chevron-down'}
                 size={16}
@@ -345,6 +345,61 @@ const row = StyleSheet.create({
   bodyText:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 20 },
   sourceLink:    { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   sourceLinkText:{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
+});
+
+const FENTON_DEADLINE = new Date('2026-07-24');
+
+function FentonPinnedCard() {
+  if (new Date() >= FENTON_DEADLINE) return null;
+  return (
+    <TouchableOpacity
+      onPress={() => openLink('mailto:info@fentonhistorycenter.org')}
+      activeOpacity={0.75}
+      style={fenton.card}
+    >
+      <View style={fenton.bar} />
+      <View style={fenton.inner}>
+        <View style={fenton.topRow}>
+          <View style={fenton.pill}>
+            <Text style={fenton.pillText}>COMMUNITY</Text>
+          </View>
+          <Text style={fenton.deadline}>Deadline 7/23</Text>
+        </View>
+        <Text style={fenton.title}>Help Save the Fenton Mansion Roof</Text>
+        <Text style={fenton.body}>
+          The Fenton History Center needs your name on a community support list for a NY State preservation grant application — up to $675K for the roof. Just reply to an email. Free, no commitment.
+        </Text>
+        <View style={fenton.ctaRow}>
+          <View style={fenton.cta}>
+            <Text style={fenton.ctaText}>Add My Name</Text>
+            <Ionicons name="mail-outline" size={12} color="#0a0e18" />
+          </View>
+          <TouchableOpacity onPress={() => openLink('https://www.wrfalp.com/fenton-history-center-working-on-finding-funds-for-replacing-roof-on-historic-mansion/')} activeOpacity={0.7}>
+            <Text style={fenton.learnMore}>Full story →</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const fenton = StyleSheet.create({
+  card: {
+    backgroundColor: 'rgba(212,168,75,0.07)', borderWidth: 1, borderColor: 'rgba(212,168,75,0.25)',
+    borderRadius: 14, overflow: 'hidden', flexDirection: 'row', marginBottom: 6,
+  },
+  bar:  { width: 3, backgroundColor: '#d4a84b', flexShrink: 0 },
+  inner:{ flex: 1, padding: 14, gap: 8 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pill: { backgroundColor: 'rgba(212,168,75,0.15)', borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 },
+  pillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', color: '#d4a84b', letterSpacing: 1 },
+  deadline: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(212,168,75,0.6)' },
+  title: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.2, lineHeight: 21 },
+  body:  { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cta:  { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#d4a84b', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5 },
+  ctaText: { fontFamily: 'Syne', fontSize: 11, fontWeight: '700', color: '#0a0e18' },
+  learnMore: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(212,168,75,0.7)', fontWeight: '600' },
 });
 
 function SectionHeader({ label, blotter, expanded, onToggle }: { label: string; blotter?: boolean; expanded?: boolean; onToggle?: () => void }) {
@@ -454,7 +509,7 @@ export default function NewsScreen() {
                 />
                 {(!bucket.isBlotter || blotterOpen) && bucket.items.map((item, i) =>
                   bi === 0 && i === 0 && !bucket.isBlotter
-                    ? <HeroCard key={i} item={item} />
+                    ? <React.Fragment key={i}><HeroCard item={item} /><FentonPinnedCard /></React.Fragment>
                     : <NewsRow key={i} item={item} />
                 )}
               </View>

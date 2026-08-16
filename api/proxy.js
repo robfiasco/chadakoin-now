@@ -37,6 +37,8 @@ const ALLOWED_HOSTS = new Set([
   'www.wjtn.com',
   'mediaonegroupradio.com',
   'www.mediaonegroupradio.com',
+  'mychq.org',
+  'www.mychq.org',
 ]);
 
 const rateLimitMap = new Map();
