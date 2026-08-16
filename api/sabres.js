@@ -77,8 +77,13 @@ async function fetchJCC(signal) {
       else records[r.sport].l++;
     }
 
+    // Only show genuinely recent results — otherwise a quiet offseason keeps
+    // last season's final score pinned as "recent" indefinitely.
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentResults = results.filter(r => new Date(r.date) >= sevenDaysAgo);
+
     return {
-      results:  results.slice(0, 8),
+      results:  recentResults.slice(0, 8),
       upcoming: upcoming.slice(0, 8),
       records,
     };
