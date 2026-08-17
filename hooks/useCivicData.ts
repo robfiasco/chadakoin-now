@@ -108,6 +108,7 @@ const FEEDS = {
   jackson: 'https://www.roberthjackson.org/feed/',
   fenton: 'https://fentonhistorycenter.org/?post_type=mec-events&feed=rss2',
   mychq: 'https://mychq.org/wp-json/tribe/events/v1/events',
+  jcc: 'https://www.jccjayhawks.com/composite?print=rss',
 };
 
 // Chautauqua County towns close enough to Jamestown to be relevant —
@@ -1451,12 +1452,13 @@ async function fetchEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('events_v2', TTL.events);
   if (cached) return cached;
 
-  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, mychqEvents] = await Promise.all([
+  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, mychqEvents, jccEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
     fetchRegLennaEvents(),
     fetchFentonEvents(),
     fetchMychqEvents(),
+    fetchJCCEvents(),
   ]);
   const libraryEvents = libraryContent.events;
 
@@ -1505,8 +1507,8 @@ async function fetchEvents(): Promise<EventItem[]> {
   const seen = new Set<string>();
   const merged: EventItem[] = [];
 
-  // Priority: Reg Lenna (structured) → Fenton → mychq → Library → WRFA → BPU
-  for (const e of [...regLennaEvents, ...fentonEvents, ...mychqEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
+  // Priority: Reg Lenna (structured) → Fenton → JCC → mychq → Library → WRFA → BPU
+  for (const e of [...regLennaEvents, ...fentonEvents, ...jccEvents, ...mychqEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
     const key = dedupeKey(e);
     if (seen.has(key)) continue;
     if (merged.some(m => isSameEvent(m, e))) continue; // fuzzy same-day title match
@@ -1592,6 +1594,83 @@ async function fetchMychqEvents(): Promise<EventItem[]> {
     return events;
   } catch {
     const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}mychq`);
+    if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
+    return [];
+  }
+}
+
+const JCC_FIELD_RX: Record<string, RegExp> = {
+  'ps:score':    /<ps:score[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:score>|<ps:score[^>]*>([^<]*)<\/ps:score>/,
+  'pubDate':     /<pubDate[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/pubDate>|<pubDate[^>]*>([^<]*)<\/pubDate>/,
+  'ps:opponent': /<ps:opponent[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:opponent>|<ps:opponent[^>]*>([^<]*)<\/ps:opponent>/,
+  'category':    /<category[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category[^>]*>([^<]*)<\/category>/,
+  'link':        /<link[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/link>|<link[^>]*>([^<]*)<\/link>/,
+};
+
+// JCC's composite RSS feed leaves <category> blank on future schedule entries
+// (only completed games get it filled in) — resolve the sport from the schedule
+// URL's code instead, built from whichever items *do* have a category.
+async function fetchJCCEvents(): Promise<EventItem[]> {
+  const cached = await getCached<EventItem[]>('jccEvents', TTL.events);
+  if (cached) return cached;
+  try {
+    const res = await feedFetch(proxyUrl(FEEDS.jcc));
+    if (!res.ok) throw new Error('JCC events fetch failed');
+    const text = await res.text();
+
+    const blocks: string[] = [];
+    const itemRx = /<item>([\s\S]*?)<\/item>/g;
+    let m;
+    while ((m = itemRx.exec(text)) !== null) blocks.push(m[1]);
+
+    const get = (block: string, tag: string) => {
+      const match = JCC_FIELD_RX[tag]?.exec(block);
+      return match ? (match[1] ?? match[2] ?? '').trim() : '';
+    };
+    const sportCode = (link: string) => link.match(/\/sports\/([a-z0-9]+)\//)?.[1];
+
+    const codeToSport: Record<string, string> = {};
+    for (const block of blocks) {
+      const code = sportCode(get(block, 'link'));
+      const cat  = get(block, 'category');
+      if (code && cat) codeToSport[code] = cat;
+    }
+
+    const now = new Date();
+    const events: EventItem[] = [];
+    for (const block of blocks) {
+      if (get(block, 'ps:score').trim() !== '') continue; // has a result — not upcoming
+      const opponentRaw = get(block, 'ps:opponent');
+      // Home games only — skip "at Team" (away) and "vs. Team @ Venue" (neutral-site
+      // tournament games, e.g. hockey at Watertown Arena — not actually at JCC)
+      if (!opponentRaw || opponentRaw.toLowerCase().startsWith('at ') || opponentRaw.includes('@')) continue;
+
+      const pubDate = get(block, 'pubDate');
+      const date = pubDate ? new Date(pubDate) : null;
+      if (!date || date < now) continue;
+
+      const link = get(block, 'link');
+      const code = sportCode(link);
+      const sport = (code && codeToSport[code]) || get(block, 'category') || 'Athletics';
+      const opponent = stripHtml(opponentRaw.replace(/^vs\.?\s+/i, ''));
+
+      events.push({
+        title: `JCC ${sport} vs. ${opponent}`,
+        startDate: date.toISOString(),
+        endDate: date.toISOString(),
+        location: 'Jamestown Community College, Jamestown',
+        category: 'Sports',
+        tags: ['JCC', sport],
+        link: link || 'https://www.jccjayhawks.com',
+      });
+    }
+
+    events.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    const result = events.slice(0, 10);
+    await setCache('jccEvents', result);
+    return result;
+  } catch {
+    const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}jccEvents`);
     if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
     return [];
   }
