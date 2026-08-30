@@ -487,7 +487,10 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   recyclingWeeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  // Local date, not UTC — toISOString() rolls over to tomorrow's date hours
+  // before local midnight in US timezones, which broke the weekend-preview
+  // logic below (both must agree on what "today" is).
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   let thisIdx = -1;
   for (let i = recyclingWeeks.length - 1; i >= 0; i--) {
     if (recyclingWeeks[i].startDate <= today) {
