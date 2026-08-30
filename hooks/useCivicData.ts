@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
+import { reloadWidgetTimelines } from '../modules/widget-reload';
 import SharedGroupPreferences from 'react-native-shared-group-preferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { XMLParser } from 'fast-xml-parser';
@@ -2280,6 +2281,10 @@ export function useCivicData(): CivicData {
         await SharedGroupPreferences.setItem('recycling_next_material',  recycling.nextWeek.material,  appGroup);
         await SharedGroupPreferences.setItem('recycling_next_dateRange', recycling.nextWeek.dateRange, appGroup);
         await SharedGroupPreferences.setItem('recycling_next_emoji',     recycling.nextWeek.emoji,     appGroup);
+        // Writing to SharedGroupPreferences alone doesn't wake WidgetKit —
+        // without this, the home screen widget can show stale data for up
+        // to a day until iOS gets around to its next scheduled refresh.
+        reloadWidgetTimelines();
       } catch {}
     }
   }, []);
