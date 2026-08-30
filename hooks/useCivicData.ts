@@ -239,7 +239,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v30_';
+const CACHE_PREFIX = 'civic_v31_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
