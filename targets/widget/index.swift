@@ -59,24 +59,10 @@ struct RecyclingInfo {
     let dateRange: String
     let emoji:     String
 
+    // The JS app already computes and applies the weekend-preview flip before
+    // pushing these values (see fetchRecyclingICS in hooks/useCivicData.ts) —
+    // flipping again here double-applies it and skips a real week.
     static func current() -> RecyclingInfo {
-        let cal     = Calendar.current
-        let now     = Date()
-        let weekday = cal.component(.weekday, from: now) // 1=Sun … 7=Sat
-        let hour    = cal.component(.hour,    from: now)
-        // Saturday after 6 pm through end of Sunday: flip to next week so pickup day
-        // is always upcoming, not last week's already-passed collection.
-        let isWeekendPreview = (weekday == 7 && hour >= 18) || weekday == 1
-        if isWeekendPreview {
-            let next = sharedDefaults?.string(forKey: "recycling_next_material") ?? ""
-            if !next.isEmpty {
-                return RecyclingInfo(
-                    material:  next,
-                    dateRange: sharedDefaults?.string(forKey: "recycling_next_dateRange") ?? "—",
-                    emoji:     sharedDefaults?.string(forKey: "recycling_next_emoji")     ?? "♻️"
-                )
-            }
-        }
         return RecyclingInfo(
             material:  sharedDefaults?.string(forKey: "recycling_material")  ?? "—",
             dateRange: sharedDefaults?.string(forKey: "recycling_dateRange") ?? "—",

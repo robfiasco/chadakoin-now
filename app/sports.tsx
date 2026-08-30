@@ -1369,7 +1369,7 @@ export default function SportsScreen() {
                   return (
                     <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={{ fontSize: 13, width: 22 }}>{sportEmoji(r.sport)}</Text>
-                      <Text style={[styles.glanceText, { color: dark.text.muted, width: 52 }]}>{r.sport.split(' ')[0]}</Text>
+                      <Text style={[styles.glanceText, { color: dark.text.muted, width: 60 }]} numberOfLines={1}>{r.sport.split(' ')[0]}</Text>
                       {recLabel ? (
                         <Text style={[styles.glanceText, { color: `${ACC.jcc}80`, width: 36 }]}>{recLabel}</Text>
                       ) : null}
