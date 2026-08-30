@@ -1,12 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Linking, Platform,
+  TextInput,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
 import { PLACES, CANNABIS_RULES, Place } from '../data/places';
@@ -117,74 +115,6 @@ function mapCategory(place: Place): FilterCat {
   if (cats.includes('drinks')) return 'drink';
   return 'eat'; // food, coffee, mixed eat+drink
 }
-
-// ─── Local Favorites (Editor's Picks) ────────────────────────────
-interface LocalFav {
-  name: string;
-  category: FilterCat;
-  detail: string;
-  website?: string;
-  orderUrl?: string;
-  hours?: string;     // standard format consumed by isOpenNow()
-  rgb: string;
-  visited: boolean;
-  quote: string;
-  lat?: number;
-  lng?: number;
-  image?: any;
-  imageAnchor?: 'top' | 'center';
-  imageFit?: 'cover' | 'contain'; // default 'cover'
-  imageBg?: string;               // background color behind image (useful for logos with solid bg)
-  noFilter?: boolean;             // skip opacity dim + gradient overlay
-  bannerAspect?: number;          // width/height ratio; if set, wrapper auto-sizes instead of fixed 200px
-  phone?: string;                 // digits only, e.g. '7167086010'
-  cateringNote?: string;          // short line shown below quote when expanded
-}
-
-const LOCAL_FAVORITES: LocalFav[] = [
-  {
-    name: 'Labyrinth Press Co.',
-    category: 'eat',
-    detail: 'Eat · Drink · Tue–Sat 8am–9pm',
-    website: 'https://www.labpressco.com/',
-    hours: 'Tue–Sat 8am–9pm',
-    rgb: '0,212,200',
-    visited: true,
-    quote: "Don't let the vegan menu scare you off — this is genuinely one of the best restaurants in Jamestown. The Brazil Lounge has a serious cocktail menu, a great local beer selection, and the patio in summer is hard to beat.",
-    lat: 42.09711, lng: -79.24081,
-    image: Platform.OS === 'web' ? { uri: '/Brazil-%20Lab.jpg' } : require('../assets/brazil-lab.jpg'),
-    noFilter: true,
-  },
-  {
-    name: 'National Comedy Center',
-    category: 'explore',
-    detail: 'Explore · Wed–Sun, 10am–5pm',
-    website: 'https://comedycenter.org',
-    hours: 'Wed–Sun 10am–5pm',
-    rgb: '155,109,255',
-    visited: true,
-    quote: "I've been three times and would go back. Comedy is my thing, so take that for what it's worth — but this is genuinely the best museum I've ever been to. If you visit Jamestown and skip it, you made a mistake.",
-    lat: 42.09467, lng: -79.24365,
-    image: Platform.OS === 'web' ? { uri: '/comedy_center.jpg' } : require('../assets/comedy_center.jpg'),
-    noFilter: true,
-  },
-  {
-    name: 'Pit Stop Pops',
-    category: 'drink',
-    detail: 'Drink · Mon–Thu 12–6pm · Fri–Sat 12–9pm',
-    orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
-    hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
-    phone: '7167086010',
-    rgb: '210,150,60',
-    visited: false,
-    quote: "Dirty sodas, lemonades, custom energy drinks, and fresh iced coffees — with names like Green Flag Glow, Slipstream, and Pink Panther. Something different than the usual coffee run.",
-    cateringNote: "Available for graduation parties, open houses & backyard events. Drop-off Pit Kits and on-site service.",
-    image: Platform.OS === 'web' ? { uri: '/psp-logo.png' } : require('../assets/psp-logo.png'),
-    imageFit: 'contain',
-    imageBg: '#111',
-    bannerAspect: 4078 / 3400,
-  },
-];
 
 // ─── Also in Jamestown (hotels / lodging) ────────────────────────
 interface AlsoEntry {
@@ -313,9 +243,6 @@ const PARKS: ParkEntry[] = [
   },
 ];
 
-// Places excluded from Browse (already in Editor's Picks)
-const EDITOR_PICKS_IDS = new Set(['labyrinth-press', 'comedy-center', 'pit-stop-pops']);
-
 // ─── "Open" badge (rendered when isOpenNow returns true) ──────────
 function OpenBadge() {
   return (
@@ -327,113 +254,47 @@ function OpenBadge() {
 }
 
 // ─── Editor's Pick hero card ──────────────────────────────────────
-function EditorPickCard({ fav }: { fav: LocalFav }) {
+// ─── Ad slot — sells the top spot instead of giving it away free ──
+function VisitAdCTA({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
-  const [expanded, setExpanded] = useState(true);
-  const catColor = CAT_COLOR[fav.category] ?? theme.acc;
-
-  const imgWrapStyle = fav.bannerAspect
-    ? { aspectRatio: fav.bannerAspect, position: 'relative' as const, overflow: 'hidden' as const, backgroundColor: fav.imageBg ?? 'transparent' }
-    : hero.imgWrap;
-
   return (
-    <View style={hero.card}>
-      {/* Image header */}
-      <View style={imgWrapStyle}>
-        {fav.image ? (
-          <Image
-            source={fav.image}
-            style={[hero.img, (fav.imageFit === 'contain' || fav.noFilter) && { opacity: 1 }]}
-            contentFit={fav.imageFit ?? 'cover'}
-            contentPosition={fav.imageAnchor === 'top' ? 'top' : 'center'}
-          />
-        ) : null}
-        {fav.imageFit !== 'contain' && !fav.noFilter && (
-          <LinearGradient
-            colors={fav.image
-              ? ['transparent', 'transparent', 'rgba(0,0,0,0.25)'] as any
-              : [`rgba(${fav.rgb},0.15)`, `rgba(${fav.rgb},0.05)`, dark.bg] as any
-            }
-            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-        )}
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[adCta.card, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
+    >
+      <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+        <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
+        <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
       </View>
-
-      {/* Card body */}
-      <TouchableOpacity activeOpacity={0.88} onPress={() => setExpanded(e => !e)} style={hero.body}>
-        <View style={hero.nameRow}>
-          <Text style={hero.name}>{fav.name}</Text>
-          {isOpenNow(fav.hours) === true ? <OpenBadge /> : null}
-          <Ionicons
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={14} color="rgba(255,255,255,0.3)"
-          />
+      <Text style={adCta.title}>Your Business, Front and Center</Text>
+      <Text style={adCta.body}>
+        This spot is the first thing people see when they open Visit — top of the list, every filter, every day.
+      </Text>
+      <View style={adCta.pricingRow}>
+        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+          <Text style={[adCta.priceText, { color: theme.acc }]}>$59 / mo</Text>
         </View>
-        <Text style={[hero.detail, { color: `rgba(${fav.rgb},0.6)` }]}>{fav.detail}</Text>
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={[hero.expanded, { borderTopColor: `rgba(${fav.rgb},0.1)` }]}>
-          <Text style={[hero.quote, { color: 'rgba(255,255,255,0.75)' }]}>"{fav.quote}"</Text>
-          {fav.cateringNote ? (
-            <View style={[hero.cateringRow, { backgroundColor: `rgba(${fav.rgb},0.07)`, borderColor: `rgba(${fav.rgb},0.15)` }]}>
-              <Ionicons name="sparkles-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
-              <Text style={[hero.cateringText, { color: `rgba(${fav.rgb},0.8)` }]}>{fav.cateringNote}</Text>
-            </View>
-          ) : null}
-          <View style={hero.linksRow}>
-            {fav.orderUrl ? (
-              <TouchableOpacity onPress={() => openLink(fav.orderUrl!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
-                <Ionicons name="bag-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
-                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Order online</Text>
-              </TouchableOpacity>
-            ) : null}
-            {fav.phone ? (
-              <TouchableOpacity onPress={() => Linking.openURL(`tel:${fav.phone}`)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
-                <Ionicons name="call-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
-                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Call</Text>
-              </TouchableOpacity>
-            ) : null}
-            {fav.website ? (
-              <TouchableOpacity onPress={() => openLink(fav.website!)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
-                <Ionicons name="globe-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
-                <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Website</Text>
-              </TouchableOpacity>
-            ) : null}
-            <TouchableOpacity onPress={() => openMaps(`${fav.name}, Jamestown NY`)} activeOpacity={0.7} style={[hero.linkBtn, { borderColor: `rgba(${fav.rgb},0.25)` }]}>
-              <Ionicons name="navigate-outline" size={12} color={`rgba(${fav.rgb},0.7)`} />
-              <Text style={[hero.linkBtnText, { color: `rgba(${fav.rgb},0.7)` }]}>Directions</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </View>
+      </View>
+      <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
+        <Text style={adCta.ctaBtnText}>Get Featured</Text>
+        <Ionicons name="arrow-forward" size={13} color="#000" />
+      </View>
+    </TouchableOpacity>
   );
 }
 
-const hero = StyleSheet.create({
-  card:    { backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border, borderRadius: 16, overflow: 'hidden', marginBottom: 10 },
-  imgWrap: { height: 200, position: 'relative', overflow: 'hidden' },
-  img:     { ...StyleSheet.absoluteFillObject, opacity: 0.55 },
-  catPill: { position: 'absolute', top: 10, left: 12, flexDirection: 'row', borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  catPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
-  editorPill: { position: 'absolute', top: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  editorPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
-  beenThereBadge: { position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  beenThereDot: { width: 5, height: 5, borderRadius: 3 },
-  beenThereText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
-  body:    { paddingHorizontal: 14, paddingVertical: 12 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3 },
-  name:    { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: -0.2, flex: 1, marginRight: 8 },
-  detail:  { fontFamily: 'Outfit', fontSize: 11, letterSpacing: 0.2 },
-  expanded:{ borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  quote:   { fontFamily: 'Outfit', fontSize: 12, lineHeight: 18 },
-  cateringRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  cateringText: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, flex: 1 },
-  linksRow:{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  linkBtnText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+const adCta = StyleSheet.create({
+  card:      { borderWidth: 1, borderRadius: 18, padding: 18, marginBottom: 12, gap: 10 },
+  badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },
+  badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
+  title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
+  body:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19 },
+  pricingRow:{ flexDirection: 'row', gap: 8 },
+  pricePill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
+  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
+  ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
 });
 
 // ─── Compact list card (Places + Also + Parks) ────────────────────
@@ -610,21 +471,10 @@ export default function VisitScreen() {
 
   const q = search.trim().toLowerCase();
 
-  // Editor's Picks — filtered by category and (when toggled) "open now"
-  const editorPicks = useMemo(() =>
-    LOCAL_FAVORITES.filter(f => {
-      if (active !== 'all' && f.category !== active) return false;
-      if (openNow && isOpenNow(f.hours) !== true) return false;
-      return true;
-    }),
-    [active, openNow]
-  );
-
-  // Places — filtered by category + search + open now, exclude Editor's Picks IDs.
+  // Places — filtered by category + search + open now.
   // Stay places get pulled out into their own section, so exclude them here.
   const browsePlaces = useMemo(() => {
     return PLACES
-      .filter(p => !EDITOR_PICKS_IDS.has(p.id))
       .map(p => ({ ...p, _cat: mapCategory(p) }))
       .filter(p => p._cat !== 'stay')
       .filter(p => {
@@ -651,7 +501,6 @@ export default function VisitScreen() {
   const stayPlaces = useMemo(() => {
     if (!showStay) return [];
     return PLACES
-      .filter(p => !EDITOR_PICKS_IDS.has(p.id))
       .map(p => ({ ...p, _cat: mapCategory(p) }))
       .filter(p => p._cat === 'stay')
       .filter(p => !q
@@ -696,13 +545,8 @@ export default function VisitScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Editor's Picks ──────────────────────────────── */}
-        {editorPicks.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { color: theme.acc }]}>Editor's Picks</Text>
-            {editorPicks.map(fav => <EditorPickCard key={fav.name} fav={fav} />)}
-          </>
-        )}
+        {/* ── Ad slot ──────────────────────────────────────── */}
+        <VisitAdCTA onPress={() => setFeedbackOpen(true)} />
 
         {/* ── Search bar + Open Now toggle ────────────────── */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
@@ -833,7 +677,7 @@ export default function VisitScreen() {
         )}
 
         {/* ── No results ──────────────────────────────────── */}
-        {!hasBrowseContent && editorPicks.length === 0 && (
+        {!hasBrowseContent && (
           <Text style={styles.emptyText}>No results for "{search}"</Text>
         )}
 
