@@ -1456,6 +1456,17 @@ const CURATED_EVENTS: EventItem[] = [
   { title: "Historic Walking Tour: Jamestown's Industrial Past", startDate: '2026-08-15T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
   { title: "Historic Walking Tour: Jamestown's Hidden Alleys", startDate: '2026-08-22T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
   { title: 'Historic Walking Tour: Military Tour at Lake View Cemetery', startDate: '2026-08-29T10:00:00', location: 'Lake View Cemetery, Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
+
+  // — City Council meeting schedule (not covered by any RSS/ICS feed) ————————
+  { title: 'City Council Work Session', startDate: '2026-09-14T19:30:00', location: 'Police Training Room, 4th Floor, Municipal Building, 200 E. 3rd St., Jamestown', category: 'Civic', tags: ['City Council', 'Government'], link: 'https://www.jamestownny.gov/city-council/meeting-schedule/' },
+  { title: 'City Council Work Session', startDate: '2026-09-21T19:30:00', location: 'Police Training Room, 4th Floor, Municipal Building, 200 E. 3rd St., Jamestown', category: 'Civic', tags: ['City Council', 'Government'], link: 'https://www.jamestownny.gov/city-council/meeting-schedule/' },
+  { title: 'City Council Voting Session', startDate: '2026-09-28T19:30:00', location: 'City Council Chambers, 2nd Floor, Municipal Building, 200 E. 3rd St., Jamestown', category: 'Civic', tags: ['City Council', 'Government'], link: 'https://www.jamestownny.gov/city-council/meeting-schedule/' },
+
+  // — Daniel Feather Memorial 5K (mychq lists this under a generic "Striders
+  // Runner of the Year Series" title with venue "Multiple Venues", which gets
+  // filtered out by the city-matching logic in fetchMychqEvents — not a
+  // duplicate of anything that actually renders) ——————————————————————————
+  { title: 'Daniel Feather Memorial 5K', startDate: '2026-09-05T09:30:00', location: 'Bergman Park, 487 Baker St., Jamestown', category: 'Sports & Recreation', tags: ['5K', 'Running', 'Chautauqua Striders'], note: 'Check-in 8:30am · Ron Graham Memorial 1K Kids Fun Run at 9:00am · Benefits youth programming & the Dan Feather Memorial Scholarship', link: 'https://runscore.runsignup.com/Race/NY/Jamestown/DanielFeatherMemorial5KRun' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
