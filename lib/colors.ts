@@ -20,5 +20,6 @@ export const dark = {
     breaking:   '#fb7185',
     jcc:        '#a78bfa',
     activity:   '#2dd4bf',
+    streets:    '#fb923c',  // orange-400 — DPW / roadwork
   },
 } as const;

@@ -76,6 +76,31 @@ export interface PodcastEpisode {
   artworkUrl: string;
 }
 
+export type DpwActivityKind =
+  | 'paving' | 'reconstruction' | 'curb' | 'storm' | 'ditch'
+  | 'patching' | 'catch_basin' | 'concrete' | 'prep' | 'other';
+
+export interface DpwWorkItem {
+  id: string;
+  street: string;
+  segment?: string;
+  activity: string;
+  activityKind: DpwActivityKind;
+  tentativeDate?: string;
+  isCitywideSupport?: boolean;
+}
+
+export interface DpwWeekUpdate {
+  id: string;
+  weekStart: string;
+  weekEnd: string;
+  fetchedAt: string;
+  sourceUrl: string;
+  items: DpwWorkItem[];
+  rawWeekLabel?: string;
+  seasonalPdfUrl?: string;
+}
+
 export interface CivicData {
   loading: boolean;
   error: string | null;
@@ -85,6 +110,7 @@ export interface CivicData {
   events: EventItem[];
   news: NewsItem[];
   latestEpisode: PodcastEpisode | null;
+  dpw: DpwWeekUpdate | null;
   lastUpdated: string | null;
   refresh: () => void;
 }
@@ -125,6 +151,7 @@ const TTL = {
   alerts:     5 * 60 * 1000,        // 5min
   news:       2 * 60 * 60 * 1000,   // 2h
   lotd:      12 * 60 * 60 * 1000,   // 12h — weekly show
+  dpw:        3 * 60 * 60 * 1000,   // 3h — page updates roughly weekly
 };
 
 // BPU only observes 6 holidays for collection delay (per 2026 Recycling Calendar):
@@ -175,6 +202,7 @@ const DEFAULTS: Omit<CivicData, 'refresh'> = {
   events: [],
   news: [],
   latestEpisode: null,
+  dpw: null,
   lastUpdated: null,
 };
 
@@ -542,6 +570,24 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
 
   await setCache('recycling', result);
   return result;
+}
+
+// DPW weekly construction update — served by our own scraper at /api/dpw
+// (no first-party feed exists for this), so it's fetched directly rather
+// than through the CORS proxy.
+async function fetchDpwUpdate(): Promise<DpwWeekUpdate | null> {
+  const cached = await getCached<DpwWeekUpdate>('dpw', TTL.dpw);
+  if (cached) return cached;
+  try {
+    const path = Platform.OS === 'web' ? '/api/dpw' : `${NATIVE_API_HOST}/api/dpw`;
+    const res = await fetch(path, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`DPW fetch failed: ${res.status}`);
+    const data: DpwWeekUpdate | null = await res.json();
+    if (data) await setCache('dpw', data);
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchAlerts(): Promise<AlertsData> {
@@ -2224,7 +2270,7 @@ export function useCivicData(): CivicData {
     const parking = computeParking();
     const { hasDelay, affectedDays, upcomingHoliday } = computeHolidayDelay();
 
-    const [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult] = await Promise.allSettled([
+    const [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult, dpwResult] = await Promise.allSettled([
       fetchRecyclingICS(),
       fetchAlerts(),
       fetchEvents(),
@@ -2232,6 +2278,7 @@ export function useCivicData(): CivicData {
       fetchLOTD(),
       fetchLibraryContent(),
       fetchChautauquaAlerts(),
+      fetchDpwUpdate(),
     ]);
 
     const recycling = recyclingResult.status === 'fulfilled'
@@ -2266,7 +2313,9 @@ export function useCivicData(): CivicData {
       ? lotdResult.value
       : null;
 
-    // Library and county-alerts failures are non-critical — intentionally excluded from error banner
+    const dpw = dpwResult.status === 'fulfilled' ? dpwResult.value : null;
+
+    // Library, county-alerts, and DPW failures are non-critical — intentionally excluded from error banner
     const anyFailed = [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult]
       .some(r => r.status === 'rejected');
 
@@ -2279,6 +2328,7 @@ export function useCivicData(): CivicData {
       events,
       news,
       latestEpisode,
+      dpw,
       lastUpdated: new Date().toISOString(),
     });
 

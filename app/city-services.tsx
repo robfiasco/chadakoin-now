@@ -9,6 +9,50 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { PulsingDot } from '../components/PulsingDot';
 import { CITY_SERVICES, CityService, ServiceStatus } from '../data/cityServices';
 import { dark } from '../lib/colors';
+import { useCivic } from '../lib/CivicDataContext';
+import { DpwWeekUpdate } from '../hooks/useCivicData';
+
+function relativeTime(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${Math.max(mins, 1)}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
+function buildDpwService(dpw: DpwWeekUpdate): CityService {
+  const streetItems = dpw.items.filter(i => !i.isCitywideSupport);
+  const citywideItems = dpw.items.filter(i => i.isCitywideSupport);
+
+  const details = streetItems.map(item => ({
+    label: item.segment ? `${item.street} (${item.segment})` : item.street,
+    value: item.activity,
+  }));
+  if (citywideItems.length > 0) {
+    details.push({
+      label: 'Citywide',
+      value: citywideItems.map(i => i.activity).join(' · '),
+    });
+  }
+
+  const links = [{ label: 'This week’s full update', url: dpw.sourceUrl }];
+  if (dpw.seasonalPdfUrl) {
+    links.push({ label: 'Full 2026 seasonal construction list', url: dpw.seasonalPdfUrl });
+  }
+
+  return {
+    id: 'dpw',
+    icon: 'construct-outline',
+    title: 'DPW — Where We Are Working',
+    badge: 'THIS WEEK',
+    badgeColor: dark.category.streets,
+    status: 'active',
+    summary: `${streetItems.length} street${streetItems.length === 1 ? '' : 's'} this week\nUpdated ${relativeTime(dpw.fetchedAt)}`,
+    details,
+    tip: 'Weekly update from DPW — schedules are tentative and can shift with weather.',
+    links,
+  };
+}
 
 type FilterOption = 'all' | ServiceStatus;
 
@@ -193,13 +237,16 @@ const FILTERS: { id: FilterOption; label: string }[] = [
 ];
 
 export default function CityServicesScreen({ onClose }: { onClose?: () => void }) {
+  const { dpw } = useCivic();
   const [filter, setFilter] = useState<FilterOption>('all');
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
 
+  const allServices = dpw && dpw.items.length > 0 ? [buildDpwService(dpw), ...CITY_SERVICES] : CITY_SERVICES;
+
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const filtered = CITY_SERVICES.filter(s => {
+  const filtered = allServices.filter(s => {
     if (s.expiresAfter && today > new Date(s.expiresAfter)) return false;
     return filter === 'all' || s.status === filter || (filter === 'coming-up' && s.status === 'imminent');
   });

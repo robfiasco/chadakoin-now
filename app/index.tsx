@@ -45,6 +45,13 @@ const HERO_PHOTO = Platform.OS === 'web'
   ? HERO_PHOTOS[0]
   : HERO_PHOTOS[Math.floor(Math.random() * HERO_PHOTOS.length)];
 
+const ACTIVITY_KIND_LABEL: Record<string, string> = {
+  paving: 'paving', reconstruction: 'reconstruction', curb: 'curb work',
+  storm: 'storm repair', ditch: 'ditch cleaning', patching: 'patching',
+  catch_basin: 'catch basin work', concrete: 'concrete work', prep: 'prep work',
+  other: 'work',
+};
+
 function getDateBadge() {
   const d = new Date();
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -195,7 +202,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
 
-  const { parking, recycling, alerts } = civic;
+  const { parking, recycling, alerts, dpw } = civic;
+
+  const dpwStreetItems = dpw?.items.filter(i => !i.isCitywideSupport) ?? [];
+  const dpwTopItem = dpwStreetItems[0];
 
   const snowEmergency = alerts.activeAlerts.find(a =>
     a.title.toLowerCase().includes('snow emergency')
@@ -549,6 +559,29 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
             </LinearGradient>
           </TouchableOpacity>
+
+          {dpwStreetItems.length > 0 && (
+            <TouchableOpacity onPress={() => setCityServicesOpen(true)} activeOpacity={0.75}>
+              <LinearGradient
+                colors={[`rgba(${theme.accRGB},0.13)`, 'transparent']}
+                start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }}
+                style={styles.todayCard}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.todayCategoryLabel, { color: dark.category.streets }]}>Streets</Text>
+                  <Text style={styles.todayCardTitle}>
+                    {dpwStreetItems.length} active this week
+                  </Text>
+                  {dpwTopItem && (
+                    <Text style={styles.todayCardSub}>
+                      {dpwTopItem.street} · {ACTIVITY_KIND_LABEL[dpwTopItem.activityKind]}
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
         </View>
 
 
