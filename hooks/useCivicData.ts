@@ -1572,13 +1572,29 @@ async function fetchEvents(): Promise<EventItem[]> {
   }
 
   const seen = new Set<string>();
-  const merged: EventItem[] = [];
+  const merged: (EventItem & { _source: string })[] = [];
 
   // Priority: Reg Lenna (structured) → Fenton → JCC → mychq → Library → WRFA → BPU
-  for (const e of [...regLennaEvents, ...fentonEvents, ...jccEvents, ...mychqEvents, ...libraryEvents, ...wrfaEvents, ...bpuEvents]) {
+  const sourced = [
+    ...regLennaEvents.map(e => ({ ...e, _source: 'reglenna' })),
+    ...fentonEvents.map(e => ({ ...e, _source: 'fenton' })),
+    ...jccEvents.map(e => ({ ...e, _source: 'jcc' })),
+    ...mychqEvents.map(e => ({ ...e, _source: 'mychq' })),
+    ...libraryEvents.map(e => ({ ...e, _source: 'library' })),
+    ...wrfaEvents.map(e => ({ ...e, _source: 'wrfa' })),
+    ...bpuEvents.map(e => ({ ...e, _source: 'bpu' })),
+  ];
+  for (const e of sourced) {
     const key = dedupeKey(e);
     if (seen.has(key)) continue;
-    if (merged.some(m => isSameEvent(m, e))) continue; // fuzzy same-day title match
+    // Fuzzy title matching is for catching the same real-world event listed
+    // by two different platforms (e.g. Reg Lenna's site + mychq both listing
+    // a show). Within a single source's own feed, two 2+ keyword matches are
+    // just different events sharing generic words ("10,000 Maniacs" fringe
+    // events vs. the main concert both contain "10000"/"maniac") — applying
+    // it there dropped the real Sat concert in favor of an earlier same-day
+    // VIP meet-and-greet from the same mychq feed.
+    if (merged.some(m => m._source !== e._source && isSameEvent(m, e))) continue;
     seen.add(key);
     merged.push(e);
   }
@@ -1586,9 +1602,10 @@ async function fetchEvents(): Promise<EventItem[]> {
   // Start-of-today, not "now" — keeps today's events visible even if their start time has passed.
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
-  const result = merged
+  const result: EventItem[] = merged
     .filter(e => new Date(e.startDate) >= cutoff)
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+    .map(({ _source, ...e }) => e);
 
   await setCache('events_v2', result);
   return result;
