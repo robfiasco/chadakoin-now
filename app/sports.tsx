@@ -1387,7 +1387,7 @@ export default function SportsScreen() {
                         {r.won ? 'W' : 'L'} {r.score}
                       </Text>
                       <Text style={{ color: dark.text.subtle, fontSize: 11, marginRight: 4 }}>·</Text>
-                      <Text style={[styles.glanceText, { color: dark.text.subtle, flex: 1 }]} numberOfLines={1}>{r.isHome ? 'vs' : '@'} {r.opponent}</Text>
+                      <Text style={[styles.glanceText, { color: dark.text.subtle, flex: 1 }]} numberOfLines={1}>{r.isHome ? 'vs' : '@'} {abbreviateOpponent(r.opponent)}</Text>
                     </View>
                   );
                 })}
