@@ -570,7 +570,7 @@ function TeamCard({
 }: {
   accentColor: string; gradStart: string; gradEnd: string;
   iconContent: React.ReactNode;
-  name: string; subtitle: string;
+  name: string; subtitle?: string;
   glanceRow: React.ReactNode;
   children?: React.ReactNode;
   defaultOpen?: boolean;
@@ -599,7 +599,7 @@ function TeamCard({
         </LinearGradient>
         <View style={{ flex: 1 }}>
           <Text style={styles.teamCardName}>{name}</Text>
-          <Text style={[styles.teamCardSub, { color: dark.text.subtle }]}>{subtitle}</Text>
+          {subtitle ? <Text style={[styles.teamCardSub, { color: dark.text.subtle }]}>{subtitle}</Text> : null}
         </View>
         <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
           <Ionicons name="chevron-down" size={16} color={dark.text.subtle} />
@@ -672,9 +672,8 @@ function SportsAdCTA({ onPress }: { onPress: () => void }) {
         <Ionicons name="megaphone-outline" size={11} color={ACC.label} />
         <Text style={adCta.badgeText}>ADVERTISE HERE</Text>
       </View>
-      <Text style={adCta.title}>Your Team, Front and Center</Text>
       <Text style={adCta.body}>
-        Sponsor this spot — seen every time a Jamestown resident checks scores.
+        Sponsor local sports — seen when residents check scores.
       </Text>
       <View style={adCta.pricingRow}>
         {EVENT_BOOST.prices.map(p => (
@@ -695,7 +694,6 @@ const adCta = StyleSheet.create({
   card:      { borderWidth: 1, borderColor: `${ACC.label}48`, backgroundColor: `${ACC.label}0d`, borderRadius: 18, padding: 18, gap: 10 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1f`, borderRadius: 20 },
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: ACC.label },
-  title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
   body:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19 },
   pricingRow:{ flexDirection: 'row', gap: 8 },
   pricePill: { borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1a`, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
@@ -1367,27 +1365,24 @@ export default function SportsScreen() {
           subtitle="NJCAA · Jamestown Community College"
           defaultOpen={false}
           glassWeb={glassWeb}
-          bgImage={Platform.OS === 'web' ? { uri: '/jcc.jpg' } : require('../assets/jcc.jpg')}
           glanceRow={
             loading ? (
               <SkeletonPulse width="60%" height={14} borderRadius={4} accRGB="52,211,153" />
             ) : jccGlance.length > 0 ? (
+              // Sport + record only — no result/score here. Stacking "W 2-0"
+              // next to a bare "M 17-10" read as ambiguous score soup, and a
+              // lone W/M glyph next to a win "W" was confusing.
               <View style={{ gap: 5 }}>
                 {jccGlance.map((r, i) => {
                   const rec = data?.jcc?.records?.[r.sport];
                   const recLabel = rec ? `${rec.w}-${rec.l}` : '';
                   return (
-                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 13, width: 22 }}>{sportEmoji(r.sport)}</Text>
-                      <Text style={[styles.glanceText, { color: dark.text.muted, width: 16 }]} numberOfLines={1}>{r.sport.charAt(0)}</Text>
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 13 }}>{sportEmoji(r.sport)}</Text>
+                      <Text style={[styles.glanceText, { color: dark.text.muted, flex: 1 }]} numberOfLines={1}>{r.sport}</Text>
                       {recLabel ? (
-                        <Text style={[styles.glanceText, { color: `${ACC.jcc}80`, width: 36 }]}>{recLabel}</Text>
+                        <Text style={[styles.glanceText, { color: ACC.jcc, fontWeight: '700' }]}>{recLabel}</Text>
                       ) : null}
-                      <Text style={[styles.glanceText, { color: r.won ? ACC.jcc : '#fb7185', fontWeight: '700', width: 52 }]}>
-                        {r.won ? 'W' : 'L'} {r.score}
-                      </Text>
-                      <Text style={{ color: dark.text.subtle, fontSize: 11, marginRight: 4 }}>·</Text>
-                      <Text style={[styles.glanceText, { color: dark.text.subtle, flex: 1 }]} numberOfLines={1}>{r.isHome ? 'vs' : '@'} {abbreviateOpponent(r.opponent)}</Text>
                     </View>
                   );
                 })}
@@ -1679,7 +1674,6 @@ export default function SportsScreen() {
             <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
           }
           name="Regional MLB"
-          subtitle="NYM · CLE · TOR · PIT · NYY · HOU"
           defaultOpen={false}
           glassWeb={glassWeb}
           glanceRow={
