@@ -1654,8 +1654,13 @@ async function fetchMychqEvents(): Promise<EventItem[]> {
           imageUrl: e.image?.url || undefined,
         } as EventItem;
       })
-      .filter((e: EventItem) => e.title && e.startDate)
-      .slice(0, 25);
+      .filter((e: EventItem) => e.title && e.startDate);
+      // No secondary cap here — per_page=100 above already bounds the fetch.
+      // A hard .slice(0, 25) used to sit here and silently dropped anything
+      // past the 25th chronological local-town event; on a dense weekend
+      // (e.g. Labor Day, ~57 local events across 4 days) that cut off
+      // headline events like the Labor Day Festival and the 10,000 Maniacs
+      // concert while lower-priority items from earlier in the week stayed.
 
     await setCache('mychq', events);
     return events;
