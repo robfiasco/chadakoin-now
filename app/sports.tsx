@@ -16,6 +16,10 @@ import { openLink } from '../lib/openLink';
 import { apiUrl } from '../lib/api';
 import { SkunksGame, SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import { useCivicData, NewsItem } from '../hooks/useCivicData';
+import { ADDONS } from '../components/FeatureYourBusiness';
+import FeedbackScreen from './feedback';
+
+const EVENT_BOOST = ADDONS.find(a => a.title === 'Event Boost')!;
 
 interface NextUpItem {
   ts: number; sport: string; emoji: string; matchup: string;
@@ -28,6 +32,8 @@ interface NextUpItem {
   probablePitcher?: string; oppProbablePitcher?: string;
   record?: string; oppRecord?: string; opponentName?: string; isHome?: boolean;
   seriesLabel?: string; // e.g. "Round 1 · Best of 7"
+  // Compact NEXT list — JCC rows deep-link out instead of opening the detail sheet
+  isJcc?: boolean; externalLink?: string;
 }
 interface GameResult {
   date: string; status: 'final' | 'live' | 'upcoming';
@@ -132,7 +138,18 @@ const ACC = {
   label:  '#22d3ee',  // cyan-400 — section headers
 } as const;
 
+// Regional teams closest to home — preferred in the NEXT list over farther
+// MLB teams (NYM, TOR, NYY, HOU) when both are chronologically similar
+const REGIONAL_FAVORITE_SPORTS = new Set([
+  'Buffalo Sabres · NHL', 'Bills · NFL', 'Steelers · NFL', 'Browns · NFL',
+  'Guardians · MLB', 'Pirates · MLB',
+]);
 
+// "Corning Community College" → "Corning CC" — deliberate abbreviation,
+// not truncation, so opponent names never get cut mid-word
+function abbreviateOpponent(name: string): string {
+  return name.replace(/\bCommunity College\b/gi, 'CC');
+}
 
 function sportEmoji(sport: string): string {
   const s = sport.toLowerCase();
@@ -616,6 +633,77 @@ function TeamCard({
   );
 }
 
+// Compact row for the NEXT list — News/City-Services chrome, not a hero card.
+// JCC rows deep-link out (no rich detail data); everything else opens the
+// existing game detail sheet.
+function NextRow({ item, onPress, isLast }: { item: NextUpItem; onPress: () => void; isLast: boolean }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={[styles.nextRow, !isLast && { borderBottomWidth: 1, borderBottomColor: dark.border }]}
+    >
+      <View style={[styles.nextRowStripe, { backgroundColor: item.accent }]} />
+      <Text style={styles.nextRowEmoji}>{item.emoji}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.nextRowSport, { color: item.accent }]} numberOfLines={1}>{item.sport}</Text>
+        <Text style={styles.nextRowMatchup} numberOfLines={1}>{item.matchup}</Text>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={[styles.nextRowDate, item.isLive && { color: '#fb7185' }]}>{item.dateLabel}</Text>
+        {item.time ? <Text style={styles.nextRowTime}>{item.time}</Text> : null}
+      </View>
+      <Ionicons
+        name={item.isJcc ? 'open-outline' : 'chevron-forward'}
+        size={13}
+        color="rgba(255,255,255,0.2)"
+        style={{ marginLeft: 8 }}
+      />
+    </TouchableOpacity>
+  );
+}
+
+// Ad slot — sells the Featured spot, never mixed into standings/score rows.
+// Reuses the same pricing constant as the Events tab's ad CTA.
+function SportsAdCTA({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={adCta.card}>
+      <View style={adCta.badge}>
+        <Ionicons name="megaphone-outline" size={11} color={ACC.label} />
+        <Text style={adCta.badgeText}>ADVERTISE HERE</Text>
+      </View>
+      <Text style={adCta.title}>Your Team, Front and Center</Text>
+      <Text style={adCta.body}>
+        Sponsor this spot — seen every time a Jamestown resident checks scores.
+      </Text>
+      <View style={adCta.pricingRow}>
+        {EVENT_BOOST.prices.map(p => (
+          <View key={p} style={adCta.pricePill}>
+            <Text style={adCta.priceText}>{p}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={adCta.ctaBtn}>
+        <Text style={adCta.ctaBtnText}>Get Featured</Text>
+        <Ionicons name="arrow-forward" size={13} color="#000" />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const adCta = StyleSheet.create({
+  card:      { borderWidth: 1, borderColor: `${ACC.label}48`, backgroundColor: `${ACC.label}0d`, borderRadius: 18, padding: 18, gap: 10 },
+  badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1f`, borderRadius: 20 },
+  badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: ACC.label },
+  title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
+  body:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19 },
+  pricingRow:{ flexDirection: 'row', gap: 8 },
+  pricePill: { borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1a`, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: ACC.label },
+  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4, backgroundColor: ACC.label },
+  ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
+});
+
 export default function SportsScreen() {
   const { news: civicNews } = useCivicData();
   const skunksNews = useMemo(
@@ -640,8 +728,8 @@ export default function SportsScreen() {
     if (next) AsyncStorage.setItem('pinnedMlb', next);
     else AsyncStorage.removeItem('pinnedMlb');
   }
-  const [nextUpIdx, setNextUpIdx] = useState(0);
   const [showSkunksSchedule, setShowSkunksSchedule] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [detailGame, setDetailGame] = useState<NextUpItem | null>(null);
   const [sheetCarouselIdx, setSheetCarouselIdx] = useState(0);
   const sheetScrollRef = useRef<any>(null);
@@ -936,6 +1024,46 @@ export default function SportsScreen() {
     return out;
   }, [data]);
 
+  // Compact NEXT list — max 3 rows. Local (JCC) first, then regional
+  // favorites (BUF/CLE/PIT) over farther teams, then whatever's soonest.
+  const nextCompactItems = useMemo((): NextUpItem[] => {
+    if (nextUpItems.length === 0) return [];
+    if (nextUpItems[0]?.isLive) return nextUpItems.slice(0, 3);
+
+    const items: NextUpItem[] = [];
+
+    if (jccNextBySport.length > 0) {
+      const soonest = [...jccNextBySport].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      const d = new Date(soonest.date);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+      const dDay = new Date(d); dDay.setHours(0, 0, 0, 0);
+      const dateLabel = dDay.getTime() === today.getTime() ? 'Today'
+        : dDay.getTime() === tomorrow.getTime() ? 'Tomorrow'
+        : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const isMidnight = d.getHours() === 0 && d.getMinutes() === 0;
+      items.push({
+        ts: d.getTime(),
+        sport: `JCC · ${soonest.sport}`,
+        emoji: sportEmoji(soonest.sport),
+        matchup: `${soonest.isHome ? 'vs' : '@'} ${abbreviateOpponent(soonest.opponent)}`,
+        dateLabel,
+        time: isMidnight ? undefined : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        accent: ACC.jcc, gradStart: '', gradEnd: '',
+        isJcc: true, externalLink: soonest.link,
+      });
+    }
+
+    const rest = nextUpItems.filter(g => !g.isLive);
+    const favorites = rest.filter(g => REGIONAL_FAVORITE_SPORTS.has(g.sport));
+    const others = rest.filter(g => !REGIONAL_FAVORITE_SPORTS.has(g.sport));
+    for (const g of [...favorites, ...others]) {
+      if (items.length >= 3) break;
+      items.push(g);
+    }
+    return items.slice(0, 3);
+  }, [nextUpItems, jccNextBySport]);
+
   // Nearest MLB next game for MLB glance row
   const mlbNextUp = useMemo(() => {
     if (!data?.mlb) return null;
@@ -1029,124 +1157,6 @@ export default function SportsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACC.label} colors={[ACC.label]} />
         }
       >
-
-        {(loading || nextUpItems.length > 0) && (
-          <View style={styles.nextUpSection}>
-            <View style={styles.sectionLabelRow}>
-              <Text style={styles.sectionLabel}>{nextUpItems[nextUpIdx]?.isLive ? 'Live Now' : 'Next Up'}</Text>
-            </View>
-
-            {loading ? (
-              <SkeletonPulse width="100%" height={112} borderRadius={18} accRGB="34,211,238" />
-            ) : nextUpItems.length > 0 ? (
-              <>
-                <ScrollView
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  onMomentumScrollEnd={e => {
-                    setNextUpIdx(Math.round(e.nativeEvent.contentOffset.x / winWidth));
-                  }}
-                  onScroll={e => {
-                    // Keep dots in sync on web where onMomentumScrollEnd may not fire
-                    const idx = Math.round(e.nativeEvent.contentOffset.x / winWidth);
-                    if (idx !== nextUpIdx) setNextUpIdx(idx);
-                  }}
-                  scrollEventThrottle={16}
-                  style={{ marginHorizontal: -16 }}
-                  contentContainerStyle={{ paddingHorizontal: 0 }}
-                >
-                  {nextUpItems.map((nextUp, idx) => {
-                    const bgOpacity = nextUp.bgKey === 'baseball' ? 0.45 : 0.4;
-                    const bgUri = nextUp.bgKey === 'baseball' ? '/ballpark.jpg'
-                      : nextUp.bgKey === 'hockey' ? '/hockey.jpg' : null;
-                    const bgSourceNative = nextUp.bgKey === 'baseball'
-                      ? require('../assets/ballpark.jpg')
-                      : nextUp.bgKey === 'hockey'
-                      ? require('../assets/hockey.jpg')
-                      : null;
-                    const cardContent = (
-                      <View style={styles.nextUpBody}>
-                        <View style={{ flex: 1 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <View style={[styles.nextUpPill, { borderColor: `${nextUp.accent}40` }]}>
-                              <Text style={[styles.nextUpPillText, { color: nextUp.accent }]}>{nextUp.sport}</Text>
-                            </View>
-                          </View>
-                          <Text style={styles.nextUpMatchup}>{nextUp.matchup}</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                            <Text style={{ fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: nextUp.isLive ? '#fb7185' : dark.text.primary }}>{nextUp.dateLabel}</Text>
-                            {nextUp.time && (
-                              <>
-                                <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                                <Text style={{ fontFamily: 'Outfit', fontSize: 12, color: nextUp.isLive ? ACC.mlb : dark.text.muted }}>{nextUp.time}</Text>
-                              </>
-                            )}
-                          </View>
-                          {!nextUp.isLive && (
-                            <Text style={{ fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>Tap for details</Text>
-                          )}
-                        </View>
-                      </View>
-                    );
-                    const handlePress = () => {
-                      if (nextUp.isLive) return;
-                      const nonLive = nextUpItems.filter(g => !g.isLive);
-                      const si = nonLive.findIndex(g => g.ts === nextUp.ts);
-                      setSheetCarouselIdx(si >= 0 ? si : 0);
-                      setDetailGame(nextUp);
-                    };
-                    if (Platform.OS === 'web' && bgUri) {
-                      return (
-                        <View key={idx} style={{ width: cardWidth, paddingHorizontal: 16 }}>
-                          <TouchableOpacity onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
-                            {/* @ts-ignore */}
-                            <View style={[styles.nextUpCard, { backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 1 }]}>
-                              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: `rgba(6,14,24,${1 - bgOpacity})`, borderRadius: 18 }]} pointerEvents="none" />
-                              {cardContent}
-                            </View>
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    }
-                    // @ts-ignore
-                    return bgSourceNative ? (
-                      <View key={idx} style={{ width: cardWidth, paddingHorizontal: 16 }}>
-                        <TouchableOpacity onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
-                          <ImageBackground
-                            source={bgSourceNative}
-                            style={styles.nextUpCard}
-                            imageStyle={{ borderRadius: 18, opacity: bgOpacity }}
-                            resizeMode="cover"
-                          >
-                            {cardContent}
-                          </ImageBackground>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <View key={idx} style={{ width: cardWidth, paddingHorizontal: 16 }}>
-                        <TouchableOpacity onPress={handlePress} activeOpacity={nextUp.isLive ? 1 : 0.85}>
-                          {/* @ts-ignore */}
-                          <View style={[styles.nextUpCard, glassWeb]}>
-                            {cardContent}
-                          </View>
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
-                {/* Dots — only shown when there are multiple cards */}
-                {nextUpItems.length > 1 && (
-                  <View style={styles.nextUpDots}>
-                    {nextUpItems.map((_, i) => (
-                      <View key={i} style={[styles.nextUpDot, i === nextUpIdx && styles.nextUpDotActive]} />
-                    ))}
-                  </View>
-                )}
-              </>
-            ) : null}
-          </View>
-        )}
 
         {/* ── Local Teams ─────────────────────────────────────── */}
         <SectionLabel label="Local Teams" />
@@ -1407,7 +1417,7 @@ export default function SportsScreen() {
                           style={[styles.jccRow, i < jccNextBySport.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
                           <Text style={styles.jccSportIcon}>{sportEmoji(u.sport)}</Text>
                           <View style={{ flex: 1, gap: 2 }}>
-                            <Text style={styles.jccGame}>{u.isHome ? 'vs' : '@'} {u.opponent}</Text>
+                            <Text style={styles.jccGame} numberOfLines={1}>{u.isHome ? 'vs' : '@'} {abbreviateOpponent(u.opponent)}</Text>
                             <Text style={[styles.jccSport, { color: dark.text.subtle }]}>{u.sport}</Text>
                           </View>
                           <View style={{ alignItems: 'flex-end', gap: 2 }}>
@@ -1421,27 +1431,39 @@ export default function SportsScreen() {
                 </>
               )}
               <Text style={[styles.innerLabel, { color: `${ACC.jcc}80` }]}>Recent Results</Text>
-              {/* @ts-ignore */}
-              <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-                {data!.jcc!.results.map((g, i) => {
-                  const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  return (
-                    <TouchableOpacity key={i} onPress={() => openLink(g.link)} activeOpacity={0.7}
-                      style={[styles.jccRow, i < data!.jcc!.results.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                      <Text style={[styles.jccResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.result}</Text>
-                      <Text style={styles.jccSportIcon}>{sportEmoji(g.sport)}</Text>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={styles.jccGame}>{g.isHome ? 'vs' : '@'} {g.opponent}</Text>
-                        <Text style={[styles.jccSport, { color: dark.text.subtle }]}>{g.sport}</Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                        <Text style={[styles.jccScore, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.score}</Text>
-                        <Text style={[styles.jccDate, { color: dark.text.subtle }]}>{dateStr}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              {(() => {
+                // Group by sport — a flat mixed list reads as score soup;
+                // grouping keeps each sport scannable on its own.
+                const bySport = new Map<string, JCCResult[]>();
+                for (const g of data!.jcc!.results) {
+                  if (!bySport.has(g.sport)) bySport.set(g.sport, []);
+                  bySport.get(g.sport)!.push(g);
+                }
+                const groups = [...bySport.entries()];
+                return groups.map(([sport, results], gi) => (
+                  <View key={sport} style={{ marginBottom: gi < groups.length - 1 ? 10 : 0 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <Text style={styles.jccSportIcon}>{sportEmoji(sport)}</Text>
+                      <Text style={[styles.jccGroupLabel, { color: dark.text.subtle }]}>{sport}</Text>
+                    </View>
+                    {/* @ts-ignore */}
+                    <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
+                      {results.map((g, i) => {
+                        const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        return (
+                          <TouchableOpacity key={i} onPress={() => openLink(g.link)} activeOpacity={0.7}
+                            style={[styles.jccRow, i < results.length - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                            <Text style={[styles.jccResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.result}</Text>
+                            <Text style={[styles.jccGame, { flex: 1 }]} numberOfLines={1}>{g.isHome ? 'vs' : '@'} {abbreviateOpponent(g.opponent)}</Text>
+                            <Text style={[styles.jccScore, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.score}</Text>
+                            <Text style={[styles.jccDate, { color: dark.text.subtle }]}>{dateStr}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ));
+              })()}
               <TouchableOpacity onPress={() => Linking.openURL('https://jccjayhawks.com')} activeOpacity={0.7} style={styles.moreLink}>
                 <Text style={[styles.moreLinkText, { color: `${ACC.jcc}70` }]}>Full schedule →</Text>
               </TouchableOpacity>
@@ -1450,6 +1472,38 @@ export default function SportsScreen() {
             <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
           )}
         </TeamCard>
+
+        {/* ── Next — compact, not a hero carousel ─────────────── */}
+        {(loading || nextCompactItems.length > 0) && (
+          <>
+            <SectionLabel label={nextCompactItems[0]?.isLive ? 'Live Now' : 'Next'} />
+            {loading ? (
+              <SkeletonPulse width="100%" height={72} borderRadius={14} accRGB="34,211,238" />
+            ) : (
+              // @ts-ignore
+              <View style={[styles.nextList, glassWeb]}>
+                {nextCompactItems.map((item, idx) => (
+                  <NextRow
+                    key={idx}
+                    item={item}
+                    isLast={idx === nextCompactItems.length - 1}
+                    onPress={() => {
+                      if (item.isLive) return;
+                      if (item.isJcc) {
+                        if (item.externalLink) openLink(item.externalLink);
+                        return;
+                      }
+                      const nonLive = nextUpItems.filter(g => !g.isLive);
+                      const si = nonLive.findIndex(g => g.ts === item.ts);
+                      setSheetCarouselIdx(si >= 0 ? si : 0);
+                      setDetailGame(item);
+                    }}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
 
         {/* ── Regional ────────────────────────────────────────── */}
         <SectionLabel label="Regional" />
@@ -1632,18 +1686,16 @@ export default function SportsScreen() {
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
-              <LinearGradient
-                colors={['rgba(100,116,139,0.35)', 'rgba(203,213,225,0.55)']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={{ flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5, justifyContent: 'space-between', flex: 1 }}
-              >
-                {(data?.mlb ?? []).map(t => (
-                  <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
-                    <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
-                    <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
-                  </View>
-                ))}
-              </LinearGradient>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  {(data?.mlb ?? []).map(t => (
+                    <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
+                      <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
+                      <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
             )
           }
         >
@@ -1916,7 +1968,17 @@ export default function SportsScreen() {
           )}
         </TeamCard>
 
+        {/* ── Featured — ad slot, never mixed into standings ──── */}
+        <SectionLabel label="Featured" />
+        <SportsAdCTA onPress={() => setFeedbackOpen(true)} />
+
       </ScrollView>
+
+      {feedbackOpen && (
+        <View style={styles.fullOverlay}>
+          <FeedbackScreen onClose={() => setFeedbackOpen(false)} initialType="business" />
+        </View>
+      )}
 
 
       {/* ── Game Detail Sheet — carousel, in-tree overlay ── */}
@@ -2105,49 +2167,27 @@ const styles = StyleSheet.create({
   title:   { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subhead: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC.label },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 10 },
+  fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 600, flex: 1 },
 
   // Section labels
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 6, paddingHorizontal: 2 },
   sectionLabel:    { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', color: ACC.label },
 
-  // Next Up hero card
-  nextUpSection: { gap: 10 },
-  nextUpCard: {
+  // Next — compact list (News/City Services chrome, not a hero card)
+  nextList: {
     borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(30,41,59,0.8)',
     backgroundColor: 'rgba(15,23,42,0.4)',
     overflow: 'hidden',
   },
-  nextUpHeader: { height: 130, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24 },
-  nextUpBgEmoji: { fontSize: 90, opacity: 0.08, alignSelf: 'center' },
-  nextUpLogoRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1,
-  },
-  nextUpLogoCol: { alignItems: 'center', gap: 6, width: 96, flexShrink: 0 },
-  nextUpLogoBg: {
-    width: 76, height: 76, borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  nextUpHeaderLogo: { width: 72, height: 72, flexShrink: 0 },
-  nextUpLogoLabel: { fontFamily: 'Syne', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
-  nextUpVsDivider: { width: 64, flexShrink: 0, height: 1, alignItems: 'center', justifyContent: 'center' },
-  nextUpVsText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '800', letterSpacing: 1, backgroundColor: 'transparent', paddingHorizontal: 8 },
-  nextUpPill: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  nextUpPillText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
-  nextUpBody: { padding: 14, flexDirection: 'row', alignItems: 'center' },
-  nextUpDots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 8 },
-  nextUpDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
-  nextUpDotActive: { backgroundColor: 'rgba(255,255,255,0.7)', width: 14 },
-  nextUpMatchup: { fontFamily: 'DMSans_800ExtraBold', fontSize: 16, color: '#fff', letterSpacing: -0.3 },
+  nextRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  nextRowStripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+  nextRowEmoji: { fontSize: 16, width: 20, textAlign: 'center' },
+  nextRowSport: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  nextRowMatchup: { fontFamily: 'DMSans_700Bold', fontSize: 13, color: '#fff', marginTop: 2 },
+  nextRowDate: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: dark.text.primary },
+  nextRowTime: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 1 },
 
   // Team cards
   teamCard: {
@@ -2191,6 +2231,7 @@ const styles = StyleSheet.create({
   jccSport:    { fontFamily: 'Outfit', fontSize: 10 },
   jccScore:    { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
   jccDate:     { fontFamily: 'Outfit', fontSize: 10 },
+  jccGroupLabel: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
 
   // Opening Night banner
   openingNightBanner: {
