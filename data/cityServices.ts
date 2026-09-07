@@ -127,6 +127,27 @@ export const CITY_SERVICES: CityService[] = [
     ],
   },
   {
+    id: 'roigrants',
+    icon: 'cash-outline',
+    title: 'ROI Jamestown Business Grants',
+    badge: 'DEADLINE SEP 30',
+    badgeColor: '#f59e0b',
+    status: 'active',
+    summary: 'CDBG-funded · Up to $50k · Deadline Wed Sep 30, 4 PM',
+    details: [
+      { label: 'Deadline',      value: 'Wed, Sep 30, 2026 · 4:00 PM' },
+      { label: 'Funding',       value: 'Up to $50,000 · CDBG-funded' },
+      { label: 'Eligible uses', value: 'Renovations, accessibility upgrades, roof/HVAC/mechanical, signage, permanently installed equipment' },
+      { label: 'Priority areas', value: 'Downtown CBD, primary corridors, job-creating sites' },
+      { label: 'Contact',       value: 'Aili Makuch, Economic Development Coordinator · (716) 338-0040 · makuch@jamestownny.gov' },
+    ],
+    tip: 'For Jamestown commercial property and business owners — covers renovations, build-outs, and equipment. Apply before the Sep 30 deadline.',
+    links: [
+      { label: 'Program details & application', url: 'https://www.jamestownny.gov/15803-2/' },
+    ],
+    expiresAfter: '2026-09-30',
+  },
+  {
     id: 'syringes',
     icon: 'medkit-outline',
     title: 'Sharps / Syringe Disposal',
