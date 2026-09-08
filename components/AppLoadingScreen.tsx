@@ -158,8 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   kicker: {
-    position: 'absolute',
-    top: '14%',
+    marginBottom: 28,
     fontFamily: 'DMSans_500Medium',
     fontSize: 11,
     letterSpacing: 3,
