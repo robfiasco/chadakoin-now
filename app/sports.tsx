@@ -138,13 +138,6 @@ const ACC = {
   label:  '#22d3ee',  // cyan-400 — section headers
 } as const;
 
-// Regional teams closest to home — preferred in the NEXT list over farther
-// MLB teams (NYM, TOR, NYY, HOU) when both are chronologically similar
-const REGIONAL_FAVORITE_SPORTS = new Set([
-  'Buffalo Sabres · NHL', 'Bills · NFL', 'Steelers · NFL', 'Browns · NFL',
-  'Guardians · MLB', 'Pirates · MLB',
-]);
-
 // "Corning Community College" → "Corning CC" — deliberate abbreviation,
 // not truncation, so opponent names never get cut mid-word
 function abbreviateOpponent(name: string): string {
@@ -233,7 +226,6 @@ async function fetchMLB(): Promise<MLBTeam[]> {
       { id: 141, name: 'Blue Jays', abbr: 'TOR' },
       { id: 134, name: 'Pirates',   abbr: 'PIT' },
       { id: 147, name: 'Yankees',   abbr: 'NYY' },
-      { id: 117, name: 'Astros',    abbr: 'HOU', communityPick: "Raybeans' Pick · LOTD" },
     ];
     const now   = new Date();
     const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -1025,10 +1017,13 @@ export default function SportsScreen() {
   // Compact NEXT list — max 3 rows. Local (JCC) first, then regional
   // favorites (BUF/CLE/PIT) over farther teams, then whatever's soonest.
   const nextCompactItems = useMemo((): NextUpItem[] => {
-    if (nextUpItems.length === 0) return [];
+    if (nextUpItems.length === 0 && jccNextBySport.length === 0) return [];
     if (nextUpItems[0]?.isLive) return nextUpItems.slice(0, 3);
 
-    const items: NextUpItem[] = [];
+    // JCC is one candidate among many here, not pinned first — a JCC game
+    // tomorrow shouldn't bump MLB games happening today. Straight
+    // chronological sort across every source, live games only excepted.
+    const candidates: NextUpItem[] = nextUpItems.filter(g => !g.isLive);
 
     if (jccNextBySport.length > 0) {
       const soonest = [...jccNextBySport].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
@@ -1040,7 +1035,7 @@ export default function SportsScreen() {
         : dDay.getTime() === tomorrow.getTime() ? 'Tomorrow'
         : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
       const isMidnight = d.getHours() === 0 && d.getMinutes() === 0;
-      items.push({
+      candidates.push({
         ts: d.getTime(),
         sport: `JCC · ${soonest.sport}`,
         emoji: sportEmoji(soonest.sport),
@@ -1052,14 +1047,8 @@ export default function SportsScreen() {
       });
     }
 
-    const rest = nextUpItems.filter(g => !g.isLive);
-    const favorites = rest.filter(g => REGIONAL_FAVORITE_SPORTS.has(g.sport));
-    const others = rest.filter(g => !REGIONAL_FAVORITE_SPORTS.has(g.sport));
-    for (const g of [...favorites, ...others]) {
-      if (items.length >= 3) break;
-      items.push(g);
-    }
-    return items.slice(0, 3);
+    candidates.sort((a, b) => a.ts - b.ts);
+    return candidates.slice(0, 3);
   }, [nextUpItems, jccNextBySport]);
 
   // Nearest MLB next game for MLB glance row

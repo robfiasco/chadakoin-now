@@ -42,7 +42,7 @@ export function MapGridBackground({ night }: { night: boolean }) {
         <Path d={RIVER_D} stroke={riverColor} strokeWidth={2.5} fill="none" opacity={riverOpacity} strokeLinecap="round" />
       </Svg>
 
-      <Text style={[styles.label, styles.lakeLabel, { color: labelColor }]}>LAKE{'\n'}CHAUTAUQUA</Text>
+      <Text style={[styles.label, styles.lakeLabel, { color: labelColor }]}>CHAUTAUQUA{'\n'}LAKE</Text>
       <Text style={[styles.label, styles.cityLabel, { color: labelColor }]}>JAMESTOWN</Text>
       <Text style={[styles.riverLabel, { color: riverLabelColor }]}>Chadakoin River</Text>
     </View>

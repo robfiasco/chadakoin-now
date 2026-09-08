@@ -223,7 +223,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const topStoryCandidate = civic.news.find(n =>
     n.pubDate &&
     Date.now() - new Date(n.pubDate).getTime() < TOP_STORY_MAX_AGE_MS &&
-    !CRIME_PATTERN.test(n.title)
+    !CRIME_PATTERN.test(n.title) &&
+    n.source !== 'WJTN' // WJTN posts are a daily roundup split into pseudo-stories, not real discrete articles like WRFA/WGRZ — fine in the list, not headline-worthy
   ) ?? null;
   const topStory: NewsItem | null = topStoryCandidate ?? null;
   const skunksAsEvents: EventItem[] = SKUNKS_SCHEDULE
