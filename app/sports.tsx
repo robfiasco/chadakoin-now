@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, ScrollView, StyleSheet, Platform,
   TouchableOpacity, Linking, Image, ImageBackground, Animated, Easing, RefreshControl,
@@ -158,6 +157,59 @@ function sportEmoji(sport: string): string {
   if (s.includes('track') || s.includes('cross')) return '🏃';
   if (s.includes('tennis'))     return '🎾';
   return '🏅';
+}
+
+// NFL team row state — one function covers the Bills hero row and the
+// Steelers/Browns secondary rows. Never renders "0-0": a team with no
+// completed regular-season game shows its next kickoff instead of a record.
+function nflTeamStatus(t: NFLTeam): { pill?: string; pillLive?: boolean; line: string; record?: string } {
+  const record = t.record && t.record !== '0-0' ? t.record : undefined;
+  if (t.liveGame) {
+    const lg = t.liveGame;
+    return {
+      pill: 'LIVE', pillLive: true,
+      line: `${lg.isHome ? 'vs' : '@'} ${lg.opponentAbbr} · ${lg.ourScore}–${lg.theirScore}`,
+      record,
+    };
+  }
+  if (t.games.length > 0) {
+    const g = t.games[0];
+    return {
+      pill: 'FINAL',
+      line: `${g.won ? 'W' : 'L'} ${g.ourScore}–${g.theirScore} ${g.isHome ? 'vs' : '@'} ${g.opponentAbbr}`,
+      record,
+    };
+  }
+  if (t.nextGame) {
+    const d = new Date(t.nextGame.date);
+    const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const wk = t.nextGame.week || '';
+    const weekNum = wk.match(/\d+/)?.[0];
+    const pill = /pre/i.test(wk) ? 'PRE' : (weekNum ? `WK${weekNum}` : undefined);
+    return { pill, line: `${dayStr} ${timeStr} · ${t.nextGame.isHome ? 'vs' : '@'} ${t.nextGame.opponentAbbr}` };
+  }
+  return { line: 'Schedule TBD' };
+}
+
+// MLB expanded-row line for teams that only appear in the accordion body
+// (not the collapsed face). Omits the pitch time when the same club is
+// already shown with a time in the NEXT list, to avoid repeating it.
+function mlbLastOrNext(t: MLBTeam, alreadyInNext: boolean): string {
+  if (t.games[0]) {
+    const g = t.games[0];
+    return `${g.won ? 'W' : 'L'} ${g.ourScore}–${g.theirScore} ${g.isHome ? 'vs' : '@'} ${g.opponent.split(' ').pop()}`;
+  }
+  if (t.nextGame) {
+    const opp = t.nextGame.opponent.split(' ').pop();
+    const prefix = `${t.nextGame.isHome ? 'vs' : '@'} ${opp}`;
+    if (alreadyInNext) return prefix;
+    const timeStr = t.nextGame.gameTime
+      ? new Date(t.nextGame.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : '';
+    return timeStr ? `${prefix} · ${timeStr}` : prefix;
+  }
+  return 'Schedule TBD';
 }
 
 // Transforms an ESPN-format game event into our GameResult shape.
@@ -441,6 +493,9 @@ async function fetchJCCNative(): Promise<JCCData> {
         const parts = score.split(',').map((s: string) => s.trim());
         const wl = parts[0]; const final = parts[1] ?? '';
         if (final === '0-0') continue;
+        // Cross country (and similar) report a meet placement here (e.g. "100th")
+        // instead of W/L — skip rather than mis-recording it as a loss.
+        if (wl !== 'W' && wl !== 'L') continue;
         results.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), result: wl, score: final, won: wl === 'W', link });
       } else if (!hasResult && date >= now) {
         upcoming.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), link });
@@ -558,7 +613,8 @@ function SectionLabel({ label }: { label: string }) {
 function TeamCard({
   accentColor, gradStart, gradEnd, iconContent,
   name, subtitle, glanceRow, children,
-  defaultOpen = false, glassWeb, bgImage,
+  defaultOpen = false, glassWeb, bgImage, hideChevron = false,
+  iconSize, nameStyle,
 }: {
   accentColor: string; gradStart: string; gradEnd: string;
   iconContent: React.ReactNode;
@@ -568,6 +624,15 @@ function TeamCard({
   defaultOpen?: boolean;
   glassWeb: any;
   bgImage?: any;
+  // No expand affordance when there's no extra detail to reveal (e.g. NFL,
+  // whose full state already lives in the glance row).
+  hideChevron?: boolean;
+  // Shrinks the leading icon tile and restyles the name as a small caps
+  // kicker instead of a full team-name heading — for cards that front a
+  // league rather than one team, so the header doesn't visually compete
+  // with a team row immediately below it (e.g. MLB/NFL above Bills).
+  iconSize?: number;
+  nameStyle?: any;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const rot = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
@@ -579,28 +644,38 @@ function TeamCard({
 
   const chevronRotate = rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
 
-  const cardContent = (
+  const headerInner = (
     <>
-      <TouchableOpacity onPress={toggle} activeOpacity={0.7} style={styles.teamCardHeader}>
-        <LinearGradient
-          colors={[gradStart, gradEnd]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={styles.teamIconSquare}
-        >
-          {iconContent}
-        </LinearGradient>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.teamCardName}>{name}</Text>
-          {subtitle ? <Text style={[styles.teamCardSub, { color: dark.text.subtle }]}>{subtitle}</Text> : null}
-        </View>
+      <LinearGradient
+        colors={[gradStart, gradEnd]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[styles.teamIconSquare, iconSize ? { width: iconSize, height: iconSize, borderRadius: Math.round(iconSize * 0.27) } : null]}
+      >
+        {iconContent}
+      </LinearGradient>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.teamCardName, nameStyle]}>{name}</Text>
+        {subtitle ? <Text style={[styles.teamCardSub, { color: dark.text.subtle }]}>{subtitle}</Text> : null}
+      </View>
+      {!hideChevron && (
         <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
           <Ionicons name="chevron-down" size={16} color={dark.text.subtle} />
         </Animated.View>
-      </TouchableOpacity>
+      )}
+    </>
+  );
+
+  const cardContent = (
+    <>
+      {hideChevron ? (
+        <View style={styles.teamCardHeader}>{headerInner}</View>
+      ) : (
+        <TouchableOpacity onPress={toggle} activeOpacity={0.7} style={styles.teamCardHeader}>{headerInner}</TouchableOpacity>
+      )}
 
       <View style={styles.glanceRow}>{glanceRow}</View>
 
-      {open && children && (
+      {!hideChevron && open && children && (
         <View style={[styles.teamCardExpanded, { borderTopColor: dark.border }]}>
           {children}
         </View>
@@ -704,20 +779,7 @@ export default function SportsScreen() {
   const [data, setData]           = useState<SabresData | null>(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedMlbAbbr, setExpandedMlbAbbr] = useState<string | null>(null);
-  const [pinnedMlbAbbr, setPinnedMlbAbbr] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    AsyncStorage.getItem('pinnedMlb').then(v => { if (v) setPinnedMlbAbbr(v); });
-  }, []);
-
-  function togglePinMlb(abbr: string) {
-    const next = pinnedMlbAbbr === abbr ? null : abbr;
-    setPinnedMlbAbbr(next);
-    if (next) AsyncStorage.setItem('pinnedMlb', next);
-    else AsyncStorage.removeItem('pinnedMlb');
-  }
   const [showSkunksSchedule, setShowSkunksSchedule] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [detailGame, setDetailGame] = useState<NextUpItem | null>(null);
@@ -1147,8 +1209,10 @@ export default function SportsScreen() {
         }
       >
 
-        {/* ── Local Teams ─────────────────────────────────────── */}
-        <SectionLabel label="Local Teams" />
+        {/* ── Local Teams — page subtitle already says "Local Teams ·
+            Jamestown", so the section header names the place instead of
+            repeating "Local Teams" right underneath it ───────────────── */}
+        <SectionLabel label="Jamestown" />
 
         {/* Tarp Skunks — hidden once the season ends until next year's schedule is added */}
         {skunksSeasonActive && <TeamCard
@@ -1656,210 +1720,68 @@ export default function SportsScreen() {
           )}
         </TeamCard>}
 
-        {/* Regional MLB */}
+        {/* MLB — face shows the 3 clubs residents actually track (Pirates,
+            Yankees, Guardians); Mets/Blue Jays live in the expanded body. */}
         <TeamCard
           accentColor={ACC.mlb}
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          iconContent={
-            <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
-          }
-          name="Regional MLB"
+          iconContent={<Text style={{ fontSize: 13 }}>⚾</Text>}
+          iconSize={26}
+          name="MLB · NY + Nearby"
+          nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.mlb }}
           defaultOpen={false}
           glassWeb={glassWeb}
           glanceRow={
             loading ? (
               <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: 'row', gap: 14 }}>
-                  {(data?.mlb ?? []).map(t => (
-                    <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
-                      <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }} style={{ width: 20, height: 20 }} resizeMode="contain" />
-                      <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record ?? t.abbr}</Text>
+              <View style={{ flexDirection: 'row', gap: 20 }}>
+                {['PIT', 'NYY', 'CLE'].map(abbr => {
+                  const t = (data?.mlb ?? []).find(x => x.abbr === abbr);
+                  if (!t) return null;
+                  return (
+                    <View key={abbr} style={{ alignItems: 'center', gap: 3 }}>
+                      <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr.toLowerCase()}.png` }} style={{ width: 22, height: 22 }} resizeMode="contain" />
+                      <Text style={[styles.glanceText, { color: '#f59e0b', fontSize: 11, fontWeight: '700' }]}>{t.record || '—'}</Text>
                     </View>
-                  ))}
-                </View>
-              </ScrollView>
+                  );
+                })}
+              </View>
             )
           }
         >
           {loading ? (
-            <SkeletonPulse width="100%" height={160} borderRadius={12} accRGB="167,139,250" />
+            <SkeletonPulse width="100%" height={80} borderRadius={12} accRGB="167,139,250" />
           ) : (data?.mlb ?? []).length > 0 ? (
             <>
               {/* @ts-ignore */}
               <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-                {[...(data?.mlb ?? [])].sort((a, b) => {
-                  if (a.abbr === pinnedMlbAbbr) return -1;
-                  if (b.abbr === pinnedMlbAbbr) return 1;
-                  return 0;
-                }).map((t, i) => {
-                  const ng = t.nextGame;
-                  const opp = ng?.opponent?.split(' ').pop() ?? '';
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-                  let nextStr = '';
-                  if (ng) {
-                    const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
-                    const dDay = new Date(d); dDay.setHours(0,0,0,0);
-                    const dayLabel = dDay.getTime() === today.getTime() ? 'Today'
-                      : dDay.getTime() === tomorrow.getTime() ? 'Tmrw'
-                      : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const timeStr = ng.gameTime
-                      ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(' ', '')
-                      : '';
-                    nextStr = `${ng.isHome ? 'vs' : '@'} ${opp} · ${dayLabel}${timeStr ? ` ${timeStr}` : ''}`;
-                  }
-                  const isExpanded = expandedMlbAbbr === t.abbr;
+                {['NYM', 'TOR'].map((abbr, i) => {
+                  const t = (data?.mlb ?? []).find(x => x.abbr === abbr);
+                  if (!t) return null;
+                  const alreadyInNext = nextCompactItems.some(n => n.sport === `${t.name} · MLB`);
                   return (
-                    <View key={t.abbr} style={[i < (data?.mlb?.length ?? 0) - 1 && !isExpanded && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                      <TouchableOpacity
-                        onPress={() => setExpandedMlbAbbr(isExpanded ? null : t.abbr)}
-                        activeOpacity={0.7}
-                        style={styles.mlbTeamRow}
-                      >
+                    <View key={abbr} style={[i === 0 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
+                      <View style={styles.mlbTeamRow}>
                         <View style={styles.mlbLogoWrap}>
                           <Image
-                            source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png` }}
+                            source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr.toLowerCase()}.png` }}
                             style={styles.mlbLogo}
                             resizeMode="contain"
                           />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.mlbTeamName}>{t.name}</Text>
-                          {t.liveGame ? (
-                            <Text style={[styles.mlbNext, { color: dark.text.muted }]}>
-                              {`${t.abbr} ${t.liveGame.isHome ? 'vs' : '@'} ${t.liveGame.opponent.split(' ').pop()} · ${t.liveGame.ourScore}–${t.liveGame.theirScore}`}
-                            </Text>
-                          ) : nextStr ? (
-                            <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text>
-                          ) : null}
-                          {t.divisionRank ? (
-                            <Text style={[styles.mlbNext, { color: 'rgba(255,255,255,0.2)' }]}>
-                              {ordinal(t.divisionRank)} · {t.gamesBack ?? ''}
-                            </Text>
-                          ) : null}
-                          {t.communityPick ? (
-                            <Text style={[styles.mlbCommunityPick, { color: ACC.mlb }]}>🎙 {t.communityPick}</Text>
-                          ) : null}
+                          <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{mlbLastOrNext(t, alreadyInNext)}</Text>
                         </View>
                         {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
                         {t.liveGame ? (
                           <View style={styles.mlbLiveBadge}>
                             <Text style={styles.mlbLiveBadgeText}>● LIVE</Text>
                           </View>
-                        ) : t.streak ? (
-                          <View style={[styles.mlbStreakBadge, {
-                            borderColor: t.streak.startsWith('W') ? `${ACC.jcc}40` : 'rgba(251,113,133,0.4)',
-                            backgroundColor: t.streak.startsWith('W') ? `${ACC.jcc}12` : 'rgba(251,113,133,0.12)',
-                          }]}>
-                            <Text style={[styles.mlbStreakBadgeText, { color: t.streak.startsWith('W') ? ACC.jcc : '#fb7185' }]}>{t.streak}</Text>
-                          </View>
                         ) : null}
-                        <TouchableOpacity
-                          onPress={() => togglePinMlb(t.abbr)}
-                          activeOpacity={0.7}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={{ marginLeft: 6 }}
-                        >
-                          <Ionicons
-                            name={pinnedMlbAbbr === t.abbr ? 'star' : 'star-outline'}
-                            size={14}
-                            color={pinnedMlbAbbr === t.abbr ? '#f59e0b' : 'rgba(255,255,255,0.18)'}
-                          />
-                        </TouchableOpacity>
-                        <Ionicons
-                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                          size={13}
-                          color="rgba(255,255,255,0.2)"
-                          style={{ marginLeft: 4 }}
-                        />
-                      </TouchableOpacity>
-
-                      {/* Expanded: last 5 games + next game */}
-                      {isExpanded && (
-                        <View style={[styles.mlbExpanded, { borderTopColor: dark.border }]}>
-                          {ng && (
-                            <View style={{ gap: 4 }}>
-                              <View style={styles.mlbExpandedNext}>
-                                <Text style={[styles.mlbExpandLabel, { color: ACC.mlb }]}>Next</Text>
-                                <Image
-                                  source={{ uri: ng.opponentAbbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${ng.opponentAbbr.toLowerCase()}.png` : undefined }}
-                                  style={styles.mlbExpandLogo}
-                                  resizeMode="contain"
-                                />
-                                <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '700' }]}>
-                                  {ng.isHome ? 'vs' : '@'} {ng.opponent.split(' ').pop()}
-                                </Text>
-                                <Text style={{ color: dark.text.subtle, fontSize: 10 }}>·</Text>
-                                <Text style={[styles.mlbExpandText, { color: dark.text.muted }]}>{nextStr.split('· ')[1] ?? ''}</Text>
-                              </View>
-                              {(ng.probablePitcher || ng.oppProbablePitcher) ? (
-                                <Text style={[styles.mlbExpandText, { color: dark.text.subtle, marginTop: 3 }]}>
-                                  {ng.probablePitcher ?? 'TBD'} vs {ng.oppProbablePitcher ?? 'TBD'}
-                                </Text>
-                              ) : null}
-                            </View>
-                          )}
-                          {t.games.length > 0 && (() => {
-                            // Streak from games as fallback if API data not available
-                            const streakChar = t.games[0].won ? 'W' : 'L';
-                            let streakCount = 0;
-                            for (const g of t.games) {
-                              if (g.won === t.games[0].won) streakCount++; else break;
-                            }
-                            const streakLabel = `${streakChar}${streakCount}`;
-                            const last3 = t.games.slice(0, 3);
-                            // Last 10 from games as fallback
-                            const last10Wins = t.games.slice(0, 10).filter(g => g.won).length;
-                            const last10Total = Math.min(t.games.length, 10);
-                            const last10FromGames = last10Total > 0 ? `${last10Wins}-${last10Total - last10Wins}` : '';
-                            return (
-                              <>
-                                {/* Stats strip */}
-                                <View style={[styles.mlbStatsStrip, { marginTop: ng ? 10 : 0, borderColor: 'rgba(167,139,250,0.12)' }]}>
-                                  <View style={styles.mlbStatCell}>
-                                    <Text style={[styles.mlbStatVal, { color: t.games[0]?.won ? ACC.jcc : '#fb7185' }]}>{t.streak || streakLabel}</Text>
-                                    <Text style={styles.mlbStatLbl}>Streak</Text>
-                                  </View>
-                                  <View style={styles.mlbStatDivider} />
-                                  <View style={styles.mlbStatCell}>
-                                    <Text style={styles.mlbStatVal}>{t.last10 || last10FromGames}</Text>
-                                    <Text style={styles.mlbStatLbl}>Last 10</Text>
-                                  </View>
-                                  <View style={styles.mlbStatDivider} />
-                                  <View style={styles.mlbStatCell}>
-                                    <Text style={styles.mlbStatVal}>{t.teamBA ?? '—'}</Text>
-                                    <Text style={styles.mlbStatLbl}>Team BA</Text>
-                                  </View>
-                                  <View style={styles.mlbStatDivider} />
-                                  <View style={styles.mlbStatCell}>
-                                    <Text style={styles.mlbStatVal}>{t.teamERA ?? '—'}</Text>
-                                    <Text style={styles.mlbStatLbl}>Team ERA</Text>
-                                  </View>
-                                </View>
-                                {/* Last 3 games */}
-                                <Text style={[styles.mlbExpandLabel, { color: dark.text.subtle, marginTop: 12, marginBottom: 6 }]}>Last 3 Games</Text>
-                                {last3.map((g, gi) => {
-                                  const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                  return (
-                                    <View key={gi} style={styles.mlbGameRow}>
-                                      <Text style={[styles.mlbGameResult, { color: g.won ? ACC.jcc : '#fb7185' }]}>{g.won ? 'W' : 'L'}</Text>
-                                      <Text style={[styles.mlbExpandText, { color: dark.text.muted, width: 60 }]}>{g.isHome ? 'vs' : '@'} {g.opponent.split(' ').pop()}</Text>
-                                      <Text style={[styles.mlbExpandText, { color: '#fff', fontWeight: '600' }]}>{g.ourScore}–{g.theirScore}</Text>
-                                      <Text style={[styles.mlbExpandText, { color: dark.text.subtle, marginLeft: 'auto' }]}>{dateStr}</Text>
-                                    </View>
-                                  );
-                                })}
-                              </>
-                            );
-                          })()}
-                        </View>
-                      )}
-                      {i < (data?.mlb?.length ?? 0) - 1 && (
-                        <View style={{ height: 1, backgroundColor: dark.border }} />
-                      )}
+                      </View>
                     </View>
                   );
                 })}
@@ -1873,85 +1795,68 @@ export default function SportsScreen() {
           )}
         </TeamCard>
 
-        {/* Regional NFL */}
+        {/* NFL — Bills lead as a hero row (they're the team Jamestown
+            actually follows); Steelers/Browns ride along as smaller rows in
+            the same glance, so nothing needs an expand tap to be useful. */}
         <TeamCard
           accentColor={ACC.nfl}
           gradStart="rgba(251,146,60,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          iconContent={
-            <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />
-          }
-          name="Regional NFL"
-          subtitle="BUF · PIT · CLE"
+          iconContent={<Text style={{ fontSize: 13 }}>🏈</Text>}
+          iconSize={26}
+          name="NFL"
+          nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.nfl }}
           defaultOpen={false}
+          hideChevron
           glassWeb={glassWeb}
           glanceRow={
             loading ? (
-              <SkeletonPulse width="55%" height={14} borderRadius={4} accRGB="251,146,60" />
-            ) : (
-              <View style={{ flexDirection: 'row', gap: 14 }}>
-                {(data?.nfl ?? []).map(t => (
-                  <View key={t.abbr} style={{ alignItems: 'center', gap: 3 }}>
-                    <Image source={{ uri: t.logo }} style={{ width: 20, height: 20 }} resizeMode="contain" />
-                    <Text style={[styles.glanceText, { color: 'rgba(255,255,255,0.7)', fontSize: 10 }]}>{t.record || t.abbr}</Text>
-                  </View>
-                ))}
-              </View>
-            )
-          }
-        >
-          {loading ? (
-            <SkeletonPulse width="100%" height={140} borderRadius={12} accRGB="251,146,60" />
-          ) : (data?.nfl ?? []).length > 0 ? (
-            <>
-              {/* @ts-ignore */}
-              <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-                {(data?.nfl ?? []).map((t, i) => {
-                  let nextStr = '';
-                  if (t.nextGame) {
-                    const d = new Date(t.nextGame.date);
-                    const timeStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                    nextStr = `${t.nextGame.isHome ? 'vs' : '@'} ${t.nextGame.opponentAbbr} · ${timeStr}`;
-                  }
-                  return (
-                    <View key={t.abbr} style={[i < (data?.nfl?.length ?? 0) - 1 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                      <View style={styles.mlbTeamRow}>
-                        <View style={styles.mlbLogoWrap}>
-                          <Image source={{ uri: t.logo }} style={styles.mlbLogo} resizeMode="contain" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.mlbTeamName}>{t.name}</Text>
-                          {t.liveGame ? (
-                            <Text style={[styles.mlbNext, { color: dark.text.muted }]}>
-                              {`${t.abbr} ${t.liveGame.isHome ? 'vs' : '@'} ${t.liveGame.opponentAbbr} · ${t.liveGame.ourScore}–${t.liveGame.theirScore}`}
-                            </Text>
-                          ) : nextStr ? (
-                            <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{nextStr}</Text>
-                          ) : t.games[0] ? (
-                            <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>
-                              {t.games[0].won ? 'W' : 'L'} {t.games[0].ourScore}–{t.games[0].theirScore} {t.games[0].isHome ? 'vs' : '@'} {t.games[0].opponentAbbr}
-                            </Text>
-                          ) : null}
-                        </View>
-                        {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
-                        {t.liveGame ? (
-                          <View style={styles.mlbLiveBadge}>
-                            <Text style={styles.mlbLiveBadgeText}>● LIVE</Text>
-                          </View>
-                        ) : null}
-                      </View>
+              <SkeletonPulse width="70%" height={44} borderRadius={8} accRGB="251,146,60" />
+            ) : (() => {
+              const bills    = (data?.nfl ?? []).find(t => t.abbr === 'BUF');
+              const steelers = (data?.nfl ?? []).find(t => t.abbr === 'PIT');
+              const browns   = (data?.nfl ?? []).find(t => t.abbr === 'CLE');
+              if (!bills) return <Text style={[styles.glanceText, { color: dark.text.subtle }]}>No schedule data.</Text>;
+              const billsStatus = nflTeamStatus(bills);
+              return (
+                <View style={{ gap: 10 }}>
+                  {/* Hero — Bills */}
+                  <View style={nfl.heroRow}>
+                    <Image source={{ uri: bills.logo }} style={nfl.heroLogo} resizeMode="contain" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={nfl.heroName}>Bills</Text>
+                      <Text style={nfl.heroSub} numberOfLines={1}>{billsStatus.line}</Text>
                     </View>
-                  );
-                })}
-              </View>
-              <TouchableOpacity onPress={() => Linking.openURL('https://www.espn.com/nfl/')} activeOpacity={0.7} style={styles.moreLink}>
-                <Text style={[styles.moreLinkText, { color: `${ACC.nfl}70` }]}>More on ESPN →</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
-          )}
-        </TeamCard>
+                    <View style={{ alignItems: 'flex-end', gap: 3 }}>
+                      {billsStatus.pill ? (
+                        <View style={[nfl.statusPill, billsStatus.pillLive && nfl.statusPillLive]}>
+                          <Text style={[nfl.statusPillText, billsStatus.pillLive && { color: '#fb7185' }]}>{billsStatus.pill}</Text>
+                        </View>
+                      ) : null}
+                      {billsStatus.record ? <Text style={nfl.heroRecord}>{billsStatus.record}</Text> : null}
+                    </View>
+                  </View>
+
+                  {/* Secondary — Steelers, Browns */}
+                  {[steelers, browns].filter((t): t is NFLTeam => !!t).map(t => {
+                    const s = nflTeamStatus(t);
+                    return (
+                      <View key={t.abbr} style={nfl.secRow}>
+                        <Image source={{ uri: t.logo }} style={nfl.secLogo} resizeMode="contain" />
+                        <Text style={nfl.secName}>{t.name}</Text>
+                        <Text style={[nfl.secLine, s.pillLive && { color: '#fb7185' }]} numberOfLines={1}>{s.line}</Text>
+                      </View>
+                    );
+                  })}
+
+                  <TouchableOpacity onPress={() => Linking.openURL('https://www.espn.com/nfl/')} activeOpacity={0.7} style={[styles.moreLink, { paddingTop: 0 }]}>
+                    <Text style={[styles.moreLinkText, { color: `${ACC.nfl}70` }]}>More on ESPN →</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()
+          }
+        />
 
         {/* ── Featured — ad slot, never mixed into standings ──── */}
         <SectionLabel label="Featured" />
@@ -2145,6 +2050,23 @@ const schedModal = StyleSheet.create({
   time:        { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)' },
   opponent:    { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.2 },
   promo:       { fontFamily: 'Outfit', fontSize: 10, marginTop: 2 },
+});
+
+// NFL glance row — Bills hero + Steelers/Browns secondary rows, all visible
+// without expanding (there's no extra data behind a chevron for this card).
+const nfl = StyleSheet.create({
+  heroRow:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroLogo:       { width: 40, height: 40 },
+  heroName:       { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff' },
+  heroSub:        { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+  heroRecord:     { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
+  statusPill:     { borderWidth: 1, borderColor: `${ACC.nfl}40`, backgroundColor: `${ACC.nfl}18`, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  statusPillLive: { borderColor: 'rgba(251,113,133,0.4)', backgroundColor: 'rgba(251,113,133,0.12)' },
+  statusPillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.6, color: ACC.nfl },
+  secRow:         { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 4 },
+  secLogo:        { width: 22, height: 22 },
+  secName:        { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.75)', width: 68 },
+  secLine:        { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', flex: 1 },
 });
 
 const styles = StyleSheet.create({
