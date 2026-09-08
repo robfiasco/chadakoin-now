@@ -988,18 +988,20 @@ export default function SportsScreen() {
     return SKUNKS_SCHEDULE.find(g => g.date >= todayStr) ?? null;
   }, []);
 
-  // JCC glance: last result per sport (up to 2 distinct sports), within 7 days
+  // JCC glance: last result per distinct sport within 7 days — every active
+  // sport, not an arbitrary cap. Keyed on the full sport name, not just its
+  // first word, so "Women's Soccer" and "Women's Volleyball" don't collide
+  // (both start with "women's").
   const jccGlance = useMemo(() => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const results = (data?.jcc?.results ?? []).filter(r => new Date(r.date) >= sevenDaysAgo);
     const seen = new Set<string>();
     const out: JCCResult[] = [];
     for (const r of results) {
-      const key = r.sport.toLowerCase().split(' ')[0];
+      const key = r.sport.toLowerCase();
       if (!seen.has(key)) { seen.add(key); out.push(r); }
-      if (out.length >= 2) break;
     }
-    return out.length > 0 ? out : results.slice(0, 2);
+    return out;
   }, [data]);
 
   // JCC next game per sport (soonest upcoming per unique sport)
@@ -1008,7 +1010,7 @@ export default function SportsScreen() {
     const seen = new Set<string>();
     const out: JCCUpcoming[] = [];
     for (const u of upcomingList) {
-      const key = u.sport.toLowerCase().split(' ')[0];
+      const key = u.sport.toLowerCase();
       if (!seen.has(key)) { seen.add(key); out.push(u); }
     }
     return out;
