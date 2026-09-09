@@ -730,6 +730,34 @@ function NextRow({ item, onPress, isLast }: { item: NextUpItem; onPress: () => v
   );
 }
 
+// One uniform row for MLB (5 teams) / NFL (3 teams) league cards — logo,
+// name, status line, trailing record and/or pill. Every team gets the same
+// treatment; nothing hidden behind a tap since the full roster fits.
+function LeagueTeamRow({
+  logo, name, line, lineColor, record, recordColor, pill, pillLive,
+}: {
+  logo: string; name: string; line: string; lineColor?: string;
+  record?: string; recordColor?: string; pill?: string; pillLive?: boolean;
+}) {
+  return (
+    <View style={league.row}>
+      <Image source={{ uri: logo }} style={league.rowLogo} resizeMode="contain" />
+      <View style={{ flex: 1 }}>
+        <Text style={league.rowName} numberOfLines={1}>{name}</Text>
+        <Text style={[league.rowLine, lineColor && { color: lineColor }]} numberOfLines={1}>{line}</Text>
+      </View>
+      <View style={{ alignItems: 'flex-end', gap: 3 }}>
+        {pill ? (
+          <View style={[league.statusPill, pillLive && league.statusPillLive]}>
+            <Text style={[league.statusPillText, pillLive && { color: '#fb7185' }]}>{pill}</Text>
+          </View>
+        ) : null}
+        {record ? <Text style={[league.rowRecord, recordColor && { color: recordColor }]}>{record}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
 // Ad slot — sells the Featured spot, never mixed into standings/score rows.
 // Reuses the same pricing constant as the Events tab's ad CTA.
 function SportsAdCTA({ onPress }: { onPress: () => void }) {
@@ -1720,8 +1748,9 @@ export default function SportsScreen() {
           )}
         </TeamCard>}
 
-        {/* MLB — face shows the 3 clubs residents actually track (Pirates,
-            Yankees, Guardians); Mets/Blue Jays live in the expanded body. */}
+        {/* MLB — all 5 tracked clubs shown as one flat list. Nothing behind
+            a tap: with only 5 rows, splitting the face from an accordion
+            body just made the card feel like it was hiding content. */}
         <TeamCard
           accentColor={ACC.mlb}
           gradStart="rgba(167,139,250,0.22)"
@@ -1731,73 +1760,41 @@ export default function SportsScreen() {
           name="MLB · NY + Nearby"
           nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.mlb }}
           defaultOpen={false}
+          hideChevron
           glassWeb={glassWeb}
           glanceRow={
             loading ? (
-              <SkeletonPulse width="65%" height={14} borderRadius={4} accRGB="167,139,250" />
-            ) : (
-              <View style={{ flexDirection: 'row', gap: 20 }}>
-                {['PIT', 'NYY', 'CLE'].map(abbr => {
-                  const t = (data?.mlb ?? []).find(x => x.abbr === abbr);
-                  if (!t) return null;
-                  return (
-                    <View key={abbr} style={{ alignItems: 'center', gap: 3 }}>
-                      <Image source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr.toLowerCase()}.png` }} style={{ width: 22, height: 22 }} resizeMode="contain" />
-                      <Text style={[styles.glanceText, { color: '#f59e0b', fontSize: 11, fontWeight: '700' }]}>{t.record || '—'}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )
-          }
-        >
-          {loading ? (
-            <SkeletonPulse width="100%" height={80} borderRadius={12} accRGB="167,139,250" />
-          ) : (data?.mlb ?? []).length > 0 ? (
-            <>
-              {/* @ts-ignore */}
-              <View style={[innerCard, { padding: 0, overflow: 'hidden' }]}>
-                {['NYM', 'TOR'].map((abbr, i) => {
+              <SkeletonPulse width="100%" height={140} borderRadius={8} accRGB="167,139,250" />
+            ) : (data?.mlb ?? []).length > 0 ? (
+              <View style={{ gap: 10 }}>
+                {['PIT', 'NYY', 'CLE', 'NYM', 'TOR'].map(abbr => {
                   const t = (data?.mlb ?? []).find(x => x.abbr === abbr);
                   if (!t) return null;
                   const alreadyInNext = nextCompactItems.some(n => n.sport === `${t.name} · MLB`);
                   return (
-                    <View key={abbr} style={[i === 0 && { borderBottomWidth: 1, borderBottomColor: dark.border }]}>
-                      <View style={styles.mlbTeamRow}>
-                        <View style={styles.mlbLogoWrap}>
-                          <Image
-                            source={{ uri: `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr.toLowerCase()}.png` }}
-                            style={styles.mlbLogo}
-                            resizeMode="contain"
-                          />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.mlbTeamName}>{t.name}</Text>
-                          <Text style={[styles.mlbNext, { color: dark.text.subtle }]}>{mlbLastOrNext(t, alreadyInNext)}</Text>
-                        </View>
-                        {t.record ? <Text style={[styles.mlbRecord, { color: dark.text.muted }]}>{t.record}</Text> : null}
-                        {t.liveGame ? (
-                          <View style={styles.mlbLiveBadge}>
-                            <Text style={styles.mlbLiveBadgeText}>● LIVE</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
+                    <LeagueTeamRow
+                      key={abbr}
+                      logo={`https://a.espncdn.com/i/teamlogos/mlb/500/${abbr.toLowerCase()}.png`}
+                      name={t.name}
+                      line={t.liveGame ? `LIVE · ${t.liveGame.ourScore}–${t.liveGame.theirScore}` : mlbLastOrNext(t, alreadyInNext)}
+                      lineColor={t.liveGame ? '#fb7185' : undefined}
+                      record={t.record}
+                      recordColor="#f59e0b"
+                    />
                   );
                 })}
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.mlb.com')} activeOpacity={0.7} style={[styles.moreLink, { paddingTop: 0 }]}>
+                  <Text style={[styles.moreLinkText, { color: `${ACC.mlb}70` }]}>More on MLB.com →</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => Linking.openURL('https://www.mlb.com')} activeOpacity={0.7} style={styles.moreLink}>
-                <Text style={[styles.moreLinkText, { color: `${ACC.mlb}70` }]}>More on MLB.com →</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
-          )}
-        </TeamCard>
+            ) : (
+              <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
+            )
+          }
+        />
 
-        {/* NFL — Bills lead as a hero row (they're the team Jamestown
-            actually follows); Steelers/Browns ride along as smaller rows in
-            the same glance, so nothing needs an expand tap to be useful. */}
+        {/* NFL — same treatment: all 3 teams as one flat list, Bills first
+            but no heavier than Steelers/Browns. */}
         <TeamCard
           accentColor={ACC.nfl}
           gradStart="rgba(251,146,60,0.22)"
@@ -1811,44 +1808,29 @@ export default function SportsScreen() {
           glassWeb={glassWeb}
           glanceRow={
             loading ? (
-              <SkeletonPulse width="70%" height={44} borderRadius={8} accRGB="251,146,60" />
+              <SkeletonPulse width="100%" height={100} borderRadius={8} accRGB="251,146,60" />
             ) : (() => {
-              const bills    = (data?.nfl ?? []).find(t => t.abbr === 'BUF');
-              const steelers = (data?.nfl ?? []).find(t => t.abbr === 'PIT');
-              const browns   = (data?.nfl ?? []).find(t => t.abbr === 'CLE');
-              if (!bills) return <Text style={[styles.glanceText, { color: dark.text.subtle }]}>No schedule data.</Text>;
-              const billsStatus = nflTeamStatus(bills);
+              const teams = ['BUF', 'PIT', 'CLE']
+                .map(abbr => (data?.nfl ?? []).find(t => t.abbr === abbr))
+                .filter((t): t is NFLTeam => !!t);
+              if (teams.length === 0) return <Text style={[styles.glanceText, { color: dark.text.subtle }]}>No schedule data.</Text>;
               return (
                 <View style={{ gap: 10 }}>
-                  {/* Hero — Bills */}
-                  <View style={nfl.heroRow}>
-                    <Image source={{ uri: bills.logo }} style={nfl.heroLogo} resizeMode="contain" />
-                    <View style={{ flex: 1 }}>
-                      <Text style={nfl.heroName}>Bills</Text>
-                      <Text style={nfl.heroSub} numberOfLines={1}>{billsStatus.line}</Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end', gap: 3 }}>
-                      {billsStatus.pill ? (
-                        <View style={[nfl.statusPill, billsStatus.pillLive && nfl.statusPillLive]}>
-                          <Text style={[nfl.statusPillText, billsStatus.pillLive && { color: '#fb7185' }]}>{billsStatus.pill}</Text>
-                        </View>
-                      ) : null}
-                      {billsStatus.record ? <Text style={nfl.heroRecord}>{billsStatus.record}</Text> : null}
-                    </View>
-                  </View>
-
-                  {/* Secondary — Steelers, Browns */}
-                  {[steelers, browns].filter((t): t is NFLTeam => !!t).map(t => {
+                  {teams.map(t => {
                     const s = nflTeamStatus(t);
                     return (
-                      <View key={t.abbr} style={nfl.secRow}>
-                        <Image source={{ uri: t.logo }} style={nfl.secLogo} resizeMode="contain" />
-                        <Text style={nfl.secName}>{t.name}</Text>
-                        <Text style={[nfl.secLine, s.pillLive && { color: '#fb7185' }]} numberOfLines={1}>{s.line}</Text>
-                      </View>
+                      <LeagueTeamRow
+                        key={t.abbr}
+                        logo={t.logo}
+                        name={t.name}
+                        line={s.line}
+                        lineColor={s.pillLive ? '#fb7185' : undefined}
+                        record={s.record}
+                        pill={s.pill}
+                        pillLive={s.pillLive}
+                      />
                     );
                   })}
-
                   <TouchableOpacity onPress={() => Linking.openURL('https://www.espn.com/nfl/')} activeOpacity={0.7} style={[styles.moreLink, { paddingTop: 0 }]}>
                     <Text style={[styles.moreLinkText, { color: `${ACC.nfl}70` }]}>More on ESPN →</Text>
                   </TouchableOpacity>
@@ -2052,21 +2034,20 @@ const schedModal = StyleSheet.create({
   promo:       { fontFamily: 'Outfit', fontSize: 10, marginTop: 2 },
 });
 
-// NFL glance row — Bills hero + Steelers/Browns secondary rows, all visible
-// without expanding (there's no extra data behind a chevron for this card).
-const nfl = StyleSheet.create({
-  heroRow:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroLogo:       { width: 40, height: 40 },
-  heroName:       { fontFamily: 'Syne', fontSize: 16, fontWeight: '700', color: '#fff' },
-  heroSub:        { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
-  heroRecord:     { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
+// Uniform row language for league cards — MLB (5 teams) and NFL (3 teams)
+// both fit entirely without paging or an expand tap, so every team gets the
+// same weight: logo, name, one status line, trailing record/pill. No
+// hero-vs-secondary hierarchy — with this few rows, differentiating one
+// team just made the list read as incomplete.
+const league = StyleSheet.create({
+  row:            { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowLogo:        { width: 28, height: 28 },
+  rowName:        { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff' },
+  rowLine:        { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
+  rowRecord:      { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
   statusPill:     { borderWidth: 1, borderColor: `${ACC.nfl}40`, backgroundColor: `${ACC.nfl}18`, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
   statusPillLive: { borderColor: 'rgba(251,113,133,0.4)', backgroundColor: 'rgba(251,113,133,0.12)' },
   statusPillText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.6, color: ACC.nfl },
-  secRow:         { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 4 },
-  secLogo:        { width: 22, height: 22 },
-  secName:        { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.75)', width: 68 },
-  secLine:        { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', flex: 1 },
 });
 
 const styles = StyleSheet.create({
@@ -2181,42 +2162,8 @@ const styles = StyleSheet.create({
   scorerPos:     { fontFamily: 'Outfit', fontSize: 9 },
   scorerStat:    { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.65)', width: 32, textAlign: 'center' },
 
-  // MLB team list
-  mlbTeamRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
-  mlbLogoWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  mlbLogo:     { width: 28, height: 28 },
-  mlbTeamName: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: '#fff' },
-  mlbNext:     { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
-  mlbRecord:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
-
-  // MLB stats strip
-  mlbStatsStrip: {
-    flexDirection: 'row', borderWidth: 1, borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.02)', overflow: 'hidden',
-  },
-  mlbStatCell:    { flex: 1, alignItems: 'center', paddingVertical: 10 },
-  mlbStatVal:     { fontFamily: 'DMSans_700Bold', fontSize: 14, color: '#fff' },
-  mlbStatLbl:     { fontFamily: 'Outfit', fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8, marginTop: 2, textTransform: 'uppercase' },
-  mlbStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 8 },
-
-  // MLB expanded detail
-  mlbExpanded:     { paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: 1, backgroundColor: 'rgba(255,255,255,0.02)' },
-  mlbExpandedNext: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  mlbExpandLabel:  { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
-  mlbExpandLogo:   { width: 20, height: 20 },
-  mlbExpandText:   { fontFamily: 'Outfit', fontSize: 12 },
-  mlbGameRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  mlbGameResult:   { fontFamily: 'Outfit', fontSize: 12, fontWeight: '800', width: 14 },
-
   playoffsBadge: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   playoffsBadgeText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
-
-  // MLB live/streak badges and community pick
-  mlbLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(251,113,133,0.12)', borderWidth: 1, borderColor: 'rgba(251,113,133,0.3)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  mlbLiveBadgeText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: '#fb7185', letterSpacing: 0.5 },
-  mlbStreakBadge: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  mlbStreakBadgeText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
-  mlbCommunityPick: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', marginTop: 1 },
 
   // Game detail bottom sheet — in-tree overlay (not Modal) so it respects app container on web
   sheetOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', zIndex: 500 },

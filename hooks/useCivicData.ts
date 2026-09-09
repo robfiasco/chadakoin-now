@@ -580,7 +580,7 @@ async function fetchDpwUpdate(): Promise<DpwWeekUpdate | null> {
   if (cached) return cached;
   try {
     const path = Platform.OS === 'web' ? '/api/dpw' : `${NATIVE_API_HOST}/api/dpw`;
-    const res = await fetch(path, { signal: AbortSignal.timeout(10000) });
+    const res = await feedFetch(path);
     if (!res.ok) throw new Error(`DPW fetch failed: ${res.status}`);
     const data: DpwWeekUpdate | null = await res.json();
     if (data) await setCache('dpw', data);
