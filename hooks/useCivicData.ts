@@ -268,7 +268,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v32_';
+const CACHE_PREFIX = 'civic_v33_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -2145,12 +2145,17 @@ async function fetchNews(): Promise<NewsItem[]> {
     feedFetch(proxyUrl(FEEDS.wjtn)),
   ]);
 
+  // Recurring show episodes ("Oakridge Outdoors EP 145 – August 24, 2026")
+  // are usually tagged [LISTEN]/[WATCH], but that tag is sometimes missing
+  // on WRFA's end — catch the "EP <number>" pattern too so an untagged
+  // episode post doesn't slip through as if it were a real article.
+  const EPISODE_PATTERN = /\bEP\s*\d+\b/i;
   function toNewsItems(raw: string, limit: number, source: string): NewsItem[] {
     const items = getRssItems(raw);
     return items
       .filter(item => {
         const title = getItemText(item.title ?? '');
-        return !title.startsWith('[LISTEN]') && !title.startsWith('[WATCH]');
+        return !title.startsWith('[LISTEN]') && !title.startsWith('[WATCH]') && !EPISODE_PATTERN.test(title);
       })
       .slice(0, limit)
       .map(item => ({
@@ -2249,27 +2254,66 @@ async function fetchNews(): Promise<NewsItem[]> {
     }
   }
 
-  const seen = new Set<string>();
-  const addUnique = (items: NewsItem[]) =>
-    items.filter(n => {
-      const key = n.title.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  // Different outlets covering the same real story write their own
+  // headlines (WJTN's "Schmidt defends use of Flock cameras..." vs WRFA's
+  // "Chautauqua County DA Schmidt Speaks In Support Of Flock Cameras..."),
+  // so exact-title matching alone misses the duplicate. Fuzzy-match by
+  // shared significant keywords within a same-day publish window — but
+  // only across *different* sources (matching within one outlet's own feed
+  // was the exact bug that ate a real event from the events pipeline; see
+  // isSameEvent's _source tagging for the same fix applied there).
+  const NEWS_STOP_WORDS = new Set(['the','and','for','with','from','this','that','will','also','while','been','have','into','over','after','about','more','than','still','says','said','county','jamestown']);
+  function newsKeywords(title: string): Set<string> {
+    return new Set(
+      title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+        .map(w => w.replace(/s$/, ''))
+        .filter(w => w.length >= 4 && !NEWS_STOP_WORDS.has(w))
+    );
+  }
+  function isSameStory(a: NewsItem, b: NewsItem): boolean {
+    const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+    const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+    // Tighter than events' isSameEvent (shared>=2): news headlines are full
+    // sentences that constantly reuse generic local-news words ("county",
+    // "police", "school", "board"...), so with a growing accepted-items list
+    // a 2-word bar was matching almost everything against something and
+    // collapsing the whole feed down to one story. Require 3+ shared words
+    // and a tighter same-coverage-window (12h, not 24h).
+    if (!ta || !tb || Math.abs(ta - tb) > 12 * 60 * 60 * 1000) return false;
+    const kA = newsKeywords(a.title); const kB = newsKeywords(b.title);
+    let shared = 0;
+    for (const w of kA) { if (kB.has(w)) shared++; }
+    return shared >= 3;
+  }
 
-  // Merge all sources then sort by date so newest always tops — no source gets permanent priority
-  const news: NewsItem[] = addUnique([
-    ...wrfaItems,
-    ...cityItems,
-    ...jacksonItems,
-    ...wnyNewsNowItems,
-    ...wgrzSTItems,
-    ...wgrzSportsItems,
-    ...wgrzWNYItems,
-    ...spectrumItems,
-    ...wjtnItems,
-  ])
+  const seen = new Set<string>();
+  const accepted: (NewsItem & { _source: string })[] = [];
+  function addUnique(items: NewsItem[], source: string) {
+    for (const n of items) {
+      const key = n.title.toLowerCase();
+      if (seen.has(key)) continue;
+      if (accepted.some(a => a._source !== source && isSameStory(a, n))) continue;
+      seen.add(key);
+      accepted.push({ ...n, _source: source });
+    }
+  }
+
+  // Priority: whichever source is added first wins a cross-source
+  // duplicate — WRFA-LP leads so it's always the version shown when the
+  // same story also runs on WJTN or elsewhere.
+  addUnique(wrfaItems, 'wrfa');
+  addUnique(cityItems, 'city');
+  addUnique(jacksonItems, 'jackson');
+  addUnique(wnyNewsNowItems, 'wnynewsnow');
+  addUnique(wgrzSTItems, 'wgrzst');
+  addUnique(wgrzSportsItems, 'wgrzsports');
+  addUnique(wgrzWNYItems, 'wgrzwny');
+  addUnique(spectrumItems, 'spectrum');
+  addUnique(wjtnItems, 'wjtn');
+
+  // Dedup is source-priority-ordered (WRFA-LP wins ties above); final display order is purely by date, newest first
+  const news: NewsItem[] = accepted
+    .map(({ _source, ...rest }) => rest)
     .sort((a, b) => {
       const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
       const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
