@@ -122,6 +122,20 @@ function isBlotter(item: NewsItem): boolean {
   return CRIME_PATTERN.test(item.title);
 }
 
+const TOP_STORY_MAX_AGE_MS = 36 * 60 * 60 * 1000; // hide if older than 36h
+
+// Single source of truth for "Top Story" eligibility — Home's featured
+// story and this tab's hero card must always pick the same item, or the
+// app looks broken when they disagree for what's supposedly one story.
+export function pickTopStory(news: NewsItem[]): NewsItem | null {
+  return news.find(n =>
+    n.pubDate &&
+    Date.now() - new Date(n.pubDate).getTime() < TOP_STORY_MAX_AGE_MS &&
+    !CRIME_PATTERN.test(n.title) &&
+    n.source !== 'WJTN' // WJTN posts are a daily roundup split into pseudo-stories, not real discrete articles like WRFA/WGRZ — fine in the list, not headline-worthy
+  ) ?? null;
+}
+
 type Bucket = { label: string; items: NewsItem[]; isBlotter?: boolean };
 
 function bucketItems(items: NewsItem[]): Bucket[] {
@@ -452,6 +466,11 @@ export default function NewsScreen() {
   const filtered = news
     .filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff);
 
+  // Same eligibility rule as Home's featured story — whichever item this
+  // picks is the one promoted to the hero card below, wherever it lands
+  // chronologically. Previously this tab just hero'd whatever was first in
+  // the list, which could be a WJTN roundup post Home would never feature.
+  const topStory = pickTopStory(filtered);
   const buckets = bucketItems(filtered);
 
   return (
@@ -499,7 +518,7 @@ export default function NewsScreen() {
           </View>
         ) : (
           <>
-            {buckets.map((bucket, bi) => (
+            {buckets.map((bucket) => (
               <View key={bucket.label} style={{ marginBottom: 8 }}>
                 <SectionHeader
                   label={bucket.label}
@@ -508,7 +527,7 @@ export default function NewsScreen() {
                   onToggle={() => setBlotterOpen(o => !o)}
                 />
                 {(!bucket.isBlotter || blotterOpen) && bucket.items.map((item, i) =>
-                  bi === 0 && i === 0 && !bucket.isBlotter
+                  !bucket.isBlotter && item === topStory
                     ? <React.Fragment key={i}><HeroCard item={item} /><FentonPinnedCard /></React.Fragment>
                     : <NewsRow key={i} item={item} />
                 )}

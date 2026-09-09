@@ -1757,7 +1757,7 @@ export default function SportsScreen() {
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={<Text style={{ fontSize: 13 }}>⚾</Text>}
           iconSize={26}
-          name="MLB · NY + Nearby"
+          name="MLB"
           nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.mlb }}
           defaultOpen={false}
           hideChevron

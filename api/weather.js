@@ -118,6 +118,15 @@ function formatLocalTime(iso) {
   });
 }
 
+// Vercel functions run in UTC — Date#getHours() returns the server's
+// timezone, not the app's (America/New_York), which silently mislabeled
+// every hourly slot by the UTC offset. Read the hour via Intl instead.
+function easternHour(dt) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: 'numeric', hour12: false }).formatToParts(dt);
+  const hourPart = parts.find(p => p.type === 'hour');
+  return hourPart ? parseInt(hourPart.value, 10) % 24 : dt.getUTCHours();
+}
+
 // Build a human-readable "Rain in ~X min" / "Rain ending ~X min" string
 // from the forecastNextHour summary segments.
 function nextHourSummary(nextHourData, isWetNow) {
@@ -203,7 +212,7 @@ export default async function handler(req, res) {
       .slice(0, 10)
       .map(h => {
         const dt  = new Date(h.forecastStart);
-        const hr  = dt.getHours();
+        const hr  = easternHour(dt);
         const ampm = hr >= 12 ? 'PM' : 'AM';
         return {
           time:  `${hr % 12 || 12} ${ampm}`,

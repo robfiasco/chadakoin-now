@@ -26,7 +26,7 @@ import RecyclingScreen from './recycling';
 import ParkingScreen from './parking';
 import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
-import { CRIME_PATTERN } from './news';
+import { pickTopStory } from './news';
 const HERO_PHOTOS = Platform.OS === 'web'
   ? [
     { source: { uri: '/JTNY1.jpg' }, scale: 1.0, translateY: -65 },
@@ -211,14 +211,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     ? civic.news.find(n => DELAY_PATTERN.test(n.title) && /\b(school|district|jamestown|chautauqua)\b/i.test(n.title) && !SCHOOL_POLICY_PATTERN.test(n.title))
     : null;
 
-  const TOP_STORY_MAX_AGE_MS = 36 * 60 * 60 * 1000; // hide if older than 36h
-  const topStoryCandidate = civic.news.find(n =>
-    n.pubDate &&
-    Date.now() - new Date(n.pubDate).getTime() < TOP_STORY_MAX_AGE_MS &&
-    !CRIME_PATTERN.test(n.title) &&
-    n.source !== 'WJTN' // WJTN posts are a daily roundup split into pseudo-stories, not real discrete articles like WRFA/WGRZ — fine in the list, not headline-worthy
-  ) ?? null;
-  const topStory: NewsItem | null = topStoryCandidate ?? null;
+  const topStory: NewsItem | null = pickTopStory(civic.news);
   const skunksAsEvents: EventItem[] = SKUNKS_SCHEDULE
     .filter(g => g.isHome)
     .map(g => {

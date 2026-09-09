@@ -1513,6 +1513,9 @@ const CURATED_EVENTS: EventItem[] = [
   // filtered out by the city-matching logic in fetchMychqEvents — not a
   // duplicate of anything that actually renders) ——————————————————————————
   { title: 'Daniel Feather Memorial 5K', startDate: '2026-09-05T09:30:00', location: 'Bergman Park, 487 Baker St., Jamestown', category: 'Sports & Recreation', tags: ['5K', 'Running', 'Chautauqua Striders'], note: 'Check-in 8:30am · Ron Graham Memorial 1K Kids Fun Run at 9:00am · Benefits youth programming & the Dan Feather Memorial Scholarship', link: 'https://runscore.runsignup.com/Race/NY/Jamestown/DanielFeatherMemorial5KRun' },
+
+  { title: 'Tailgate Party ft. Special Guest Mark Kelso', startDate: '2026-09-13T11:00:00', endDate: '2026-09-13T20:00:00', location: 'The Empty Pint, Lakewood', category: 'Sports & Recreation', tags: ['Bills', 'Tailgate', 'Lakewood'], note: 'Meet Mark Kelso + autograph signing · pregame beer pong · tailgate food · halftime wing-eating contest · Buffalo merch vendor on site', link: 'https://lakewood.stbcbeer.com' },
+  { title: 'Bemus Point Fall Fest', startDate: '2026-09-18T10:00:00', endDate: '2026-09-20T17:00:00', location: 'Bemus Point, NY', category: 'Festival', tags: ['Bemus Point', 'Fall Fest', 'Street Market'], note: 'Street market (70+ vendors, Fri–Sun 10–5) · Draw-a-Leaf discounts around the village · classic car cruise-in Sat 12–5 · petting zoo & face painting · beer garden Fri–Sun · last weekend for the Bemus-Stow ferry' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {
