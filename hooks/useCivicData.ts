@@ -22,6 +22,11 @@ export interface RecyclingData {
   holidayDelay: boolean;
   affectedDays: string[];
   upcomingHoliday: { name: string; date: string } | null;
+  // Set when the live BPU fetch failed and this is the last successful
+  // fetch instead — lets the UI show "as of Xh ago" rather than pretending
+  // this is current.
+  stale?: boolean;
+  staleAsOf?: number | null;
 }
 
 export interface ParkingData {
@@ -43,6 +48,12 @@ export interface AlertItem {
 export interface AlertsData {
   hasActiveAlerts: boolean;
   activeAlerts: AlertItem[];
+  // Set when the live BPU fetch failed and this is the last successful
+  // fetch instead — a safety-relevant feed (water main breaks, boil-water
+  // notices) should never silently fall back to "no alerts" on a network
+  // blip, so failures resurface the last known state with its age.
+  stale?: boolean;
+  staleAsOf?: number | null;
 }
 
 export interface EventItem {
@@ -117,8 +128,11 @@ export interface CivicData {
 
 const FEEDS = {
   recyclingICS: 'https://www.jamestownnybpu.gov/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24',
-  alerts: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=63&CID=Alerts-11',
-  eventsFallback: 'https://www.jamestownbpu.com/RSSFeed.aspx?ModID=58&CID=Jamestown-Board-Meeting-Calendar-23',
+  // jamestownbpu.com (the old domain) now 301s to jamestownnybpu.gov over a
+  // 3-hop chain that briefly downgrades to plain http:// mid-redirect —
+  // fragile enough to intermittently fail. Fetch the final host directly.
+  alerts: 'https://www.jamestownnybpu.gov/RSSFeed.aspx?ModID=63&CID=Alerts-11',
+  eventsFallback: 'https://www.jamestownnybpu.gov/RSSFeed.aspx?ModID=58&CID=Jamestown-Board-Meeting-Calendar-23',
   news: 'https://www.wrfalp.com/feed/',
   cityNews: 'https://www.jamestownny.gov/feed/',
   wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
@@ -268,7 +282,7 @@ function stripHtml(html: string): string {
 }
 
 // Bump to bust stale cached data across all clients
-const CACHE_PREFIX = 'civic_v33_';
+const CACHE_PREFIX = 'civic_v34_';
 
 async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   try {
@@ -282,13 +296,16 @@ async function getCached<T>(key: string, ttlMs: number): Promise<T | null> {
   }
 }
 
-// Returns cached data regardless of age — for stale-while-revalidate patterns
-async function getStaleCached<T>(key: string): Promise<T | null> {
+// Returns cached data regardless of age, plus when it was fetched — for
+// stale-while-revalidate patterns where the UI can show "last known" data
+// with its age rather than silently rendering an empty default.
+async function getStaleCached<T>(key: string): Promise<{ data: T; timestamp: number } | null> {
   try {
     const raw = await AsyncStorage.getItem(`${CACHE_PREFIX}${key}`);
     if (!raw) return null;
-    const { data } = JSON.parse(raw);
-    return (data as T) ?? null;
+    const { data, timestamp } = JSON.parse(raw);
+    if (data == null) return null;
+    return { data: data as T, timestamp };
   } catch {
     return null;
   }
@@ -462,6 +479,26 @@ async function fetchRecyclingICS(): Promise<RecyclingData> {
   const cached = await getCached<RecyclingData>('recycling', TTL.recycling);
   if (cached) return cached;
 
+  try {
+    return await fetchRecyclingICSLive();
+  } catch {
+    // BPU's redirect chain (or the feed itself) occasionally fails — fall
+    // back to the last successful fetch with its age instead of the bare
+    // "—" empty state, which looks identical to "genuinely no pickup data"
+    // and previously masked which week's schedule (and holiday delay) was
+    // actually showing.
+    const stale = await getStaleCached<RecyclingData>('recycling');
+    if (stale) return { ...stale.data, stale: true, staleAsOf: stale.timestamp };
+    const { hasDelay, affectedDays, upcomingHoliday } = computeHolidayDelay();
+    return {
+      thisWeek: EMPTY_WEEK, nextWeek: EMPTY_WEEK, upcomingWeeks: [],
+      holidayDelay: hasDelay, affectedDays, upcomingHoliday,
+      stale: true, staleAsOf: null,
+    };
+  }
+}
+
+async function fetchRecyclingICSLive(): Promise<RecyclingData> {
   const res = await feedFetch(proxyUrl(FEEDS.recyclingICS));
   if (!res.ok) throw new Error(`Recycling ICS fetch failed: ${res.status}`);
   const text = await res.text();
@@ -594,32 +631,41 @@ async function fetchAlerts(): Promise<AlertsData> {
   const cached = await getCached<AlertsData>('alerts', TTL.alerts);
   if (cached) return cached;
 
-  const res = await feedFetch(proxyUrl(FEEDS.alerts));
-  if (!res.ok) throw new Error('Alerts fetch failed');
-  const text = await res.text();
-  const items = getRssItems(text);
+  try {
+    const res = await feedFetch(proxyUrl(FEEDS.alerts));
+    if (!res.ok) throw new Error(`Alerts fetch failed: ${res.status}`);
+    const text = await res.text();
+    const items = getRssItems(text);
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const activeAlerts: AlertItem[] = items
-    .filter(item => {
-      const pub = new Date(getItemText(item.pubDate));
-      return pub >= sevenDaysAgo;
-    })
-    .map(item => ({
-      title: stripHtml(getItemText(item.title)),
-      description: stripHtml(getItemText(item.description ?? item['content:encoded'] ?? '')),
-      pubDate: getItemText(item.pubDate),
-      link: getItemText(item.link),
-    }));
+    const activeAlerts: AlertItem[] = items
+      .filter(item => {
+        const pub = new Date(getItemText(item.pubDate));
+        return pub >= sevenDaysAgo;
+      })
+      .map(item => ({
+        title: stripHtml(getItemText(item.title)),
+        description: stripHtml(getItemText(item.description ?? item['content:encoded'] ?? '')),
+        pubDate: getItemText(item.pubDate),
+        link: getItemText(item.link),
+      }));
 
-  const result: AlertsData = {
-    hasActiveAlerts: activeAlerts.length > 0,
-    activeAlerts,
-  };
+    const result: AlertsData = {
+      hasActiveAlerts: activeAlerts.length > 0,
+      activeAlerts,
+    };
 
-  await setCache('alerts', result);
-  return result;
+    await setCache('alerts', result);
+    return result;
+  } catch {
+    // Water main breaks / boil-water notices are safety-relevant — a fetch
+    // failure must never silently render as "no alerts." Fall back to the
+    // last successful fetch, however old, rather than an empty default.
+    const stale = await getStaleCached<AlertsData>('alerts');
+    if (stale) return { ...stale.data, stale: true, staleAsOf: stale.timestamp };
+    return { hasActiveAlerts: false, activeAlerts: [], stale: true, staleAsOf: null };
+  }
 }
 
 // Known events that don't appear in any feed. Keep sorted by startDate.
@@ -1890,7 +1936,17 @@ async function fetchChautauquaAlerts(): Promise<AlertItem[]> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     return items
-      .filter(item => new Date(getItemText(item.pubDate ?? '')) >= sevenDaysAgo)
+      .filter(item => {
+        if (new Date(getItemText(item.pubDate ?? '')) < sevenDaysAgo) return false;
+        // The county's own CMS marks each alert post with a literal status
+        // field ("THIS IS NOT AN ACTIVE ALERT" once resolved/expired) — a
+        // same-day Tornado Watch stays "active" here for a flat 7 days on
+        // publish date alone, well past when the county itself closed it
+        // out. Trust that field over age when it's present.
+        const rawDesc = getItemText(item.description ?? '');
+        if (rawDesc.includes('field-active-alert') && rawDesc.includes('NOT AN ACTIVE ALERT')) return false;
+        return true;
+      })
       .slice(0, 5)
       .map(item => ({
         title: stripHtml(getItemText(item.title)),
@@ -2421,8 +2477,8 @@ export function useCivicData(): CivicData {
 
   // Show last known recycling data immediately (even if stale) — fresh fetch updates it in background
   useEffect(() => {
-    getStaleCached<RecyclingData>('recycling').then(stale => {
-      if (stale) setState(prev => ({ ...prev, recycling: stale }));
+    getStaleCached<RecyclingData>('recycling').then(entry => {
+      if (entry) setState(prev => ({ ...prev, recycling: { ...entry.data, stale: true, staleAsOf: entry.timestamp } }));
     });
   }, []);
 

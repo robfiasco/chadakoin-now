@@ -101,7 +101,7 @@ function getNextEventLabel(event: EventItem): string {
   return 'Coming Up';
 }
 
-function relativeTime(dateStr: string): string {
+function relativeTime(dateStr: string | number): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const hours = Math.floor(diff / (1000 * 60 * 60));
   if (hours < 1) return 'Just now';
@@ -275,6 +275,9 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.snowBannerTitle}>Snow Emergency Active</Text>
             <Text style={styles.snowBannerBody} numberOfLines={2}>{snowEmergency.title}</Text>
+            {alerts.stale && alerts.staleAsOf ? (
+              <Text style={styles.snowBannerBody}>Last confirmed {relativeTime(alerts.staleAsOf)} — BPU feed unreachable</Text>
+            ) : null}
           </View>
           {snowEmergency.link ? (
             <TouchableOpacity onPress={() => openLink(snowEmergency.link)} activeOpacity={0.7}>
@@ -498,7 +501,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                 )}
               </View>
               {recycling.thisWeek.material !== '—' && (
-                <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>{recycling.thisWeek.dateRange || '—'}</Text>
+                <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
+                  {recycling.thisWeek.dateRange || '—'}
+                  {recycling.stale && recycling.staleAsOf ? `\nAs of ${relativeTime(recycling.staleAsOf)}` : ''}
+                </Text>
               )}
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
             </LinearGradient>

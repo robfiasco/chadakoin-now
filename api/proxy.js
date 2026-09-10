@@ -46,6 +46,21 @@ const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
 const CLEANUP_INTERVAL = 5 * 60_000;
 
+const UPSTREAM_TIMEOUT_MS = 10_000;
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+
+function fetchUpstream(url) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), UPSTREAM_TIMEOUT_MS);
+  return fetch(url, {
+    signal: ctrl.signal,
+    headers: {
+      'User-Agent': 'ChadakoinNow/1.0',
+      'Accept': 'text/calendar, application/rss+xml, application/xml, application/json, text/xml, */*',
+    },
+  }).finally(() => clearTimeout(t));
+}
+
 let lastCleanup = Date.now();
 function isRateLimited(ip) {
   const now = Date.now();
@@ -89,12 +104,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    const upstream = await fetch(parsed.toString(), {
-      headers: {
-        'User-Agent': 'ChadakoinNow/1.0',
-        'Accept': 'text/calendar, application/rss+xml, application/xml, application/json, text/xml, */*',
-      },
-    });
+    let upstream;
+    try {
+      upstream = await fetchUpstream(parsed.toString());
+      if (RETRYABLE_STATUSES.has(upstream.status)) {
+        console.warn(`[proxy] ${parsed.hostname} returned ${upstream.status}, retrying once`);
+        upstream = await fetchUpstream(parsed.toString());
+      }
+    } catch (err) {
+      // Network/TLS/timeout error on the first attempt — one retry after a
+      // short backoff before giving up. Upstream civic feeds (BPU, county)
+      // occasionally hiccup; a single retry clears most of them without
+      // masking a genuinely dead source.
+      console.warn(`[proxy] ${parsed.hostname} fetch failed (${err?.name ?? 'Error'}: ${err?.message ?? err}), retrying once`);
+      await new Promise(r => setTimeout(r, 300));
+      upstream = await fetchUpstream(parsed.toString());
+    }
+
+    if (!upstream.ok) {
+      console.warn(`[proxy] ${parsed.hostname} final status ${upstream.status}`);
+    }
 
     const body = await upstream.text();
     const contentType = upstream.headers.get('content-type') ?? 'text/plain';
@@ -103,7 +132,8 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
     res.status(upstream.status).send(body);
-  } catch {
+  } catch (err) {
+    console.error(`[proxy] ${parsed.hostname} fetch failed after retry: ${err?.name ?? 'Error'}: ${err?.message ?? err}`);
     res.status(502).send('Proxy fetch failed');
   }
 }
