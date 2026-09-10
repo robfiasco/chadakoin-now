@@ -12,6 +12,8 @@ import { RadioProvider, useRadio } from '../lib/RadioContext';
 import { Image } from 'react-native';
 import { AppLoadingScreen } from '../components/AppLoadingScreen';
 import { AddToHomeScreen } from '../components/AddToHomeScreen';
+import { UpdateRequiredScreen } from '../components/UpdateRequiredScreen';
+import { useUpdateCheck } from '../lib/useUpdateCheck';
 import { onboardingResetRef } from '../lib/onboardingReset';
 import { LinearGradient } from 'expo-linear-gradient';
 import OnboardingScreen from './onboarding';
@@ -82,6 +84,7 @@ function NowPlayingBar({ activePage }: { activePage: number }) {
 function AppLayout() {
   const { theme } = useTheme();
   const { loading: dataLoading } = useCivic();
+  const { required: updateRequired, storeUrl } = useUpdateCheck();
   const [activePage, setActivePage] = useState(0);
   const pagerRef = useRef<PagerViewHandle>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
@@ -197,15 +200,23 @@ function AppLayout() {
         />
       )}
 
+      {/* Update-required overlay — takes priority over onboarding; an
+          outdated build shouldn't proceed into the app at all */}
+      {!showLoading && updateRequired && (
+        <View style={[StyleSheet.absoluteFillObject, { zIndex: 2000 }]}>
+          <UpdateRequiredScreen storeUrl={storeUrl} />
+        </View>
+      )}
+
       {/* Onboarding overlay — waits for loading screen to finish first */}
-      {!showLoading && showOnboarding === true && (
+      {!showLoading && !updateRequired && showOnboarding === true && (
         <View style={[StyleSheet.absoluteFillObject, { zIndex: 1000 }]}>
           <OnboardingScreen onDone={handleOnboardingDone} />
         </View>
       )}
 
       {/* PWA install banner — floats above tab bar, shown after loading */}
-      {!showLoading && <AddToHomeScreen />}
+      {!showLoading && !updateRequired && <AddToHomeScreen />}
     </View>
   );
 }
