@@ -428,8 +428,7 @@ function recyclingEmoji(lower: string): string {
 
 function parseRecyclingTitle(summary: string, description: string, start: Date | null = null, end: Date | null = null): RecyclingWeek {
   const lowerSummary = summary.toLowerCase();
-  const lowerDesc = description.toLowerCase();
-  
+
   // Extract exclusions from either summary or description (look for "no " or "No ")
   let exclusions = '';
   const searchStr = summary + ' ' + description;

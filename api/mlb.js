@@ -51,82 +51,85 @@ async function fetchTeamStats(teamId, year) {
 }
 
 async function fetchTeamGames(teamId) {
-  const now   = new Date();
-  const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
-  const fmt   = d => d.toISOString().split('T')[0];
-  const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
+  const empty = { games: [], nextGame: null, liveGame: null };
+  try {
+    const now   = new Date();
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
+    const fmt   = d => d.toISOString().split('T')[0];
+    const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
 
-  const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
-  if (!res.ok) return { games: [], nextGame: null, liveGame: null };
-  const json = await res.json();
+    const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return empty;
+    const json = await res.json();
 
-  const completed = [];
-  let nextGame = null;
-  let liveGame = null;
+    const completed = [];
+    let nextGame = null;
+    let liveGame = null;
 
-  for (const dateObj of (json.dates ?? [])) {
-    for (const g of (dateObj.games ?? [])) {
-      const state = g.status?.detailedState ?? '';
+    for (const dateObj of (json.dates ?? [])) {
+      for (const g of (dateObj.games ?? [])) {
+        const state = g.status?.detailedState ?? '';
 
-      if (state === 'Final' || state === 'Completed Early') {
-        const weAreHome = g.teams?.home?.team?.id === teamId;
-        const us   = weAreHome ? g.teams.home : g.teams.away;
-        const them = weAreHome ? g.teams.away : g.teams.home;
-        completed.push({
-          date:       dateObj.date,
-          opponent:   them?.team?.name ?? '???',
-          ourScore:   us?.score   ?? 0,
-          theirScore: them?.score ?? 0,
-          isHome:     weAreHome,
-          won:        us?.isWinner === true,
-        });
-      } else if (!liveGame && (state === 'In Progress' || state === 'Live Preview')) {
-        const weAreHome = g.teams?.home?.team?.id === teamId;
-        const us   = weAreHome ? g.teams.home : g.teams.away;
-        const them = weAreHome ? g.teams.away : g.teams.home;
-        const ls   = g.linescore ?? {};
-        liveGame = {
-          inning: ls.currentInning ?? 0,
-          inningOrdinal: ls.currentInningOrdinal ?? '',
-          topBottom: ls.isTopInning ? 'Top' : 'Bot',
-          ourScore:   us?.score   ?? 0,
-          theirScore: them?.score ?? 0,
-          outs: ls.outs ?? 0,
-          isHome: weAreHome,
-          opponent: them?.team?.name ?? '???',
-          opponentAbbr: them?.team?.abbreviation ?? '',
-          opponentId: them?.team?.id,
-        };
-      } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game' || state === 'Warmup')) {
-        const weAreHome = g.teams?.home?.team?.id === teamId;
-        const them = weAreHome ? g.teams?.away : g.teams?.home;
-        const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
-        const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
-        const oppRec   = them?.leagueRecord;
-        nextGame = {
-          date:               dateObj.date,
-          gameTime:           g.gameDate ?? null,
-          opponent:           them?.team?.name ?? '???',
-          opponentAbbr:       them?.team?.abbreviation ?? '',
-          opponentId:         them?.team?.id,
-          isHome:             weAreHome,
-          probablePitcher:    probUs?.fullName  ?? probUs?.lastName  ?? null,
-          oppProbablePitcher: probThem?.fullName ?? probThem?.lastName ?? null,
-          venue:              g.venue?.name ?? null,
-          oppRecord:          oppRec ? `${oppRec.wins}-${oppRec.losses}` : null,
-        };
+        if (state === 'Final' || state === 'Completed Early') {
+          const weAreHome = g.teams?.home?.team?.id === teamId;
+          const us   = weAreHome ? g.teams.home : g.teams.away;
+          const them = weAreHome ? g.teams.away : g.teams.home;
+          completed.push({
+            date:       dateObj.date,
+            opponent:   them?.team?.name ?? '???',
+            ourScore:   us?.score   ?? 0,
+            theirScore: them?.score ?? 0,
+            isHome:     weAreHome,
+            won:        us?.isWinner === true,
+          });
+        } else if (!liveGame && (state === 'In Progress' || state === 'Live Preview')) {
+          const weAreHome = g.teams?.home?.team?.id === teamId;
+          const us   = weAreHome ? g.teams.home : g.teams.away;
+          const them = weAreHome ? g.teams.away : g.teams.home;
+          const ls   = g.linescore ?? {};
+          liveGame = {
+            inning: ls.currentInning ?? 0,
+            inningOrdinal: ls.currentInningOrdinal ?? '',
+            topBottom: ls.isTopInning ? 'Top' : 'Bot',
+            ourScore:   us?.score   ?? 0,
+            theirScore: them?.score ?? 0,
+            outs: ls.outs ?? 0,
+            isHome: weAreHome,
+            opponent: them?.team?.name ?? '???',
+            opponentAbbr: them?.team?.abbreviation ?? '',
+            opponentId: them?.team?.id,
+          };
+        } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game' || state === 'Warmup')) {
+          const weAreHome = g.teams?.home?.team?.id === teamId;
+          const them = weAreHome ? g.teams?.away : g.teams?.home;
+          const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
+          const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
+          const oppRec   = them?.leagueRecord;
+          nextGame = {
+            date:               dateObj.date,
+            gameTime:           g.gameDate ?? null,
+            opponent:           them?.team?.name ?? '???',
+            opponentAbbr:       them?.team?.abbreviation ?? '',
+            opponentId:         them?.team?.id,
+            isHome:             weAreHome,
+            probablePitcher:    probUs?.fullName  ?? probUs?.lastName  ?? null,
+            oppProbablePitcher: probThem?.fullName ?? probThem?.lastName ?? null,
+            venue:              g.venue?.name ?? null,
+            oppRecord:          oppRec ? `${oppRec.wins}-${oppRec.losses}` : null,
+          };
+        }
       }
     }
-  }
 
-  return {
-    games: completed
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 10),
-    nextGame,
-    liveGame,
-  };
+    return {
+      games: completed
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 10),
+      nextGame,
+      liveGame,
+    };
+  } catch { return empty; }
 }
 
 export default async function handler(req, res) {
@@ -156,7 +159,7 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     res.status(200).json({ teams });
-  } catch (err) {
+  } catch {
     res.status(200).json({ teams: [] });
   }
 }

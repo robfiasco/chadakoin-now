@@ -299,12 +299,11 @@ const adCta = StyleSheet.create({
 
 // ─── Compact list card (Places + Also + Parks) ────────────────────
 function ListCard({
-  name, address, color, visited, badge, children,
+  name, address, color, badge, children,
 }: {
   name: string;
   address?: string;
   color: string;
-  visited?: boolean;
   badge?: React.ReactNode;
   children?: React.ReactNode;
 }) {
@@ -357,7 +356,6 @@ function PlaceListCard({ place, color }: { place: Place; color: string }) {
       name={place.name}
       address={place.address}
       color={color}
-      visited={place.visited}
       badge={open ? <OpenBadge /> : undefined}
     >
       {place.description ? (
@@ -416,7 +414,7 @@ function ParkListCard({ park }: { park: ParkEntry }) {
   const color = `rgb(${rgb})`;
 
   return (
-    <ListCard name={park.name} address={park.address} color={color} visited={park.visited}>
+    <ListCard name={park.name} address={park.address} color={color}>
       <Text style={[lc.desc, { color: `rgba(${rgb},0.6)` }]}>"{park.quote}"</Text>
       <View style={lc.tagsRow}>
         {park.features.map(f => (

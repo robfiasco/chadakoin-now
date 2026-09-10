@@ -13,8 +13,8 @@ import { PulsingDot } from '../components/PulsingDot';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import { apiUrl } from '../lib/api';
-import { SkunksGame, SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
-import { useCivicData, NewsItem } from '../hooks/useCivicData';
+import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
+import { useCivicData } from '../hooks/useCivicData';
 import { ADDONS } from '../components/FeatureYourBusiness';
 import FeedbackScreen from './feedback';
 
@@ -86,7 +86,6 @@ interface SabresData {
   recentGame?: GameResult; nextGame?: GameResult; liveGame?: GameResult | null;
   topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[]; nfl?: NFLTeam[];
   playoffSeries?: PlayoffSeries | null;
-  news: any[];
 }
 
 interface NFLGame     { date: string; week: string; opponent: string; opponentAbbr: string; ourScore: string; theirScore: string; isHome: boolean; won: boolean; }
@@ -103,28 +102,7 @@ const NFL_TEAMS = [
   { espnAbbr: 'cle', abbr: 'CLE', name: 'Browns' },
 ];
 
-const SABRES_ID   = '7';
 const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
-
-// Renders a team logo with graceful fallback to abbreviation text if the image fails
-function TeamLogo({ uri, abbr, size, accent }: { uri?: string; abbr: string; size: number; accent?: string }) {
-  const [failed, setFailed] = useState(false);
-  if (!uri || failed) {
-    return (
-      <Text style={{ fontFamily: 'DMSans_800ExtraBold', fontSize: size * 0.28, letterSpacing: 1, color: accent ?? 'rgba(255,255,255,0.55)', textAlign: 'center' }}>
-        {abbr}
-      </Text>
-    );
-  }
-  return (
-    <Image
-      source={{ uri }}
-      style={{ width: size, height: size }}
-      resizeMode="contain"
-      onError={() => setFailed(true)}
-    />
-  );
-}
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
 const JCC_LOGO    = require('../assets/jcc_logo.png');
 
@@ -159,9 +137,9 @@ function sportEmoji(sport: string): string {
   return '🏅';
 }
 
-// NFL team row state — one function covers the Bills hero row and the
-// Steelers/Browns secondary rows. Never renders "0-0": a team with no
-// completed regular-season game shows its next kickoff instead of a record.
+// NFL team row state — feeds all three uniform rows (Bills, Steelers,
+// Browns). Never renders "0-0": a team with no completed regular-season
+// game shows its next kickoff instead of a record.
 function nflTeamStatus(t: NFLTeam): { pill?: string; pillLive?: boolean; line: string; record?: string } {
   const record = t.record && t.record !== '0-0' ? t.record : undefined;
   if (t.liveGame) {
@@ -192,9 +170,9 @@ function nflTeamStatus(t: NFLTeam): { pill?: string; pillLive?: boolean; line: s
   return { line: 'Schedule TBD' };
 }
 
-// MLB expanded-row line for teams that only appear in the accordion body
-// (not the collapsed face). Omits the pitch time when the same club is
-// already shown with a time in the NEXT list, to avoid repeating it.
+// MLB row line for a team's last result or next game. Omits the pitch
+// time when the same club is already shown with a time in the NEXT list,
+// to avoid repeating it.
 function mlbLastOrNext(t: MLBTeam, alreadyInNext: boolean): string {
   if (t.games[0]) {
     const g = t.games[0];
@@ -212,29 +190,6 @@ function mlbLastOrNext(t: MLBTeam, alreadyInNext: boolean): string {
   return 'Schedule TBD';
 }
 
-// Transforms an ESPN-format game event into our GameResult shape.
-function parseGame(event: any): GameResult | null {
-  try {
-    const comp = event.competitions?.[0]; if (!comp) return null;
-    const competitors: any[] = comp.competitors ?? [];
-    const us   = competitors.find(c => String(c.team?.id) === SABRES_ID);
-    const them = competitors.find(c => String(c.team?.id) !== SABRES_ID);
-    if (!us || !them) return null;
-    const status: GameResult['status'] = comp.status?.type?.completed ? 'final' : comp.status?.type?.state === 'in' ? 'live' : 'upcoming';
-    return {
-      date: event.date, status,
-      opponentAbbr: them.team?.abbreviation ?? '???',
-      opponentName: them.team?.displayName ?? 'Opponent',
-      opponentLogo: them.team?.abbreviation
-        ? `https://a.espncdn.com/i/teamlogos/nhl/500/${them.team.abbreviation.toLowerCase()}.png`
-        : (them.team?.logo ?? ''),
-      ourScore: us.score ?? '—', theirScore: them.score ?? '—',
-      isHome: us.homeAway === 'home',
-      won: status === 'final' ? (us.winner === true) : null,
-      venue: comp.venue?.fullName ?? '', broadcast: comp.broadcasts?.[0]?.names?.[0] ?? '',
-    };
-  } catch { return null; }
-}
 
 // Transforms an NHL API v1 game (native — different shape from ESPN).
 function parseNHLGame(g: any): GameResult | null {
@@ -554,7 +509,7 @@ async function fetchSabres(): Promise<SabresData> {
     const jcc: JCCData = rawJcc && typeof rawJcc === 'object' && !Array.isArray(rawJcc)
       ? rawJcc
       : { results: [], upcoming: [], records: {} };
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, nfl: nflRes, playoffSeries: json.playoffSeries ?? null, news: [] };
+    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, nfl: nflRes, playoffSeries: json.playoffSeries ?? null };
   }
   const [schedRes, standRes, statsRes, jcc, mlb, nfl, playoffSeries] = await Promise.all([
     fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
@@ -596,7 +551,7 @@ async function fetchSabres(): Promise<SabresData> {
     }));
   const liveGames: any[] = games.filter((g: any) => g.gameState === 'LIVE' || g.gameState === 'CRIT');
   const liveGame: GameResult | null = liveGames[0] ? (parseNHLGame(liveGames[0]) ?? null) : null;
-  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, liveGame, topScorers, jcc, mlb, nfl, playoffSeries, news: [] };
+  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, liveGame, topScorers, jcc, mlb, nfl, playoffSeries };
 }
 
 function ordinal(n: number): string {
@@ -611,12 +566,12 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 function TeamCard({
-  accentColor, gradStart, gradEnd, iconContent,
+  gradStart, gradEnd, iconContent,
   name, subtitle, glanceRow, children,
   defaultOpen = false, glassWeb, bgImage, hideChevron = false,
   iconSize, nameStyle,
 }: {
-  accentColor: string; gradStart: string; gradEnd: string;
+  gradStart: string; gradEnd: string;
   iconContent: React.ReactNode;
   name: string; subtitle?: string;
   glanceRow: React.ReactNode;
@@ -823,9 +778,8 @@ export default function SportsScreen() {
     }, 50); // small delay lets the ScrollView mount first
     return () => clearTimeout(timeout);
   }, [detailGame]);
-  // Cards fill full page width — internal padding handles the visual inset.
-  // This prevents next-card peek-through with pagingEnabled.
-  const cardWidth = winWidth;
+  // Cards fill full page width (winWidth) — internal padding handles the
+  // visual inset. This prevents next-card peek-through with pagingEnabled.
 
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
@@ -1143,32 +1097,6 @@ export default function SportsScreen() {
     return candidates.slice(0, 3);
   }, [nextUpItems, jccNextBySport]);
 
-  // Nearest MLB next game for MLB glance row
-  const mlbNextUp = useMemo(() => {
-    if (!data?.mlb) return null;
-    const now = new Date();
-    let best: { team: MLBTeam; date: Date } | null = null;
-    for (const t of data.mlb) {
-      if (!t.nextGame) continue;
-      const ng = t.nextGame;
-      const d = ng.gameTime ? new Date(ng.gameTime) : new Date(ng.date + 'T12:00:00');
-      if (d > now && (!best || d < best.date)) best = { team: t, date: d };
-    }
-    if (!best) return null;
-    const ng = best.team.nextGame!;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-    const cDay = new Date(best.date); cDay.setHours(0,0,0,0);
-    const dateLabel = cDay.getTime() === today.getTime() ? 'Today'
-      : cDay.getTime() === tomorrow.getTime() ? 'Tomorrow'
-      : best.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const timeStr = ng.gameTime
-      ? new Date(ng.gameTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : '';
-    const oppAbbrRaw = ng.opponentAbbr || (ng.opponentId != null ? MLB_ID_ESPN[ng.opponentId] : '') || '';
-    return { abbr: best.team.abbr, opp: ng.opponent.split(' ').pop(), oppAbbr: oppAbbrRaw, isHome: ng.isHome, dateLabel, timeStr };
-  }, [data]);
-
   const innerCard = {
     borderRadius: 14, borderWidth: 1,
     backgroundColor: 'rgba(15,23,42,0.5)',
@@ -1244,7 +1172,6 @@ export default function SportsScreen() {
 
         {/* Tarp Skunks — hidden once the season ends until next year's schedule is added */}
         {skunksSeasonActive && <TeamCard
-          accentColor={ACC.skunks}
           gradStart="rgba(132,204,22,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
@@ -1334,7 +1261,6 @@ export default function SportsScreen() {
 
           {/* More home games */}
           {(() => {
-            const todayStr = new Date().toISOString().split('T')[0];
             const more = SKUNKS_SCHEDULE.filter(g => g.isHome && g.date > (nextSkunksHome?.date ?? '')).slice(0, 4);
             if (!more.length) return null;
             return (
@@ -1436,7 +1362,6 @@ export default function SportsScreen() {
 
         {/* JCC Jayhawks */}
         <TeamCard
-          accentColor={ACC.jcc}
           gradStart="rgba(52,211,153,0.25)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
@@ -1588,7 +1513,6 @@ export default function SportsScreen() {
 
         {/* Buffalo Sabres — hidden May–Sep (off-season); returns Oct for pre-season */}
         {(() => { const m = new Date().getMonth() + 1; return m < 5 || m > 9; })() && <TeamCard
-          accentColor={ACC.sabres}
           gradStart="rgba(96,165,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           bgImage={Platform.OS === 'web' ? { uri: '/hockey.jpg' } : require('../assets/hockey.jpg')}
@@ -1752,7 +1676,6 @@ export default function SportsScreen() {
             a tap: with only 5 rows, splitting the face from an accordion
             body just made the card feel like it was hiding content. */}
         <TeamCard
-          accentColor={ACC.mlb}
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={<Text style={{ fontSize: 13 }}>⚾</Text>}
@@ -1796,7 +1719,6 @@ export default function SportsScreen() {
         {/* NFL — same treatment: all 3 teams as one flat list, Bills first
             but no heavier than Steelers/Browns. */}
         <TeamCard
-          accentColor={ACC.nfl}
           gradStart="rgba(251,146,60,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={<Text style={{ fontSize: 13 }}>🏈</Text>}

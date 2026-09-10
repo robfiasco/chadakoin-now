@@ -150,7 +150,20 @@ function nextHourSummary(nextHourData, isWetNow) {
   return null;
 }
 
+const CACHE_TTL = 5 * 60 * 1000; // 5min — matches the s-maxage below
+let cached = null; // { data, fetchedAt }
+
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // WeatherKit is a metered API — an in-memory gate (matching gas.js/dpw.js)
+  // means repeated or cache-busted requests within the window still cost
+  // us at most one upstream call, not one per request.
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+    return res.status(200).json(cached.data);
+  }
+
   try {
     const jwt = getJWT();
 
@@ -231,7 +244,7 @@ export default async function handler(req, res) {
       );
       if (nextWet) {
         const dt    = new Date(nextWet.forecastStart);
-        const hr    = dt.getHours();
+        const hr    = easternHour(dt);
         const dayStr = nextWet.forecastStart.split('T')[0];
         precipAt = `${dayStr > todayStr ? 'Tmrw ' : ''}${hr % 12 || 12} ${hr >= 12 ? 'PM' : 'AM'}`;
       }
@@ -251,9 +264,7 @@ export default async function handler(req, res) {
         expires:  a.expireTime ? formatLocalTime(a.expireTime) : null,
       }));
 
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.status(200).json({
+    const data = {
       // Base fields (same as before)
       temp:      `${temp}°`,
       feelsLike: `${feels}°`,
@@ -276,9 +287,13 @@ export default async function handler(req, res) {
       hourly,
       nextHour,
       alerts,
-    });
+    };
+
+    cached = { data, fetchedAt: Date.now() };
+    res.status(200).json(data);
   } catch (err) {
     console.error('WeatherKit error:', err.message);
+    if (cached) return res.status(200).json(cached.data); // serve stale over an error
     res.status(502).json({ error: 'Weather fetch failed' });
   }
 }

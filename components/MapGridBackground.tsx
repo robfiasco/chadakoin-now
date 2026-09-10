@@ -11,7 +11,7 @@ const MAP_SOURCE = Platform.OS === 'web'
   ? { uri: '/jamestown-map.jpg' }
   : require('../assets/jamestown-map.jpg');
 
-export function MapGridBackground({ night }: { night: boolean }) {
+export function MapGridBackground() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <Image source={MAP_SOURCE} style={StyleSheet.absoluteFill} resizeMode="cover" />

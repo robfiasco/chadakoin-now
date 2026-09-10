@@ -100,7 +100,7 @@ export function AppLoadingScreen({
 
   return (
     <Animated.View style={[styles.container, { opacity: exitAnim, backgroundColor: '#060e18' }]}>
-      <MapGridBackground night={night} />
+      <MapGridBackground />
 
       <Animated.View style={[styles.inner, { opacity: screenFade }]}>
 

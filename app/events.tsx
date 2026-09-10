@@ -20,8 +20,6 @@ import FeedbackScreen from './feedback';
 const EVENT_BOOST = ADDONS.find(a => a.title === 'Event Boost')!;
 
 // ── Category colors & icons ───────────────────────────────────────
-type IoniconName = keyof typeof Ionicons.glyphMap;
-
 function categoryColor(cat: string): string {
   const c = cat.toLowerCase();
   if (/music|concert|jazz|band|blues|rock/i.test(c))       return dark.category.music;
@@ -34,19 +32,6 @@ function categoryColor(cat: string): string {
   if (/civic|lecture|forum|summit/i.test(c))               return dark.category.city;
   if (/entertain/i.test(c))                                return dark.category.film;
   return dark.category.community;
-}
-
-function categoryIcon(cat: string): IoniconName {
-  const c = cat.toLowerCase();
-  if (/music|concert|jazz|band/i.test(c))         return 'musical-notes-outline';
-  if (/film|cinema|movie/i.test(c))               return 'film-outline';
-  if (/arts?|theater|theatre|gallery/i.test(c))   return 'color-palette-outline';
-  if (/pride/i.test(c))                           return 'heart-outline';
-  if (/sport|athletic|hockey|basketball/i.test(c))return 'trophy-outline';
-  if (/jcc|library|education/i.test(c))           return 'school-outline';
-  if (/civic|lecture|forum/i.test(c))             return 'mic-outline';
-  if (/family/i.test(c))                          return 'happy-outline';
-  return 'calendar-outline';
 }
 
 // ── Date helpers ──────────────────────────────────────────────────

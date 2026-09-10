@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
-import { PulsingDot } from '../components/PulsingDot';
 import { useTheme } from '../lib/ThemeContext';
 import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';

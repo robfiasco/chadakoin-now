@@ -251,7 +251,6 @@ export default async function handler(req, res) {
       topScorers,
       jcc:           jccResults,
       playoffSeries: playoffSeries ?? null,
-      news: [],
     };
 
     // Tighter cache during live games so scores refresh quickly

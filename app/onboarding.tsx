@@ -16,7 +16,6 @@ const BG_POOL = Platform.OS === 'web'
 const BG_SRC = BG_POOL[Math.floor(Math.random() * BG_POOL.length)];
 
 const ACC     = '#22d3ee';
-const ACC_RGB = '34,211,238';
 const GOLD    = '#fbbf24';
 
 type Role = 'local' | 'visitor';

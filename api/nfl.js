@@ -106,7 +106,7 @@ export default async function handler(req, res) {
     const cacheSwr    = hasLive ? 15 : 60;
     res.setHeader('Cache-Control', `public, s-maxage=${cacheMaxAge}, stale-while-revalidate=${cacheSwr}`);
     res.status(200).json({ teams });
-  } catch (err) {
+  } catch {
     res.status(200).json({ teams: [] });
   }
 }

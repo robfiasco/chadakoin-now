@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image,
   TouchableOpacity, Animated, Easing, Platform, RefreshControl,
-  FlatList,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../lib/ThemeContext';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
-import { fetchWeather, WeatherData, WeatherAlert } from '../services/weather';
+import { fetchWeather, WeatherData } from '../services/weather';
 import { EventItem, NewsItem } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
@@ -124,10 +123,6 @@ function storyMeta(title: string, source: string): { color: string; label: strin
   if (s.includes('nys') || s.includes('dec') || s.includes('dot')) return { color: '#fbbf24', label: 'STATE' };
   return { color: '#34d399', label: 'COMMUNITY' };
 }
-function storyColor(title: string, source: string): string {
-  return storyMeta(title, source).color;
-}
-
 function eventCategoryColor(category: string): string {
   const c = category.toLowerCase();
   if (c.includes('music') || c.includes('concert')) return dark.category.music;

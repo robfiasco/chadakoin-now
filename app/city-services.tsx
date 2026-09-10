@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Linking,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { PulsingDot } from '../components/PulsingDot';
 import { CITY_SERVICES, CityService, ServiceStatus } from '../data/cityServices';
 import { dark } from '../lib/colors';
+import { openLink } from '../lib/openLink';
 import { useCivic } from '../lib/CivicDataContext';
 import { DpwWeekUpdate } from '../hooks/useCivicData';
 
@@ -179,7 +180,7 @@ function ServiceCard({ service }: { service: CityService }) {
                   key={link.url}
                   style={[svc.linkRow, { borderColor: `rgba(${rgb},0.15)`, backgroundColor: `rgba(${rgb},0.06)` }]}
                   activeOpacity={0.7}
-                  onPress={() => Linking.openURL(link.url)}
+                  onPress={() => openLink(link.url)}
                 >
                   <Ionicons name="map-outline" size={13} color={`rgba(${rgb},0.7)`} style={{ marginTop: 1 }} />
                   <Text style={[svc.linkText, { color: `rgba(${rgb},0.85)` }]}>{link.label}</Text>
