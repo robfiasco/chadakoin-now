@@ -151,6 +151,25 @@ export const CITY_SERVICES: CityService[] = [
     expiresAfter: '2026-09-30',
   },
   {
+    id: 'safestreets',
+    icon: 'shield-checkmark-outline',
+    title: 'Safe Streets Priority Survey',
+    badge: 'SHARE YOUR INPUT',
+    badgeColor: '#fb923c',
+    status: 'active',
+    summary: 'City Safe Streets for All plan · Pick your top 3 project priorities',
+    details: [
+      { label: 'What it is',  value: 'City-wide street safety planning under a federal USDOT Safe Streets for All grant' },
+      { label: 'Your input',  value: 'Select your 3 highest-priority projects from 10 proposed street improvement locations' },
+      { label: 'Public meeting', value: 'Aug 26 · James Prendergast Library, 5–6:30 PM (already held — survey still open)' },
+    ],
+    tip: 'No survey deadline has been published — take a few minutes to weigh in on which streets get prioritized while it’s still open.',
+    links: [
+      { label: 'Take the survey', url: 'https://www.surveymonkey.com/r/FDJ93DK' },
+      { label: 'Project details', url: 'https://www.jamestownny.gov/safe-streets-4-all/' },
+    ],
+  },
+  {
     id: 'syringes',
     icon: 'medkit-outline',
     title: 'Sharps / Syringe Disposal',
