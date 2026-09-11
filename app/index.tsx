@@ -143,7 +143,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [cdirExpanded, setCdirExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [widgetBanner, setWidgetBanner] = useState(false);
+  const [surveyBanner, setSurveyBanner] = useState(false);
   const [alertExpanded, setAlertExpanded] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('safe_streets_survey_dismissed_v1').then(v => {
+      if (!v) setSurveyBanner(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -449,6 +456,36 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </View>
           )}
         </View>
+
+        {surveyBanner && (
+          <View style={styles.surveyBanner}>
+            <View style={styles.surveyBannerHeader}>
+              <View style={styles.surveyBannerBadge}>
+                <Ionicons name="megaphone" size={11} color="#fb923c" />
+                <Text style={styles.surveyBannerBadgeText}>YOUR INPUT NEEDED</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  AsyncStorage.setItem('safe_streets_survey_dismissed_v1', '1');
+                  setSurveyBanner(false);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, lineHeight: 16 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.surveyBannerTitle}>City Safe Streets Survey</Text>
+            <Text style={styles.surveyBannerBody}>Help prioritize street safety projects — review the proposed locations and pick your top 3.</Text>
+            <TouchableOpacity
+              onPress={() => openLink('https://www.surveymonkey.com/r/FDJ93DK')}
+              activeOpacity={0.85}
+              style={styles.surveyBannerBtn}
+            >
+              <Text style={styles.surveyBannerBtnText}>Take the Survey</Text>
+              <Ionicons name="arrow-forward" size={13} color="#000" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {widgetBanner && (
           <View style={styles.widgetBanner}>
@@ -927,6 +964,15 @@ const styles = StyleSheet.create({
   widgetBannerTitle: { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#00d4ff' },
   widgetBannerBody: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle, lineHeight: 16, marginTop: 2 },
   widgetBannerDismiss: { paddingTop: 2 },
+
+  surveyBanner: { backgroundColor: 'rgba(251,146,60,0.13)', borderWidth: 1, borderColor: 'rgba(251,146,60,0.4)', borderRadius: 16, padding: 14, marginTop: 12, gap: 8 },
+  surveyBannerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  surveyBannerBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(251,146,60,0.22)', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  surveyBannerBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', letterSpacing: 0.8, color: '#fb923c' },
+  surveyBannerTitle: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff' },
+  surveyBannerBody: { fontFamily: 'Outfit', fontSize: 12, color: dark.text.subtle, lineHeight: 17 },
+  surveyBannerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, borderRadius: 11, marginTop: 4, backgroundColor: '#fb923c' },
+  surveyBannerBtnText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
 
   todayGrid: { flexDirection: 'column', marginHorizontal: -16 },
   todayCard: { paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },

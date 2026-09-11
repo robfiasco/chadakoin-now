@@ -94,7 +94,6 @@ export function AppLoadingScreen({
   const subtitleClr = night ? 'rgba(155, 205, 235, 0.75)' : 'rgba(224, 178, 120, 0.85)';
   const dividerClr  = night ? 'rgba(90, 195, 230, 0.35)' : 'rgba(224, 168, 96, 0.4)';
   const kickerClr   = night ? 'rgba(160, 205, 230, 0.55)' : 'rgba(200, 215, 235, 0.55)';
-  const cityClr     = night ? 'rgba(160, 205, 230, 0.4)' : 'rgba(224, 178, 120, 0.5)';
   const statusClr   = night ? 'rgba(145, 200, 232, 0.65)' : 'rgba(224, 178, 120, 0.75)';
   const rowLabelClr = night ? 'rgba(220, 238, 250, 0.9)' : 'rgba(255, 240, 225, 0.9)';
 
@@ -114,7 +113,6 @@ export function AppLoadingScreen({
           </View>
           <View style={[styles.divider, { backgroundColor: dividerClr }]} />
           <Text style={[styles.subtitle, { color: subtitleClr }]}>JAMESTOWN · NEW YORK</Text>
-          <Text style={[styles.cityLabel, { color: cityClr }]}>Jamestown</Text>
         </Animated.View>
 
         {/* Status line */}
@@ -197,12 +195,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2.5,
     textAlign: 'center',
     textTransform: 'uppercase',
-  },
-  cityLabel: {
-    marginTop: 10,
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    textAlign: 'center',
   },
   status: {
     marginTop: 44,
