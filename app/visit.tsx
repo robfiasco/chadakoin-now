@@ -294,6 +294,28 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
   );
 }
 
+function VisitCurationFooter({ onSuggest }: { onSuggest: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <View style={curationFooter.wrap}>
+      <Text style={curationFooter.primary}>
+        These places are curated by a local with opinions — spots I've been and can recommend.
+      </Text>
+      <Text style={curationFooter.secondary}>
+        Know somewhere I should try?{' '}
+        <Text onPress={onSuggest} style={[curationFooter.suggestLink, { color: theme.acc }]}>Suggest it.</Text>
+      </Text>
+    </View>
+  );
+}
+
+const curationFooter = StyleSheet.create({
+  wrap: { marginTop: 4, marginBottom: 20, paddingHorizontal: 8, gap: 6 },
+  primary: { fontFamily: 'Outfit', fontSize: 12.5, color: 'rgba(255,255,255,0.45)', lineHeight: 18, textAlign: 'center' },
+  secondary: { fontFamily: 'Outfit', fontSize: 11.5, color: 'rgba(255,255,255,0.3)', lineHeight: 16, textAlign: 'center' },
+  suggestLink: { fontFamily: 'Outfit', fontWeight: '700', fontSize: 11.5 },
+});
+
 const adCta = StyleSheet.create({
   card:      { borderWidth: 1, borderRadius: 18, padding: 18, marginBottom: 12, gap: 10 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },
@@ -477,6 +499,10 @@ export default function VisitScreen() {
   const [search, setSearch] = useState('');
   const [openNow, setOpenNow] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackPreset, setFeedbackPreset] = useState<{ type: string; message: string }>({
+    type: 'business',
+    message: "I'd like to reserve the Featured Business slot on Visit. ",
+  });
 
   const q = search.trim().toLowerCase();
 
@@ -555,7 +581,12 @@ export default function VisitScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* ── Ad slot — stays at the top, first thing a visitor sees ── */}
-        <VisitAdCTA onPress={() => setFeedbackOpen(true)} />
+        <VisitAdCTA
+          onPress={() => {
+            setFeedbackPreset({ type: 'business', message: "I'd like to reserve the Featured Business slot on Visit. " });
+            setFeedbackOpen(true);
+          }}
+        />
 
         {/* ── Search bar + Open Now toggle ────────────────── */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
@@ -690,8 +721,21 @@ export default function VisitScreen() {
           <Text style={styles.emptyText}>No results for "{search}"</Text>
         )}
 
+        {/* ── Curation note ────────────────────────────────── */}
+        <VisitCurationFooter
+          onSuggest={() => {
+            setFeedbackPreset({ type: 'suggestion', message: "Place: \nArea: \nWhy I'd suggest it: " });
+            setFeedbackOpen(true);
+          }}
+        />
+
         {/* ── Footer CTA ──────────────────────────────────── */}
-        <FeatureYourBusiness onContact={() => setFeedbackOpen(true)} />
+        <FeatureYourBusiness
+          onContact={() => {
+            setFeedbackPreset({ type: 'business', message: "I'd like to reserve the Featured Business slot on Visit. " });
+            setFeedbackOpen(true);
+          }}
+        />
 
       </ScrollView>
 
@@ -699,8 +743,8 @@ export default function VisitScreen() {
         <View style={styles.fullOverlay}>
           <FeedbackScreen
             onClose={() => setFeedbackOpen(false)}
-            initialType="business"
-            initialMessage="I'd like to reserve the Featured Business slot on Visit. "
+            initialType={feedbackPreset.type}
+            initialMessage={feedbackPreset.message}
           />
         </View>
       )}
