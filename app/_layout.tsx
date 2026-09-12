@@ -88,9 +88,13 @@ function AppLayout() {
   const [activePage, setActivePage] = useState(0);
   const pagerRef = useRef<PagerViewHandle>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
-  // Skip loading screen on web for repeat visitors — assets are cached, no need to block LCP
+  // Repeat web visitors skip the branded intro animation (assets are
+  // cached, no need to force a splash) — but the overlay itself always
+  // stays up, still gated on isAppReady below. It used to skip the whole
+  // overlay outright, which let repeat visitors through to Home before
+  // news/events had actually loaded, exposing raw skeleton placeholders.
   const isRepeatWebVisit = Platform.OS === 'web' && typeof localStorage !== 'undefined' && localStorage.getItem('app_visited') === 'true';
-  const [showLoading, setShowLoading] = useState(!isRepeatWebVisit);
+  const [showLoading, setShowLoading] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY).then(val => {
@@ -191,6 +195,7 @@ function AppLayout() {
       {showLoading && (
         <AppLoadingScreen
           isAppReady={!dataLoading}
+          skipIntro={isRepeatWebVisit}
           onFinished={() => {
             setShowLoading(false);
             if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {

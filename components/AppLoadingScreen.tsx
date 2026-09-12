@@ -26,9 +26,11 @@ const PAGES: { label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
 
 export function AppLoadingScreen({
   isAppReady = false,
+  skipIntro = false,
   onFinished,
 }: {
   isAppReady?: boolean;
+  skipIntro?: boolean;
   onFinished?: () => void;
 }) {
   const { theme } = useTheme();
@@ -44,11 +46,18 @@ export function AppLoadingScreen({
   const statusFade = useRef(new Animated.Value(0)).current;
   const pagesFade  = useRef(new Animated.Value(0)).current;
 
-  // Fade in on mount, mark sequence done after intro
+  // Fade in on mount, mark sequence done after intro. Repeat web visitors
+  // (skipIntro) get the branded animation collapsed to near-nothing — but
+  // the overlay itself still stays up until isAppReady, below. Only the
+  // cosmetic minimum-splash-time is skipped, never the actual data gate:
+  // that's what used to let people through to a skeleton-filled Home when
+  // "skip loading screen for repeat visitors" was implemented as skipping
+  // the overlay outright instead of just its fixed intro delay.
   useEffect(() => {
-    Animated.timing(screenFade, { toValue: 1, duration: 700, useNativeDriver: true }).start();
-    Animated.timing(textFade,   { toValue: 1, duration: 900, delay: 400, useNativeDriver: true }).start();
-    const t = setTimeout(() => setSequenceDone(true), 1400);
+    const introDuration = skipIntro ? 60 : 1400;
+    Animated.timing(screenFade, { toValue: 1, duration: skipIntro ? 150 : 700, useNativeDriver: true }).start();
+    Animated.timing(textFade,   { toValue: 1, duration: skipIntro ? 150 : 900, delay: skipIntro ? 0 : 400, useNativeDriver: true }).start();
+    const t = setTimeout(() => setSequenceDone(true), introDuration);
     return () => clearTimeout(t);
   }, []);
 

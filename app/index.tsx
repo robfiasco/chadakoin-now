@@ -638,10 +638,17 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             {/* Hero image always renders immediately — text overlays once news loads */}
             {(() => {
               const sColor = topStory ? storyMeta(topStory.title, topStory.source ?? '').color : theme.acc;
+              // Prefer showing existing data over the loading flag — a
+              // background refresh (pull-to-refresh, periodic reload) sets
+              // civic.loading back to true without clearing topStory, so
+              // checking loading first would flash a skeleton over
+              // perfectly good content. Only fall back to skeleton when
+              // there's genuinely no story yet (first load).
+              const showSkeleton = civic.loading && !topStory;
               return (
                 <TouchableOpacity
-                  activeOpacity={civic.loading ? 1 : 0.85}
-                  onPress={() => !civic.loading && topStory?.link ? openLink(topStory.link) : null}
+                  activeOpacity={showSkeleton ? 1 : 0.85}
+                  onPress={() => !showSkeleton && topStory?.link ? openLink(topStory.link) : null}
                   // @ts-ignore
                   style={[styles.heroCard, glassWeb]}
                 >
@@ -657,14 +664,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  {civic.loading ? (
-                    <View style={[styles.heroContent, { gap: 8 }]}>
-                      <SkeletonPulse width="40%" height={11} borderRadius={3} accRGB={theme.accRGB} />
-                      <SkeletonPulse width="95%" height={18} borderRadius={4} accRGB={theme.accRGB} />
-                      <SkeletonPulse width="80%" height={18} borderRadius={4} accRGB={theme.accRGB} />
-                      <SkeletonPulse width="45%" height={11} borderRadius={3} accRGB={theme.accRGB} />
-                    </View>
-                  ) : topStory ? (
+                  {topStory ? (
                     <>
                       <View style={[styles.heroAccentBar, { backgroundColor: sColor }]} />
                       <View style={styles.heroContent}>
@@ -675,6 +675,13 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                         <Text style={styles.heroMeta}>{topStory.source ?? 'WRFA-LP'} · {relativeTime(topStory.pubDate)}</Text>
                       </View>
                     </>
+                  ) : showSkeleton ? (
+                    <View style={[styles.heroContent, { gap: 8 }]}>
+                      <SkeletonPulse width="40%" height={11} borderRadius={3} accRGB={theme.accRGB} />
+                      <SkeletonPulse width="95%" height={18} borderRadius={4} accRGB={theme.accRGB} />
+                      <SkeletonPulse width="80%" height={18} borderRadius={4} accRGB={theme.accRGB} />
+                      <SkeletonPulse width="45%" height={11} borderRadius={3} accRGB={theme.accRGB} />
+                    </View>
                   ) : null}
                 </TouchableOpacity>
               );
@@ -694,13 +701,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               )}
             </View>
 
-            {civic.loading ? (
-              // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
-              <View style={[styles.card, glassWeb, { gap: 10 }]}>
-                <SkeletonPulse width="70%" height={18} borderRadius={4} accRGB={theme.accRGB} />
-                <SkeletonPulse width="45%" height={12} borderRadius={4} accRGB={theme.accRGB} />
-              </View>
-            ) : weekendEvent ? (() => {
+            {weekendEvent ? (() => {
               const startD = new Date(weekendEvent.startDate);
               const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
               const evtColor = eventCategoryColor(weekendEvent.category);
@@ -726,7 +727,13 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                   </View>
                 </TouchableOpacity>
               );
-            })() : null}
+            })() : civic.loading ? (
+              // @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle>
+              <View style={[styles.card, glassWeb, { gap: 10 }]}>
+                <SkeletonPulse width="70%" height={18} borderRadius={4} accRGB={theme.accRGB} />
+                <SkeletonPulse width="45%" height={12} borderRadius={4} accRGB={theme.accRGB} />
+              </View>
+            ) : null}
           </>
         )}
 
