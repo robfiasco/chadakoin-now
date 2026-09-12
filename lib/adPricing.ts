@@ -17,29 +17,12 @@ export const FEATURED_SLOTS_FILLED = FEATURED_PARTNERS.length;
 export const FEATURED_SLOTS_AVAILABLE = Math.max(0, FEATURED_SLOTS - FEATURED_SLOTS_FILLED);
 export const FEATURED_SLOTS_FULL = FEATURED_SLOTS_AVAILABLE === 0;
 
-export const FEATURED_INTRO_MONTHS = 3;
-export const FEATURED_INTRO_PRICE = 59;
-export const FEATURED_OFFSEASON_PRICE = 79;
-export const FEATURED_PEAK_PRICE = 129;
+// Straight public pricing, year-round — no seasonal tiers, no intro
+// months. Replaces the old $59 intro / $79-$129 seasonal model everywhere
+// it used to show up (Visit, Settings) — this is the one Featured price.
+export const FEATURED_FLAT_MONTHLY = 99;
 export const FEATURED_ANNUAL_PRICE = 899;
 
-// Straight public pricing for Visit's equal-visibility Featured block — no
-// seasonal tiers. The seasonal/intro numbers above stay in place for
-// Events, Sports, and Settings, which are out of scope for this change.
-export const FEATURED_FLAT_MONTHLY = 99;
-
-// Peak season: May 1 – Sep 30. Off-season: Oct 1 – Apr 30. Informational
-// copy currently lists both tiers rather than switching on the current
-// date, but this is exposed in case a surface wants to highlight "current"
-// season dynamically later.
-export function isPeakSeason(date: Date = new Date()): boolean {
-  const month = date.getMonth() + 1; // 1-12
-  return month >= 5 && month <= 9;
-}
-
-export const FEATURED_INTRO_NOTE = `for your first ${FEATURED_INTRO_MONTHS} months`;
-export const FEATURED_SEASONAL_NOTE =
-  `Then $${FEATURED_OFFSEASON_PRICE}/mo off-season (Oct–Apr) · $${FEATURED_PEAK_PRICE}/mo peak season (May–Sep)`;
 export const FEATURED_ANNUAL_NOTE = 'Prepay annually — locks your slot for 12 months';
 export const FEATURED_SCARCITY_NOTE = FEATURED_SLOTS_FULL
   ? `All ${FEATURED_SLOTS} slots filled — join the waitlist`
@@ -47,8 +30,27 @@ export const FEATURED_SCARCITY_NOTE = FEATURED_SLOTS_FULL
 export const FEATURED_WAITLIST_NOTE =
   'Slots are first come, first served. If full, you’ll be added to the waitlist and notified within 48 hours when one opens.';
 
+// ─── Founding Featured — first FEATURED_SLOTS partners, grandfathered
+// pricing. A subset of the same Visit Featured cap above, not a separate
+// pool: the first five partners to sign up lock this rate in for as long
+// as they keep renewing without a gap. ──────────────────────────────
+export const FOUNDING_ANNUAL_PRICE = 699;
+export const FOUNDING_TERM_NOTE =
+  'Live when creative is ready (fall 2026) through Dec 31, 2027 — up to ~15 months for the price of 12, depending on signup date.';
+export const FOUNDING_RENEWAL_NOTE =
+  `Renews each calendar year at $${FOUNDING_ANNUAL_PRICE}/yr for as long as you renew without a gap — locked in, never subject to future price increases.`;
+export const FOUNDING_ELIGIBILITY_NOTE =
+  'Only for places already on the hand-curated Visit list. Paying does not buy or force a Visit listing.';
+export const FOUNDING_SCARCITY_NOTE = `Limited to the first ${FEATURED_SLOTS} partners — hand-selected.`;
+
 export const EVENT_BOOST_PRICES = ['$25 / 2 wks', '$45 / 30 days'];
 export const EXTENDED_PROFILE_PRICE = '$19 / mo';
 export const BUSINESS_STORY_PRICES = ['$25 / 48 hrs', '$49 / 7 days'];
+
+// ─── Founders-only add-ons — OG rate card, not offered to general
+// Public Featured partners. ──────────────────────────────────────────
+export const BRAND_CHROME_PRICES = ['$19 / mo', '$150 / yr'];
+export const FOUNDING_STORY_CREDIT_NOTE = '1×/yr included for Founders';
+export const EVENT_BOOST_PACK_NOTE = '2× 30-day Event Featured boosts per year — bundle ~$90/yr, or inquire';
 
 export const AD_BADGE_LABEL = 'ADVERTISE HERE';

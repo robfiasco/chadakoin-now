@@ -15,10 +15,8 @@ import { openLink } from '../lib/openLink';
 import { apiUrl } from '../lib/api';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import { useCivicData } from '../hooks/useCivicData';
-import { ADDONS } from '../components/FeatureYourBusiness';
+import { EVENT_BOOST_PRICES } from '../lib/adPricing';
 import FeedbackScreen from './feedback';
-
-const EVENT_BOOST = ADDONS.find(a => a.title === 'Event Boost')!;
 
 interface NextUpItem {
   ts: number; sport: string; emoji: string; matchup: string;
@@ -729,7 +727,7 @@ function SportsAdCTA({ onPress }: { onPress: () => void }) {
         This slot stays at the top of Sports — seen every time residents check scores.
       </Text>
       <View style={adCta.pricingRow}>
-        {EVENT_BOOST.prices.map(p => (
+        {EVENT_BOOST_PRICES.map(p => (
           <View key={p} style={adCta.pricePill}>
             <Text style={adCta.priceText}>{p}</Text>
           </View>

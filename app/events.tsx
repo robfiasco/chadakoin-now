@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
-import { ADDONS } from '../components/FeatureYourBusiness';
+import { EVENT_BOOST_PRICES } from '../lib/adPricing';
 import { useTheme } from '../lib/ThemeContext';
 import { EventItem, isEventUpcomingOrOngoing } from '../hooks/useCivicData';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
@@ -16,8 +16,6 @@ import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import FeedbackScreen from './feedback';
-
-const EVENT_BOOST = ADDONS.find(a => a.title === 'Event Boost')!;
 
 // ── Category colors & icons ───────────────────────────────────────
 function categoryColor(cat: string): string {
@@ -542,7 +540,7 @@ function EventAdCTA({ onPress }: { onPress: () => void }) {
         This slot stays at the top of Events — every filter, every day.
       </Text>
       <View style={adCta.pricingRow}>
-        {EVENT_BOOST.prices.map(p => (
+        {EVENT_BOOST_PRICES.map(p => (
           <View key={p} style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
             <Text style={[adCta.priceText, { color: theme.acc }]}>{p}</Text>
           </View>

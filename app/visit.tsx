@@ -14,6 +14,7 @@ import { openLink } from '../lib/openLink';
 import { FEATURED_SLOTS, FEATURED_FLAT_MONTHLY, FEATURED_ANNUAL_PRICE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
 import { heroIndex } from '../lib/featuredRotation';
 import FeedbackScreen from './feedback';
+import RateCardScreen from './rate-card';
 
 function openMaps(query: string) {
   openLink(`https://maps.google.com/?q=${encodeURIComponent(query)}`);
@@ -256,38 +257,39 @@ function OpenBadge() {
 }
 
 // ─── Ad slot — sells equal-visibility Featured placement, not one slot ──
-function VisitAdSellCard({ onPress }: { onPress: () => void }) {
+function VisitAdSellCard({ onPress, onViewRateCard }: { onPress: () => void; onViewRateCard: () => void }) {
   const { theme } = useTheme();
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={[adCta.card, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
-    >
-      <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
-        <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
-        <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
-      </View>
-      <Text style={adCta.title}>Get Featured on Visit</Text>
-      <Text style={adCta.body}>
-        Up to {FEATURED_SLOTS} local partners, shown to every visitor, every time they open Visit — not just one slot at the top.
-      </Text>
-      <View style={adCta.pricingRow}>
-        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_FLAT_MONTHLY} / mo</Text>
+    <View style={[adCta.card, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+        <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+          <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
+          <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
         </View>
-        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
+        <Text style={adCta.title}>Get Featured on Visit</Text>
+        <Text style={adCta.body}>
+          Up to {FEATURED_SLOTS} local partners, shown to every visitor, every time they open Visit — not just one slot at the top.
+        </Text>
+        <View style={adCta.pricingRow}>
+          <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+            <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_FLAT_MONTHLY} / mo</Text>
+          </View>
+          <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+            <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
+          </View>
         </View>
-      </View>
-      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        Straight pricing, no seasonal tiers. {FEATURED_SCARCITY_NOTE}.
-      </Text>
-      <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
-        <Text style={adCta.ctaBtnText}>Feature This Business</Text>
-        <Ionicons name="arrow-forward" size={13} color="#000" />
-      </View>
-    </TouchableOpacity>
+        <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
+          {FEATURED_SCARCITY_NOTE}.
+        </Text>
+        <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
+          <Text style={adCta.ctaBtnText}>Feature This Business</Text>
+          <Ionicons name="arrow-forward" size={13} color="#000" />
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onViewRateCard} activeOpacity={0.7} style={{ marginTop: 10, alignItems: 'center' }}>
+        <Text style={[adCta.rateCardLink, { color: theme.acc }]}>See the full rate card (Founding offer) →</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -348,7 +350,7 @@ function FeaturedPartnerCard({ place, hero, tagline }: { place: Place; hero: boo
 }
 
 // ─── Featured block — every active partner, every Visit open ────────
-function VisitFeaturedBlock({ onAdvertise }: { onAdvertise: () => void }) {
+function VisitFeaturedBlock({ onAdvertise, onViewRateCard }: { onAdvertise: () => void; onViewRateCard: () => void }) {
   const { theme } = useTheme();
 
   const partners = useMemo(() => {
@@ -359,7 +361,7 @@ function VisitFeaturedBlock({ onAdvertise }: { onAdvertise: () => void }) {
   }, []);
 
   if (partners.length === 0) {
-    return <VisitAdSellCard onPress={onAdvertise} />;
+    return <VisitAdSellCard onPress={onAdvertise} onViewRateCard={onViewRateCard} />;
   }
 
   const hIdx = heroIndex(partners.length);
@@ -432,6 +434,7 @@ const adCta = StyleSheet.create({
   finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, marginTop: -2 },
   ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
+  rateCardLink: { fontFamily: 'Outfit', fontSize: 11.5, fontWeight: '700' },
 });
 
 const featured = StyleSheet.create({
@@ -627,6 +630,7 @@ export default function VisitScreen() {
     type: 'business',
     message: "I'd like to reserve a Featured slot on Visit. ",
   });
+  const [rateCardOpen, setRateCardOpen] = useState(false);
 
   const q = search.trim().toLowerCase();
 
@@ -710,6 +714,7 @@ export default function VisitScreen() {
             setFeedbackPreset({ type: 'business', message: "I'd like to reserve a Featured slot on Visit. " });
             setFeedbackOpen(true);
           }}
+          onViewRateCard={() => setRateCardOpen(true)}
         />
 
         {/* ── Search bar + Open Now toggle ────────────────── */}
@@ -862,6 +867,12 @@ export default function VisitScreen() {
             initialType={feedbackPreset.type}
             initialMessage={feedbackPreset.message}
           />
+        </View>
+      )}
+
+      {rateCardOpen && (
+        <View style={styles.fullOverlay}>
+          <RateCardScreen onClose={() => setRateCardOpen(false)} />
         </View>
       )}
     </ThemedBackground>

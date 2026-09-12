@@ -16,6 +16,7 @@ import { THEMES, Theme, ThemeId } from '../lib/themes';
 import { dark } from '../lib/colors';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 import DollarTrailScreen from './dollar-trail';
+import RateCardScreen from './rate-card';
 
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -35,6 +36,7 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState('general');
   const [dollarTrailOpen, setDollarTrailOpen] = useState(false);
+  const [rateCardOpen, setRateCardOpen] = useState(false);
 
   // Theme description sheet
   const [descTheme, setDescTheme] = useState<Theme | null>(null);
@@ -167,7 +169,10 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
           </Text>
         </View>
 
-        <FeatureYourBusiness onContact={() => { setFeedbackType('business'); setFeedbackOpen(true); }} />
+        <FeatureYourBusiness
+          onContact={() => { setFeedbackType('business'); setFeedbackOpen(true); }}
+          onViewRateCard={() => setRateCardOpen(true)}
+        />
 
         <Text style={styles.footer}>v{Constants.expoConfig?.version ?? '1.1.0'} · Built by Chadakoin Digital in Jamestown, NY</Text>
         <Text style={styles.sources}>Data sources: Sabres via NHL · JCC via jccjayhawks.com · MLB via MLB Stats API · Weather via Apple WeatherKit</Text>
@@ -176,6 +181,11 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
       {dollarTrailOpen && (
         <View style={styles.fullOverlay}>
           <DollarTrailScreen onClose={() => setDollarTrailOpen(false)} />
+        </View>
+      )}
+      {rateCardOpen && (
+        <View style={styles.fullOverlay}>
+          <RateCardScreen onClose={() => setRateCardOpen(false)} />
         </View>
       )}
       {feedbackOpen && (

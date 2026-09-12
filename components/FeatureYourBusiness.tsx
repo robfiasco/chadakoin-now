@@ -4,38 +4,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/ThemeContext';
 import { dark } from '../lib/colors';
 import {
-  FEATURED_INTRO_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE,
+  FEATURED_FLAT_MONTHLY,
   FEATURED_ANNUAL_PRICE, FEATURED_ANNUAL_NOTE, FEATURED_WAITLIST_NOTE, FEATURED_SCARCITY_NOTE,
-  EVENT_BOOST_PRICES, EXTENDED_PROFILE_PRICE, BUSINESS_STORY_PRICES,
 } from '../lib/adPricing';
 
 const INCLUDES = [
   { icon: 'chatbubble-ellipses-outline' as const, text: 'A genuine local endorsement — not ad copy' },
-  { icon: 'star-outline' as const,                text: 'Featured badge + top placement' },
+  { icon: 'star-outline' as const,                text: 'Featured badge + equal visibility every Visit open' },
   { icon: 'card-outline' as const,                text: 'Your listing card with photo, quote & direct links' },
   { icon: 'calendar-outline' as const,            text: 'Monthly · renew or cancel anytime (unless on annual)' },
   { icon: 'people-outline' as const,              text: FEATURED_SCARCITY_NOTE },
 ];
 
-export const ADDONS = [
-  {
-    title: 'Event Boost',
-    prices: EVENT_BOOST_PRICES,
-    desc: 'Listed in the app through your event date.',
-  },
-  {
-    title: 'Extended Profile',
-    prices: [EXTENDED_PROFILE_PRICE],
-    desc: 'Updated hours, photos & seasonal details on your listing.',
-  },
-  {
-    title: 'Business Story',
-    prices: BUSINESS_STORY_PRICES,
-    desc: 'A featured post on the home screen. You write it, we post it.',
-  },
-];
-
-export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
+export function FeatureYourBusiness({
+  onContact,
+  onViewRateCard,
+}: {
+  onContact?: () => void;
+  onViewRateCard?: () => void;
+}) {
   const { theme } = useTheme();
   const acc = theme.acc;
   const accRGB = theme.accRGB;
@@ -124,12 +111,9 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
         ))}
       </View>
 
-      {/* ── Pricing ── */}
+      {/* ── Pricing — straight, year-round, no seasonal tiers ── */}
       <View style={[s.pricingBlock, { borderColor: `rgba(${accRGB},0.12)`, backgroundColor: `rgba(${accRGB},0.05)` }]}>
-        <Text style={[s.pricingMain, { color: acc }]}>${FEATURED_INTRO_PRICE}<Text style={s.pricingPer}>/mo</Text></Text>
-        <Text style={s.pricingNote}>{FEATURED_INTRO_NOTE}</Text>
-        <View style={[s.pricingDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
-        <Text style={s.pricingThen}>{FEATURED_SEASONAL_NOTE}</Text>
+        <Text style={[s.pricingMain, { color: acc }]}>${FEATURED_FLAT_MONTHLY}<Text style={s.pricingPer}>/mo</Text></Text>
         <View style={[s.pricingDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
         <View style={s.annualRow}>
           <Text style={[s.annualPrice, { color: acc }]}>${FEATURED_ANNUAL_PRICE}<Text style={s.annualPer}>/yr</Text></Text>
@@ -152,7 +136,12 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
         {FEATURED_WAITLIST_NOTE}
       </Text>
 
-      {/* ── Add-ons ── */}
+      {onViewRateCard && (
+        <TouchableOpacity onPress={onViewRateCard} activeOpacity={0.7} style={{ marginTop: 14, alignItems: 'center' }}>
+          <Text style={[s.rateCardLink, { color: acc }]}>See the full Featured & Founders rate card →</Text>
+        </TouchableOpacity>
+      )}
+
       <View style={[s.addonsDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
 
       {/* ── Secondary CTA ── */}
@@ -166,25 +155,6 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
           <Text style={[s.secondaryCtaLink, { color: acc }]}>Boost an event, add your story, or update your profile</Text>
           <Ionicons name="arrow-forward" size={12} color={acc} />
         </TouchableOpacity>
-      </View>
-
-      <Text style={[s.subLabel, { color: `rgba(${accRGB},0.4)`, marginTop: 12 }]}>ADD-ONS · ANY BUSINESS</Text>
-      <View style={{ gap: 8 }}>
-        {ADDONS.map((item, i) => (
-          <View key={i} style={[s.addonCard, { borderColor: `rgba(${accRGB},0.1)` }]}>
-            <View style={s.addonTop}>
-              <Text style={s.addonTitle}>{item.title}</Text>
-              <View style={s.addonPrices}>
-                {item.prices.map(p => (
-                  <View key={p} style={[s.addonPricePill, { backgroundColor: `rgba(${accRGB},0.1)`, borderColor: `rgba(${accRGB},0.2)` }]}>
-                    <Text style={[s.addonPriceText, { color: acc }]}>{p}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <Text style={s.addonDesc}>{item.desc}</Text>
-          </View>
-        ))}
       </View>
       </>}
 
@@ -300,9 +270,7 @@ const s = StyleSheet.create({
   },
   pricingMain: { fontFamily: 'Syne', fontSize: 32, fontWeight: '700', letterSpacing: -1 },
   pricingPer:  { fontFamily: 'Outfit', fontSize: 14, fontWeight: '400', letterSpacing: 0 },
-  pricingNote: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
   pricingDivider: { height: 1, width: '100%', marginVertical: 8 },
-  pricingThen: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 17 },
   annualRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, justifyContent: 'center', flexWrap: 'wrap' },
   annualPrice: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700' },
   annualPer: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '400' },
@@ -317,16 +285,9 @@ const s = StyleSheet.create({
   ctaBtnText: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#000' },
 
   waitlistNote: { fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', lineHeight: 17, marginTop: 10 },
+  rateCardLink: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
 
   addonsDivider: { height: 1, marginVertical: 20 },
-
-  addonCard: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 6, backgroundColor: 'rgba(255,255,255,0.02)' },
-  addonTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  addonTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fff' },
-  addonPrices: { flexDirection: 'row', gap: 5, flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end' },
-  addonPricePill: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  addonPriceText: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700' },
-  addonDesc: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 16 },
 
   // ── Secondary CTA ──
   secondaryCta: { marginTop: 14, alignItems: 'center', gap: 8 },
