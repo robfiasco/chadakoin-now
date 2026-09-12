@@ -180,7 +180,7 @@ const LOCAL_TOWNS = new Set([
 const TTL = {
   recycling: 24 * 60 * 60 * 1000,   // 24h
   events:     1 * 60 * 60 * 1000,   // 1h
-  alerts:     5 * 60 * 1000,        // 5min
+  alerts:     3 * 60 * 60 * 1000,   // 3h — same slow BPU feed as dpw; 5min was hammering it
   news:       2 * 60 * 60 * 1000,   // 2h
   lotd:      12 * 60 * 60 * 1000,   // 12h — weekly show
   dpw:        3 * 60 * 60 * 1000,   // 3h — page updates roughly weekly

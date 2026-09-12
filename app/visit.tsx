@@ -10,7 +10,6 @@ import { useTheme } from '../lib/ThemeContext';
 import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
-import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
 import FeedbackScreen from './feedback';
 
@@ -725,14 +724,6 @@ export default function VisitScreen() {
         <VisitCurationFooter
           onSuggest={() => {
             setFeedbackPreset({ type: 'suggestion', message: "Place: \nArea: \nWhy I'd suggest it: " });
-            setFeedbackOpen(true);
-          }}
-        />
-
-        {/* ── Footer CTA ──────────────────────────────────── */}
-        <FeatureYourBusiness
-          onContact={() => {
-            setFeedbackPreset({ type: 'business', message: "I'd like to reserve the Featured Business slot on Visit. " });
             setFeedbackOpen(true);
           }}
         />
