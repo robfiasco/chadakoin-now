@@ -68,6 +68,24 @@ export interface EventItem {
   note?: string;
 }
 
+// Most events don't list an end time — assume a typical event runs a few
+// hours so it doesn't vanish from the app the instant its start time
+// passes while it's realistically still going on.
+const DEFAULT_EVENT_DURATION_MS = 3 * 60 * 60 * 1000;
+
+export function eventEndTime(e: EventItem): number {
+  if (e.endDate) return new Date(e.endDate).getTime();
+  return new Date(e.startDate).getTime() + DEFAULT_EVENT_DURATION_MS;
+}
+
+// Replaces a plain `startDate >= now` check — that dropped an event the
+// moment it started even if it (or its assumed duration) was still
+// ongoing, which made multi-hour events disappear from the app mid-way
+// through instead of once they actually ended.
+export function isEventUpcomingOrOngoing(e: EventItem, now: Date = new Date()): boolean {
+  return eventEndTime(e) >= now.getTime();
+}
+
 export interface NewsItem {
   title: string;
   link: string;

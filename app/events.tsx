@@ -10,7 +10,7 @@ import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { ADDONS } from '../components/FeatureYourBusiness';
 import { useTheme } from '../lib/ThemeContext';
-import { EventItem } from '../hooks/useCivicData';
+import { EventItem, isEventUpcomingOrOngoing } from '../hooks/useCivicData';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
@@ -683,7 +683,7 @@ export default function EventsScreen() {
       link: 'https://tarp-skunks-2026.vercel.app/',
     } as EventItem));
   const upcoming = [
-    ...events.filter(e => new Date(e.startDate) >= now),
+    ...events.filter(e => isEventUpcomingOrOngoing(e, now)),
     ...skunksHomeEvents,
   ].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 

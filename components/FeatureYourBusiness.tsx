@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/ThemeContext';
 import { dark } from '../lib/colors';
 import {
-  FEATURED_SLOTS, FEATURED_INTRO_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE,
-  FEATURED_ANNUAL_PRICE, FEATURED_ANNUAL_NOTE, FEATURED_WAITLIST_NOTE,
+  FEATURED_INTRO_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE,
+  FEATURED_ANNUAL_PRICE, FEATURED_ANNUAL_NOTE, FEATURED_WAITLIST_NOTE, FEATURED_SCARCITY_NOTE,
   EVENT_BOOST_PRICES, EXTENDED_PROFILE_PRICE, BUSINESS_STORY_PRICES,
 } from '../lib/adPricing';
 
@@ -14,7 +14,7 @@ const INCLUDES = [
   { icon: 'star-outline' as const,                text: 'Featured badge + top placement' },
   { icon: 'card-outline' as const,                text: 'Your listing card with photo, quote & direct links' },
   { icon: 'calendar-outline' as const,            text: 'Monthly · renew or cancel anytime (unless on annual)' },
-  { icon: 'people-outline' as const,              text: `Only ${FEATURED_SLOTS} slots available` },
+  { icon: 'people-outline' as const,              text: FEATURED_SCARCITY_NOTE },
 ];
 
 export const ADDONS = [
@@ -156,13 +156,17 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
       <View style={[s.addonsDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
 
       {/* ── Secondary CTA ── */}
-      <TouchableOpacity onPress={onContact} activeOpacity={0.7} style={s.secondaryCta}>
+      <View style={s.secondaryCta}>
         <Text style={[s.secondaryCtaLabel, { color: `rgba(${accRGB},0.55)` }]}>Not ready for a featured slot?</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <TouchableOpacity
+          onPress={onContact}
+          activeOpacity={0.75}
+          style={[s.secondaryCtaPill, { borderColor: `rgba(${accRGB},0.25)`, backgroundColor: `rgba(${accRGB},0.08)` }]}
+        >
           <Text style={[s.secondaryCtaLink, { color: acc }]}>Boost an event, add your story, or update your profile</Text>
           <Ionicons name="arrow-forward" size={12} color={acc} />
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
 
       <Text style={[s.subLabel, { color: `rgba(${accRGB},0.4)`, marginTop: 12 }]}>ADD-ONS · ANY BUSINESS</Text>
       <View style={{ gap: 8 }}>
@@ -325,7 +329,12 @@ const s = StyleSheet.create({
   addonDesc: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 16 },
 
   // ── Secondary CTA ──
-  secondaryCta: { marginTop: 14, alignItems: 'center', gap: 4 },
+  secondaryCta: { marginTop: 14, alignItems: 'center', gap: 8 },
   secondaryCtaLabel: { fontFamily: 'Outfit', fontSize: 11 },
-  secondaryCtaLink:  { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
+  secondaryCtaPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 9,
+  },
+  secondaryCtaLink:  { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
 });

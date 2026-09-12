@@ -5,6 +5,15 @@
 // here and every surface updates together instead of drifting.
 
 export const FEATURED_SLOTS = 5;
+
+// No payment/subscription backend exists — Featured Placement is sold by
+// email (the app's "Get Featured" CTAs open the feedback form, which sends
+// straight to Rob via Resend). Bump this by hand each time a slot is sold
+// or a subscription ends; same manual-update pattern as CURATED_EVENTS.
+export const FEATURED_SLOTS_FILLED = 0;
+export const FEATURED_SLOTS_AVAILABLE = Math.max(0, FEATURED_SLOTS - FEATURED_SLOTS_FILLED);
+export const FEATURED_SLOTS_FULL = FEATURED_SLOTS_AVAILABLE === 0;
+
 export const FEATURED_INTRO_MONTHS = 3;
 export const FEATURED_INTRO_PRICE = 59;
 export const FEATURED_OFFSEASON_PRICE = 79;
@@ -24,7 +33,9 @@ export const FEATURED_INTRO_NOTE = `for your first ${FEATURED_INTRO_MONTHS} mont
 export const FEATURED_SEASONAL_NOTE =
   `Then $${FEATURED_OFFSEASON_PRICE}/mo off-season (Oct–Apr) · $${FEATURED_PEAK_PRICE}/mo peak season (May–Sep)`;
 export const FEATURED_ANNUAL_NOTE = 'Prepay annually — locks your slot for 12 months';
-export const FEATURED_SCARCITY_NOTE = `Only ${FEATURED_SLOTS} slots available`;
+export const FEATURED_SCARCITY_NOTE = FEATURED_SLOTS_FULL
+  ? `All ${FEATURED_SLOTS} slots filled — join the waitlist`
+  : `${FEATURED_SLOTS_AVAILABLE}/${FEATURED_SLOTS} slots available`;
 export const FEATURED_WAITLIST_NOTE =
   'Slots are first come, first served. If full, you’ll be added to the waitlist and notified within 48 hours when one opens.';
 

@@ -11,7 +11,7 @@ import { useTheme } from '../lib/ThemeContext';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { fetchWeather, WeatherData } from '../services/weather';
-import { EventItem, NewsItem } from '../hooks/useCivicData';
+import { EventItem, NewsItem, isEventUpcomingOrOngoing } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import * as WebBrowser from 'expo-web-browser';
@@ -84,7 +84,7 @@ function LiveDot({ color }: { color: string }) {
 
 function getNextEvent(events: EventItem[]): EventItem | null {
   const now = new Date();
-  return events.find(e => new Date(e.startDate) >= now) ?? null;
+  return events.find(e => isEventUpcomingOrOngoing(e, now)) ?? null;
 }
 
 function getNextEventLabel(event: EventItem): string {
@@ -94,7 +94,11 @@ function getNextEventLabel(event: EventItem): string {
   const tomorrowMidnight = new Date(todayMidnight); tomorrowMidnight.setDate(todayMidnight.getDate() + 1);
   const dayAfterMidnight = new Date(tomorrowMidnight); dayAfterMidnight.setDate(tomorrowMidnight.getDate() + 1);
   const day = d.getDay();
-  if (d >= todayMidnight && d < tomorrowMidnight) return 'Tonight';
+  if (d >= todayMidnight && d < tomorrowMidnight) {
+    // "Tonight" only reads right for an evening event — a 1pm event today
+    // isn't tonight yet, even though it's the soonest upcoming one.
+    return d.getHours() >= 17 ? 'Tonight' : 'Today';
+  }
   if (d >= tomorrowMidnight && d < dayAfterMidnight) return 'Tomorrow';
   if (day === 6 || day === 0) return 'This Weekend';
   return 'Coming Up';
@@ -711,7 +715,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
                     </Text>
                   </View>
                   <View style={styles.eventBody}>
-                    <Text style={styles.eventTitle} numberOfLines={2}>{weekendEvent.title}</Text>
+                    <Text style={styles.eventTitle}>{weekendEvent.title}</Text>
                     <Text style={styles.eventVenue}>{weekendEvent.location}</Text>
                     <Text style={[styles.eventCategory, { color: evtColor }]}>{weekendEvent.category}</Text>
                   </View>

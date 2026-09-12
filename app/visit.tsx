@@ -11,7 +11,7 @@ import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
-import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_OFFSEASON_PRICE, FEATURED_PEAK_PRICE, FEATURED_SLOTS } from '../lib/adPricing';
+import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_OFFSEASON_PRICE, FEATURED_PEAK_PRICE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
 import FeedbackScreen from './feedback';
 
 function openMaps(query: string) {
@@ -281,7 +281,7 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
         </View>
       </View>
       <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        Then ${FEATURED_OFFSEASON_PRICE}–{FEATURED_PEAK_PRICE}/mo seasonally · Only {FEATURED_SLOTS} slots available
+        Then ${FEATURED_OFFSEASON_PRICE}–{FEATURED_PEAK_PRICE}/mo seasonally · {FEATURED_SCARCITY_NOTE}
       </Text>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
         <Text style={adCta.ctaBtnText}>Get Featured</Text>
