@@ -696,7 +696,9 @@ function LeagueTeamRow({
 }) {
   return (
     <View style={league.row}>
-      <Image source={{ uri: logo }} style={league.rowLogo} resizeMode="contain" />
+      <View style={league.rowLogoWrap}>
+        <Image source={{ uri: logo }} style={league.rowLogo} resizeMode="contain" />
+      </View>
       <View style={{ flex: 1 }}>
         <Text style={league.rowName} numberOfLines={1}>{name}</Text>
         <Text style={[league.rowLine, lineColor && { color: lineColor }]} numberOfLines={1}>{line}</Text>
@@ -722,9 +724,9 @@ function SportsAdCTA({ onPress }: { onPress: () => void }) {
         <Ionicons name="megaphone-outline" size={11} color={ACC.label} />
         <Text style={adCta.badgeText}>ADVERTISE HERE</Text>
       </View>
-      <Text style={adCta.title}>Your Team, Front and Center</Text>
+      <Text style={adCta.title}>Put Your Team First</Text>
       <Text style={adCta.body}>
-        Sponsor local sports — seen when residents check scores.
+        This slot stays at the top of Sports — seen every time residents check scores.
       </Text>
       <View style={adCta.pricingRow}>
         {EVENT_BOOST.prices.map(p => (
@@ -734,7 +736,7 @@ function SportsAdCTA({ onPress }: { onPress: () => void }) {
         ))}
       </View>
       <View style={adCta.ctaBtn}>
-        <Text style={adCta.ctaBtnText}>Get Featured</Text>
+        <Text style={adCta.ctaBtnText}>Feature This Team</Text>
         <Ionicons name="arrow-forward" size={13} color="#000" />
       </View>
     </TouchableOpacity>
@@ -1166,6 +1168,10 @@ export default function SportsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACC.label} colors={[ACC.label]} />
         }
       >
+
+        {/* ── Featured — ad slot stays at the top, matching Visit/Events ── */}
+        <SectionLabel label="Featured" />
+        <SportsAdCTA onPress={() => setFeedbackOpen(true)} />
 
         {/* ── Local Teams — page subtitle already says "Local Teams ·
             Jamestown", so the section header names the place instead of
@@ -1680,7 +1686,11 @@ export default function SportsScreen() {
         <TeamCard
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          iconContent={<Text style={{ fontSize: 13 }}>⚾</Text>}
+          iconContent={
+            <View style={styles.leagueIconWrap}>
+              <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={styles.leagueIconImg} resizeMode="contain" />
+            </View>
+          }
           iconSize={26}
           name="MLB"
           nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.mlb }}
@@ -1723,7 +1733,11 @@ export default function SportsScreen() {
         <TeamCard
           gradStart="rgba(251,146,60,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
-          iconContent={<Text style={{ fontSize: 13 }}>🏈</Text>}
+          iconContent={
+            <View style={styles.leagueIconWrap}>
+              <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png' }} style={styles.leagueIconImg} resizeMode="contain" />
+            </View>
+          }
           iconSize={26}
           name="NFL"
           nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.nfl }}
@@ -1763,10 +1777,6 @@ export default function SportsScreen() {
             })()
           }
         />
-
-        {/* ── Featured — ad slot, never mixed into standings ──── */}
-        <SectionLabel label="Featured" />
-        <SportsAdCTA onPress={() => setFeedbackOpen(true)} />
 
       </ScrollView>
 
@@ -1965,7 +1975,10 @@ const schedModal = StyleSheet.create({
 // team just made the list read as incomplete.
 const league = StyleSheet.create({
   row:            { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rowLogo:        { width: 28, height: 28 },
+  // White backing behind every logo — some team marks (Yankees navy "NY",
+  // etc.) are nearly invisible directly on the dark card background.
+  rowLogoWrap:    { width: 30, height: 30, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 3 },
+  rowLogo:        { width: '100%', height: '100%' },
   rowName:        { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', color: '#fff' },
   rowLine:        { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
   rowRecord:      { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
@@ -1980,6 +1993,11 @@ const styles = StyleSheet.create({
   subhead: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC.label },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40, gap: 10 },
   fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 600, flex: 1 },
+
+  // Official league mark (MLB/NFL) on a white backing — same reason as
+  // team logos: league marks aren't designed to sit on a dark gradient.
+  leagueIconWrap: { width: 20, height: 20, borderRadius: 5, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 2 },
+  leagueIconImg:  { width: '100%', height: '100%' },
 
   // Section labels
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 6, paddingHorizontal: 2 },

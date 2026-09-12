@@ -11,7 +11,7 @@ import { useTheme } from '../lib/ThemeContext';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
 import { fetchWeather, WeatherData } from '../services/weather';
-import { EventItem, NewsItem, isEventUpcomingOrOngoing } from '../hooks/useCivicData';
+import { EventItem, NewsItem } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import * as WebBrowser from 'expo-web-browser';
@@ -83,8 +83,13 @@ function LiveDot({ color }: { color: string }) {
 }
 
 function getNextEvent(events: EventItem[]): EventItem | null {
+  // Deliberately stricter than the full Events list: this feeds a single
+  // "what's next" card with a static start-time badge, so showing an
+  // event that's merely still-ongoing-per-grace-period (e.g. a 9am event
+  // at 3pm) reads as stale/wrong here, even though the same event
+  // correctly stays visible in the scrollable Events list.
   const now = new Date();
-  return events.find(e => isEventUpcomingOrOngoing(e, now)) ?? null;
+  return events.find(e => new Date(e.startDate) >= now) ?? null;
 }
 
 function getNextEventLabel(event: EventItem): string {

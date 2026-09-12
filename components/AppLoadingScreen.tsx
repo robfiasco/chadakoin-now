@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MapGridBackground } from './MapGridBackground';
+import { useTheme } from '../lib/ThemeContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -23,11 +24,6 @@ const PAGES: { label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { label: 'Visit',  icon: 'map-outline' },
 ];
 
-function isNight() {
-  const h = new Date().getHours();
-  return h < 6 || h >= 20;
-}
-
 export function AppLoadingScreen({
   isAppReady = false,
   onFinished,
@@ -35,7 +31,7 @@ export function AppLoadingScreen({
   isAppReady?: boolean;
   onFinished?: () => void;
 }) {
-  const night = isNight();
+  const { theme } = useTheme();
 
   const [statusIdx, setStatusIdx]       = useState(0);
   const [sequenceDone, setSequenceDone] = useState(false);
@@ -88,14 +84,16 @@ export function AppLoadingScreen({
     ? 'READY'
     : sequenceDone ? STATUS_MESSAGES[statusIdx] : 'Initializing...';
 
-  // Time-of-day accent — same map artwork, warmer accent by day, cooler by night
-  const accent      = night ? '#5ac3e6' : '#e0a860';
-  const titleClr    = night ? '#e6f3ff' : '#ffffff';
-  const subtitleClr = night ? 'rgba(155, 205, 235, 0.75)' : 'rgba(224, 178, 120, 0.85)';
-  const dividerClr  = night ? 'rgba(90, 195, 230, 0.35)' : 'rgba(224, 168, 96, 0.4)';
-  const kickerClr   = night ? 'rgba(160, 205, 230, 0.55)' : 'rgba(200, 215, 235, 0.55)';
-  const statusClr   = night ? 'rgba(145, 200, 232, 0.65)' : 'rgba(224, 178, 120, 0.75)';
-  const rowLabelClr = night ? 'rgba(220, 238, 250, 0.9)' : 'rgba(255, 240, 225, 0.9)';
+  // Matches whichever theme the user picked in Settings, instead of a
+  // fixed gold (day) / blue (night) split — same map artwork for everyone,
+  // accent color now follows theme.acc like the rest of the app does.
+  const accent      = theme.acc;
+  const titleClr    = '#ffffff';
+  const subtitleClr = `rgba(${theme.accRGB},0.85)`;
+  const dividerClr  = `rgba(${theme.accRGB},0.4)`;
+  const kickerClr   = `rgba(${theme.accRGB},0.55)`;
+  const statusClr   = `rgba(${theme.accRGB},0.75)`;
+  const rowLabelClr = 'rgba(255,255,255,0.9)';
 
   return (
     <Animated.View style={[styles.container, { opacity: exitAnim, backgroundColor: '#060e18' }]}>

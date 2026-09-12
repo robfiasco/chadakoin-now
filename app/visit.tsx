@@ -268,9 +268,9 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
         <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
         <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
       </View>
-      <Text style={adCta.title}>Your Business, Front and Center</Text>
+      <Text style={adCta.title}>Put Your Business First</Text>
       <Text style={adCta.body}>
-        This spot is the first thing people see when they open Visit — top of the list, every filter, every day.
+        This slot stays at the top of Visit — every filter, every day.
       </Text>
       <View style={adCta.pricingRow}>
         <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
@@ -284,7 +284,7 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
         Then ${FEATURED_OFFSEASON_PRICE}–{FEATURED_PEAK_PRICE}/mo seasonally · {FEATURED_SCARCITY_NOTE}
       </Text>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
-        <Text style={adCta.ctaBtnText}>Get Featured</Text>
+        <Text style={adCta.ctaBtnText}>Feature This Business</Text>
         <Ionicons name="arrow-forward" size={13} color="#000" />
       </View>
     </TouchableOpacity>
@@ -551,7 +551,7 @@ export default function VisitScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Ad slot ──────────────────────────────────────── */}
+        {/* ── Ad slot — stays at the top, first thing a visitor sees ── */}
         <VisitAdCTA onPress={() => setFeedbackOpen(true)} />
 
         {/* ── Search bar + Open Now toggle ────────────────── */}

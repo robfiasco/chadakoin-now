@@ -537,9 +537,9 @@ function EventAdCTA({ onPress }: { onPress: () => void }) {
         <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
         <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
       </View>
-      <Text style={adCta.title}>Your Event, Front and Center</Text>
+      <Text style={adCta.title}>Put Your Event First</Text>
       <Text style={adCta.body}>
-        This spot is the first thing people see when they open Events — top of the list, every filter, every day.
+        This slot stays at the top of Events — every filter, every day.
       </Text>
       <View style={adCta.pricingRow}>
         {EVENT_BOOST.prices.map(p => (
@@ -549,7 +549,7 @@ function EventAdCTA({ onPress }: { onPress: () => void }) {
         ))}
       </View>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
-        <Text style={adCta.ctaBtnText}>Feature My Event</Text>
+        <Text style={adCta.ctaBtnText}>Feature This Event</Text>
         <Ionicons name="arrow-forward" size={13} color="#000" />
       </View>
     </TouchableOpacity>
@@ -663,6 +663,10 @@ export default function EventsScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [adFeedbackOpen, setAdFeedbackOpen] = useState(false);
+  // Checked by default — today's events that already started (9am while
+  // it's now afternoon) read as stale/wrong sitting at the top of the
+  // list. Only affects today; future days are untouched either way.
+  const [hidePastToday, setHidePastToday] = useState(true);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -685,7 +689,14 @@ export default function EventsScreen() {
   const upcoming = [
     ...events.filter(e => isEventUpcomingOrOngoing(e, now)),
     ...skunksHomeEvents,
-  ].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  ]
+    .filter(e => {
+      if (!hidePastToday) return true;
+      const d = new Date(e.startDate);
+      const isToday = d.toDateString() === now.toDateString();
+      return !isToday || d >= now;
+    })
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   const monthFilters = useMemo(() => buildMonthFilters(), []);
   const eventMonths = useMemo(() => new Set(upcoming.map(e => getEventMonth(e.startDate))), [upcoming]);
@@ -783,6 +794,18 @@ export default function EventsScreen() {
             );
           })}
         </ScrollView>
+
+        {/* Hide today's already-started events — on by default */}
+        <TouchableOpacity
+          onPress={() => setHidePastToday(v => !v)}
+          activeOpacity={0.7}
+          style={styles.hidePastRow}
+        >
+          <View style={[styles.hidePastBox, hidePastToday && { backgroundColor: theme.acc, borderColor: theme.acc }]}>
+            {hidePastToday && <Ionicons name="checkmark" size={12} color="#000" />}
+          </View>
+          <Text style={styles.hidePastLabel}>Hide today's earlier events</Text>
+        </TouchableOpacity>
       </SafeAreaView>
 
       <ScrollView
@@ -888,6 +911,13 @@ const styles = StyleSheet.create({
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
   },
   chipText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+
+  hidePastRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  hidePastBox: {
+    width: 16, height: 16, borderRadius: 4, borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center',
+  },
+  hidePastLabel: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
 
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48 },
 

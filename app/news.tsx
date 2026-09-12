@@ -517,21 +517,28 @@ export default function NewsScreen() {
           </View>
         ) : (
           <>
-            {buckets.map((bucket) => (
-              <View key={bucket.label} style={{ marginBottom: 8 }}>
-                <SectionHeader
-                  label={bucket.label}
-                  blotter={bucket.isBlotter}
-                  expanded={blotterOpen}
-                  onToggle={() => setBlotterOpen(o => !o)}
-                />
-                {(!bucket.isBlotter || blotterOpen) && bucket.items.map((item, i) =>
-                  !bucket.isBlotter && item === topStory
-                    ? <React.Fragment key={i}><HeroCard item={item} /><FentonPinnedCard /></React.Fragment>
-                    : <NewsRow key={i} item={item} />
-                )}
-              </View>
-            ))}
+            {/* Top Story always leads the page — it must not render in
+                whatever bucket it naturally falls into, or a newer but
+                ineligible (WJTN/crime) item bucketed ahead of it pushes
+                the hero down the page instead of keeping it up top. */}
+            {topStory && <><HeroCard item={topStory} /><FentonPinnedCard /></>}
+            {buckets.map((bucket) => {
+              const visibleItems = bucket.isBlotter ? bucket.items : bucket.items.filter(item => item !== topStory);
+              if (visibleItems.length === 0) return null;
+              return (
+                <View key={bucket.label} style={{ marginBottom: 8 }}>
+                  <SectionHeader
+                    label={bucket.label}
+                    blotter={bucket.isBlotter}
+                    expanded={blotterOpen}
+                    onToggle={() => setBlotterOpen(o => !o)}
+                  />
+                  {(!bucket.isBlotter || blotterOpen) && visibleItems.map((item, i) => (
+                    <NewsRow key={i} item={item} />
+                  ))}
+                </View>
+              );
+            })}
           </>
         )}
 

@@ -301,6 +301,19 @@ export const PLACES: Place[] = [
   },
 
   {
+    id: 'buzz-wny',
+    name: 'Buzz WNY Dispensary',
+    categories: ['cannabis'],
+    icon: 'leaf-outline',
+    description: 'Neighborhood cannabis dispensary with tax-included pricing and same-day pickup.',
+    address: '34 Scott St, Jamestown, NY 14701',
+    website: 'https://buzzwny.com/',
+    hours: 'Daily, closes 12am',
+    featured: false,
+    lat: 42.0954, lng: -79.2467,
+  },
+
+  {
     id: 'lucy-desi-museum',
     name: 'Lucille Ball Desi Arnaz Museum',
     categories: ['activity'],
