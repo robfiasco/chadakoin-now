@@ -20,6 +20,8 @@ const TYPE_LABELS = {
   suggestion: 'Suggestion',
   correction: 'Correction',
   business:   'Featured Placement inquiry',
+  event:      'Event Boost inquiry',
+  team:       'Featured Team inquiry',
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

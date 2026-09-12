@@ -1782,7 +1782,11 @@ export default function SportsScreen() {
 
       {feedbackOpen && (
         <View style={styles.fullOverlay}>
-          <FeedbackScreen onClose={() => setFeedbackOpen(false)} initialType="business" />
+          <FeedbackScreen
+            onClose={() => setFeedbackOpen(false)}
+            initialType="team"
+            initialMessage="I'd like to reserve the Featured Team slot on Sports. "
+          />
         </View>
       )}
 

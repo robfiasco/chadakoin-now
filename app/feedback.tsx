@@ -19,6 +19,7 @@ const TYPES = [
   { key: 'correction', label: 'Correction (wrong hours, bad link, etc.)' },
   { key: 'business',   label: 'Featured Placement inquiry' },
   { key: 'event',      label: 'Event Boost inquiry' },
+  { key: 'team',       label: 'Featured Team inquiry' },
 ];
 
 const PLACEHOLDERS: Record<string, string> = {
@@ -28,13 +29,22 @@ const PLACEHOLDERS: Record<string, string> = {
   correction: "Which business or event? What's wrong, and what should it be?",
   business:   "Tell us about your business and what you'd like to know about Featured Placement.",
   event:      "What's the event, and when? We'll get it featured at the top of the Events tab.",
+  team:       "What team or league, and what would you like to know about Featured Placement on Sports?",
 };
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
-export default function FeedbackScreen({ onClose, initialType = 'general' }: { onClose: () => void; initialType?: string }) {
+export default function FeedbackScreen({
+  onClose,
+  initialType = 'general',
+  initialMessage = '',
+}: {
+  onClose: () => void;
+  initialType?: string;
+  initialMessage?: string;
+}) {
   const [formType, setFormType] = useState(initialType);
-  const [message, setMessage]   = useState('');
+  const [message, setMessage]   = useState(initialMessage);
   const [replyTo, setReplyTo]   = useState('');
   const [status, setStatus]     = useState<Status>('idle');
 

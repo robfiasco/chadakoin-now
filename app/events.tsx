@@ -892,7 +892,11 @@ export default function EventsScreen() {
 
       {adFeedbackOpen && (
         <View style={styles.fullOverlay}>
-          <FeedbackScreen onClose={() => setAdFeedbackOpen(false)} initialType="event" />
+          <FeedbackScreen
+            onClose={() => setAdFeedbackOpen(false)}
+            initialType="event"
+            initialMessage="I'd like to reserve the Featured Event slot on Events. "
+          />
         </View>
       )}
     </ThemedBackground>

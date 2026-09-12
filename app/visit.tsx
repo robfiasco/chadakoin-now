@@ -11,7 +11,7 @@ import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
-import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_OFFSEASON_PRICE, FEATURED_PEAK_PRICE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
+import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
 import FeedbackScreen from './feedback';
 
 function openMaps(query: string) {
@@ -281,7 +281,10 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
         </View>
       </View>
       <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        Then ${FEATURED_OFFSEASON_PRICE}–{FEATURED_PEAK_PRICE}/mo seasonally · {FEATURED_SCARCITY_NOTE}
+        ${FEATURED_INTRO_PRICE}/mo {FEATURED_INTRO_NOTE}. {FEATURED_SEASONAL_NOTE}.
+      </Text>
+      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
+        {FEATURED_SCARCITY_NOTE}
       </Text>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
         <Text style={adCta.ctaBtnText}>Feature This Business</Text>
@@ -694,7 +697,11 @@ export default function VisitScreen() {
 
       {feedbackOpen && (
         <View style={styles.fullOverlay}>
-          <FeedbackScreen onClose={() => setFeedbackOpen(false)} initialType="business" />
+          <FeedbackScreen
+            onClose={() => setFeedbackOpen(false)}
+            initialType="business"
+            initialMessage="I'd like to reserve the Featured Business slot on Visit. "
+          />
         </View>
       )}
     </ThemedBackground>
