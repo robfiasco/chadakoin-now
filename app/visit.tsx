@@ -8,9 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
 import { PLACES, CANNABIS_RULES, Place } from '../data/places';
+import { FEATURED_PARTNERS } from '../data/featuredPartners';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
-import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
+import { FEATURED_SLOTS, FEATURED_FLAT_MONTHLY, FEATURED_ANNUAL_PRICE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
+import { heroIndex } from '../lib/featuredRotation';
 import FeedbackScreen from './feedback';
 
 function openMaps(query: string) {
@@ -253,9 +255,8 @@ function OpenBadge() {
   );
 }
 
-// ─── Editor's Pick hero card ──────────────────────────────────────
-// ─── Ad slot — sells the top spot instead of giving it away free ──
-function VisitAdCTA({ onPress }: { onPress: () => void }) {
+// ─── Ad slot — sells equal-visibility Featured placement, not one slot ──
+function VisitAdSellCard({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
   return (
     <TouchableOpacity
@@ -267,29 +268,133 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
         <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
         <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
       </View>
-      <Text style={adCta.title}>Put Your Business First</Text>
+      <Text style={adCta.title}>Get Featured on Visit</Text>
       <Text style={adCta.body}>
-        This slot stays at the top of Visit — every filter, every day.
+        Up to {FEATURED_SLOTS} local partners, shown to every visitor, every time they open Visit — not just one slot at the top.
       </Text>
       <View style={adCta.pricingRow}>
         <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_INTRO_PRICE} / mo intro</Text>
+          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_FLAT_MONTHLY} / mo</Text>
         </View>
         <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
           <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
         </View>
       </View>
       <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        ${FEATURED_INTRO_PRICE}/mo {FEATURED_INTRO_NOTE}. {FEATURED_SEASONAL_NOTE}.
-      </Text>
-      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        {FEATURED_SCARCITY_NOTE}
+        Straight pricing, no seasonal tiers. {FEATURED_SCARCITY_NOTE}.
       </Text>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
         <Text style={adCta.ctaBtnText}>Feature This Business</Text>
         <Ionicons name="arrow-forward" size={13} color="#000" />
       </View>
     </TouchableOpacity>
+  );
+}
+
+// ─── Featured partner card — used for both the rotating hero and the
+// rest of the block. Paid placement, always clearly badged. ──────────
+function FeaturedPartnerCard({ place, hero, tagline }: { place: Place; hero: boolean; tagline?: string }) {
+  const { theme } = useTheme();
+  const cat = mapCategory(place);
+  const color = CAT_COLOR[cat] ?? theme.acc;
+  const open = isOpenNow(place.hours) === true;
+  const blurb = tagline ?? place.description;
+
+  const badges = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      <View style={[featured.badge, { backgroundColor: `${color}18`, borderColor: `${color}40` }]}>
+        <Ionicons name="star" size={8} color={color} />
+        <Text style={[featured.badgeText, { color }]}>FEATURED</Text>
+      </View>
+      {open ? <OpenBadge /> : null}
+    </View>
+  );
+
+  const links = (
+    <View style={lc.links}>
+      {place.website ? (
+        <TouchableOpacity onPress={() => openLink(place.website!)} activeOpacity={0.7}>
+          <Text style={[lc.link, { color: theme.acc }]}>Website →</Text>
+        </TouchableOpacity>
+      ) : null}
+      {place.lat ? (
+        <TouchableOpacity onPress={() => openMaps(`${place.name}, ${place.address}`)} activeOpacity={0.7} style={lc.mapBtn}>
+          <Ionicons name="navigate-outline" size={11} color="rgba(255,255,255,0.4)" />
+          <Text style={lc.mapText}>Map it</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+
+  if (!hero) {
+    return (
+      <ListCard name={place.name} address={place.address} color={color} badge={badges}>
+        {blurb ? <Text style={[lc.desc, { color: `${color}99` }]}>{blurb}</Text> : null}
+        {place.hours ? <Text style={lc.hours}>{place.hours}</Text> : null}
+        {links}
+      </ListCard>
+    );
+  }
+
+  return (
+    <View style={[featured.heroCard, { borderColor: `${color}55`, backgroundColor: `${color}0d` }]}>
+      {badges}
+      <Text style={featured.heroName}>{place.name}</Text>
+      {place.address ? <Text style={featured.heroAddress}>{place.address}</Text> : null}
+      {blurb ? <Text style={[featured.heroDesc, { color: `${color}cc` }]}>{blurb}</Text> : null}
+      <View style={{ marginTop: 8 }}>{links}</View>
+    </View>
+  );
+}
+
+// ─── Featured block — every active partner, every Visit open ────────
+function VisitFeaturedBlock({ onAdvertise }: { onAdvertise: () => void }) {
+  const { theme } = useTheme();
+
+  const partners = useMemo(() => {
+    return FEATURED_PARTNERS
+      .map(fp => ({ ...fp, place: PLACES.find(p => p.id === fp.placeId) }))
+      .filter((fp): fp is (typeof fp & { place: Place }) => !!fp.place)
+      .slice(0, FEATURED_SLOTS);
+  }, []);
+
+  if (partners.length === 0) {
+    return <VisitAdSellCard onPress={onAdvertise} />;
+  }
+
+  const hIdx = heroIndex(partners.length);
+  const hero = partners[hIdx];
+  const rest = partners.filter((_, i) => i !== hIdx);
+  const slotsLeft = FEATURED_SLOTS - partners.length;
+
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <View style={featured.headerRow}>
+        <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.45)`, marginBottom: 0, marginTop: 0 }]}>Featured</Text>
+        <View style={[featured.miniBadge, { borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+          <Ionicons name="megaphone-outline" size={9} color={`rgba(${theme.accRGB},0.6)`} />
+          <Text style={[featured.miniBadgeText, { color: `rgba(${theme.accRGB},0.6)` }]}>PAID PLACEMENT</Text>
+        </View>
+      </View>
+
+      <FeaturedPartnerCard place={hero.place} hero tagline={hero.tagline} />
+      {rest.map(r => (
+        <FeaturedPartnerCard key={r.placeId} place={r.place} hero={false} tagline={r.tagline} />
+      ))}
+
+      {slotsLeft > 0 && (
+        <TouchableOpacity
+          onPress={onAdvertise}
+          activeOpacity={0.8}
+          style={[featured.slotTile, { borderColor: `rgba(${theme.accRGB},0.25)` }]}
+        >
+          <Ionicons name="add-circle-outline" size={16} color={theme.acc} />
+          <Text style={[featured.slotTileText, { color: theme.acc }]}>
+            {slotsLeft} Featured {slotsLeft === 1 ? 'spot' : 'spots'} open — Feature your business
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
@@ -327,6 +432,26 @@ const adCta = StyleSheet.create({
   finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, marginTop: -2 },
   ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
+});
+
+const featured = StyleSheet.create({
+  headerRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  miniBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  miniBadgeText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
+  badge:         { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeText:     { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.6 },
+
+  heroCard:    { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 8 },
+  heroName:    { fontFamily: 'Syne', fontSize: 17, fontWeight: '700', color: '#fff', marginTop: 10 },
+  heroAddress: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  heroDesc:    { fontFamily: 'Outfit', fontSize: 12.5, lineHeight: 18, marginTop: 8 },
+
+  slotTile: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderWidth: 1, borderStyle: 'dashed', borderRadius: 12,
+    paddingVertical: 12, marginTop: 2,
+  },
+  slotTileText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700' },
 });
 
 // ─── Compact list card (Places + Also + Parks) ────────────────────
@@ -500,7 +625,7 @@ export default function VisitScreen() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackPreset, setFeedbackPreset] = useState<{ type: string; message: string }>({
     type: 'business',
-    message: "I'd like to reserve the Featured Business slot on Visit. ",
+    message: "I'd like to reserve a Featured slot on Visit. ",
   });
 
   const q = search.trim().toLowerCase();
@@ -579,10 +704,10 @@ export default function VisitScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Ad slot — stays at the top, first thing a visitor sees ── */}
-        <VisitAdCTA
-          onPress={() => {
-            setFeedbackPreset({ type: 'business', message: "I'd like to reserve the Featured Business slot on Visit. " });
+        {/* ── Featured block — every active partner, every open, first thing a visitor sees ── */}
+        <VisitFeaturedBlock
+          onAdvertise={() => {
+            setFeedbackPreset({ type: 'business', message: "I'd like to reserve a Featured slot on Visit. " });
             setFeedbackOpen(true);
           }}
         />

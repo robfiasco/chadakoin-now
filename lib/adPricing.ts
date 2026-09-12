@@ -4,13 +4,16 @@
 // iOS and web since both consume this module directly. Change a number
 // here and every surface updates together instead of drifting.
 
+import { FEATURED_PARTNERS } from '../data/featuredPartners';
+
 export const FEATURED_SLOTS = 5;
 
-// No payment/subscription backend exists — Featured Placement is sold by
-// email (the app's "Get Featured" CTAs open the feedback form, which sends
-// straight to Rob via Resend). Bump this by hand each time a slot is sold
-// or a subscription ends; same manual-update pattern as CURATED_EVENTS.
-export const FEATURED_SLOTS_FILLED = 0;
+// Featured Placement is sold by email (the app's "Get Featured" CTAs open
+// the feedback form, which sends straight to Rob via Resend) — no
+// payment/subscription backend exists. FEATURED_SLOTS_FILLED now derives
+// from the actual partner list (data/featuredPartners.ts) instead of being
+// hand-maintained separately, so the two can't drift out of sync.
+export const FEATURED_SLOTS_FILLED = FEATURED_PARTNERS.length;
 export const FEATURED_SLOTS_AVAILABLE = Math.max(0, FEATURED_SLOTS - FEATURED_SLOTS_FILLED);
 export const FEATURED_SLOTS_FULL = FEATURED_SLOTS_AVAILABLE === 0;
 
@@ -19,6 +22,11 @@ export const FEATURED_INTRO_PRICE = 59;
 export const FEATURED_OFFSEASON_PRICE = 79;
 export const FEATURED_PEAK_PRICE = 129;
 export const FEATURED_ANNUAL_PRICE = 899;
+
+// Straight public pricing for Visit's equal-visibility Featured block — no
+// seasonal tiers. The seasonal/intro numbers above stay in place for
+// Events, Sports, and Settings, which are out of scope for this change.
+export const FEATURED_FLAT_MONTHLY = 99;
 
 // Peak season: May 1 – Sep 30. Off-season: Oct 1 – Apr 30. Informational
 // copy currently lists both tiers rather than switching on the current
