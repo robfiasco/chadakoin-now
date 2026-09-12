@@ -722,6 +722,7 @@ function SportsAdCTA({ onPress }: { onPress: () => void }) {
         <Ionicons name="megaphone-outline" size={11} color={ACC.label} />
         <Text style={adCta.badgeText}>ADVERTISE HERE</Text>
       </View>
+      <Text style={adCta.title}>Your Team, Front and Center</Text>
       <Text style={adCta.body}>
         Sponsor local sports — seen when residents check scores.
       </Text>
@@ -744,6 +745,7 @@ const adCta = StyleSheet.create({
   card:      { borderWidth: 1, borderColor: `${ACC.label}48`, backgroundColor: `${ACC.label}0d`, borderRadius: 18, padding: 18, gap: 10 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1f`, borderRadius: 20 },
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: ACC.label },
+  title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25, marginBottom: 2 },
   body:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19 },
   pricingRow:{ flexDirection: 'row', gap: 8 },
   pricePill: { borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1a`, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },

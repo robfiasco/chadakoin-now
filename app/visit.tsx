@@ -11,6 +11,7 @@ import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
+import { FEATURED_INTRO_PRICE, FEATURED_ANNUAL_PRICE, FEATURED_OFFSEASON_PRICE, FEATURED_PEAK_PRICE, FEATURED_SLOTS } from '../lib/adPricing';
 import FeedbackScreen from './feedback';
 
 function openMaps(query: string) {
@@ -273,9 +274,15 @@ function VisitAdCTA({ onPress }: { onPress: () => void }) {
       </Text>
       <View style={adCta.pricingRow}>
         <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-          <Text style={[adCta.priceText, { color: theme.acc }]}>$59 / mo</Text>
+          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_INTRO_PRICE} / mo intro</Text>
+        </View>
+        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
         </View>
       </View>
+      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
+        Then ${FEATURED_OFFSEASON_PRICE}–{FEATURED_PEAK_PRICE}/mo seasonally · Only {FEATURED_SLOTS} slots available
+      </Text>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
         <Text style={adCta.ctaBtnText}>Get Featured</Text>
         <Ionicons name="arrow-forward" size={13} color="#000" />
@@ -290,9 +297,10 @@ const adCta = StyleSheet.create({
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
   title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
   body:      { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19 },
-  pricingRow:{ flexDirection: 'row', gap: 8 },
+  pricingRow:{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   pricePill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
+  finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, marginTop: -2 },
   ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
 });

@@ -3,29 +3,34 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/ThemeContext';
 import { dark } from '../lib/colors';
+import {
+  FEATURED_SLOTS, FEATURED_INTRO_PRICE, FEATURED_INTRO_NOTE, FEATURED_SEASONAL_NOTE,
+  FEATURED_ANNUAL_PRICE, FEATURED_ANNUAL_NOTE, FEATURED_WAITLIST_NOTE,
+  EVENT_BOOST_PRICES, EXTENDED_PROFILE_PRICE, BUSINESS_STORY_PRICES,
+} from '../lib/adPricing';
 
 const INCLUDES = [
   { icon: 'chatbubble-ellipses-outline' as const, text: 'A genuine local endorsement — not ad copy' },
   { icon: 'star-outline' as const,                text: 'Featured badge + top placement' },
   { icon: 'card-outline' as const,                text: 'Your listing card with photo, quote & direct links' },
-  { icon: 'calendar-outline' as const,            text: 'Monthly · renew or cancel anytime' },
-  { icon: 'people-outline' as const,              text: 'Only 5 slots available' },
+  { icon: 'calendar-outline' as const,            text: 'Monthly · renew or cancel anytime (unless on annual)' },
+  { icon: 'people-outline' as const,              text: `Only ${FEATURED_SLOTS} slots available` },
 ];
 
 export const ADDONS = [
   {
     title: 'Event Boost',
-    prices: ['$25 / 2 wks', '$45 / 30 days'],
+    prices: EVENT_BOOST_PRICES,
     desc: 'Listed in the app through your event date.',
   },
   {
     title: 'Extended Profile',
-    prices: ['$19 / mo'],
+    prices: [EXTENDED_PROFILE_PRICE],
     desc: 'Updated hours, photos & seasonal details on your listing.',
   },
   {
     title: 'Business Story',
-    prices: ['$25 / 48 hrs', '$49 / 7 days'],
+    prices: BUSINESS_STORY_PRICES,
     desc: 'A featured post on the home screen. You write it, we post it.',
   },
 ];
@@ -121,10 +126,15 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
 
       {/* ── Pricing ── */}
       <View style={[s.pricingBlock, { borderColor: `rgba(${accRGB},0.12)`, backgroundColor: `rgba(${accRGB},0.05)` }]}>
-        <Text style={[s.pricingMain, { color: acc }]}>$59<Text style={s.pricingPer}>/mo</Text></Text>
-        <Text style={s.pricingNote}>for your first 3 months</Text>
+        <Text style={[s.pricingMain, { color: acc }]}>${FEATURED_INTRO_PRICE}<Text style={s.pricingPer}>/mo</Text></Text>
+        <Text style={s.pricingNote}>{FEATURED_INTRO_NOTE}</Text>
         <View style={[s.pricingDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
-        <Text style={s.pricingThen}>Then $79/mo off-season (Oct–Apr) · $129/mo peak season (May–Sep)</Text>
+        <Text style={s.pricingThen}>{FEATURED_SEASONAL_NOTE}</Text>
+        <View style={[s.pricingDivider, { backgroundColor: `rgba(${accRGB},0.1)` }]} />
+        <View style={s.annualRow}>
+          <Text style={[s.annualPrice, { color: acc }]}>${FEATURED_ANNUAL_PRICE}<Text style={s.annualPer}>/yr</Text></Text>
+          <Text style={s.annualNote}>{FEATURED_ANNUAL_NOTE}</Text>
+        </View>
       </View>
 
       {/* ── Primary CTA ── */}
@@ -139,7 +149,7 @@ export function FeatureYourBusiness({ onContact }: { onContact?: () => void }) {
 
       {/* ── Waitlist note ── */}
       <Text style={[s.waitlistNote, { color: `rgba(${accRGB},0.45)` }]}>
-        Slots are first come, first served. If full, you'll be added to the waitlist and notified within 48 hours when one opens.
+        {FEATURED_WAITLIST_NOTE}
       </Text>
 
       {/* ── Add-ons ── */}
@@ -289,6 +299,10 @@ const s = StyleSheet.create({
   pricingNote: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
   pricingDivider: { height: 1, width: '100%', marginVertical: 8 },
   pricingThen: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 17 },
+  annualRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, justifyContent: 'center', flexWrap: 'wrap' },
+  annualPrice: { fontFamily: 'Syne', fontSize: 16, fontWeight: '700' },
+  annualPer: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '400' },
+  annualNote: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)' },
 
   // ── Button ──
   ctaBtn: {
