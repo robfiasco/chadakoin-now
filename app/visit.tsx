@@ -257,39 +257,38 @@ function OpenBadge() {
 }
 
 // ─── Ad slot — sells equal-visibility Featured placement, not one slot ──
-function VisitAdSellCard({ onPress, onViewRateCard }: { onPress: () => void; onViewRateCard: () => void }) {
+function VisitAdSellCard({ onViewRateCard }: { onViewRateCard: () => void }) {
   const { theme } = useTheme();
   return (
-    <View style={[adCta.card, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}>
-      <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
-        <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
-          <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
-          <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
+    <TouchableOpacity
+      onPress={onViewRateCard}
+      activeOpacity={0.85}
+      style={[adCta.card, adCta.cardTouchable, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
+    >
+      <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
+        <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
+        <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
+      </View>
+      <Text style={adCta.title}>Get Featured on Visit</Text>
+      <Text style={adCta.body}>
+        Up to {FEATURED_SLOTS} local partners, shown to every visitor, every time they open Visit — not just one slot at the top.
+      </Text>
+      <View style={adCta.pricingRow}>
+        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_FLAT_MONTHLY} / mo</Text>
         </View>
-        <Text style={adCta.title}>Get Featured on Visit</Text>
-        <Text style={adCta.body}>
-          Up to {FEATURED_SLOTS} local partners, shown to every visitor, every time they open Visit — not just one slot at the top.
-        </Text>
-        <View style={adCta.pricingRow}>
-          <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-            <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_FLAT_MONTHLY} / mo</Text>
-          </View>
-          <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-            <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
-          </View>
+        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
+          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
         </View>
-        <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-          {FEATURED_SCARCITY_NOTE}.
-        </Text>
-        <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
-          <Text style={adCta.ctaBtnText}>Feature This Business</Text>
-          <Ionicons name="arrow-forward" size={13} color="#000" />
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onViewRateCard} activeOpacity={0.7} style={{ marginTop: 10, alignItems: 'center' }}>
-        <Text style={[adCta.rateCardLink, { color: theme.acc }]}>See the full rate card (Founding offer) →</Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
+        {FEATURED_SCARCITY_NOTE}.
+      </Text>
+      <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
+        <Text style={adCta.ctaBtnText}>See Pricing & Founding Offer</Text>
+        <Ionicons name="arrow-forward" size={13} color="#000" />
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -361,7 +360,7 @@ function VisitFeaturedBlock({ onAdvertise, onViewRateCard }: { onAdvertise: () =
   }, []);
 
   if (partners.length === 0) {
-    return <VisitAdSellCard onPress={onAdvertise} onViewRateCard={onViewRateCard} />;
+    return <VisitAdSellCard onViewRateCard={onViewRateCard} />;
   }
 
   const hIdx = heroIndex(partners.length);
@@ -424,6 +423,7 @@ const curationFooter = StyleSheet.create({
 
 const adCta = StyleSheet.create({
   card:      { borderWidth: 1, borderRadius: 18, padding: 20, marginBottom: 12, gap: 14 },
+  cardTouchable: { gap: 14 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
   title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
@@ -434,7 +434,6 @@ const adCta = StyleSheet.create({
   finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16 },
   ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
-  rateCardLink: { fontFamily: 'Outfit', fontSize: 11.5, fontWeight: '700' },
 });
 
 const featured = StyleSheet.create({
