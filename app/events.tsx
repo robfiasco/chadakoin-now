@@ -8,7 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
-import { EVENT_BOOST_PRICES } from '../lib/adPricing';
+import { EVENT_BOOST_PRICES, EVENT_BOOST_SHORT_NOTE, EVENT_BOOST_LONG_NOTE, FEATURED_EVENT_SLOTS, FEATURED_EVENT_SLOTS_AVAILABLE } from '../lib/adPricing';
+import { FEATURED_EVENTS } from '../data/featuredEvents';
+import { heroIndex } from '../lib/featuredRotation';
 import { useTheme } from '../lib/ThemeContext';
 import { EventItem, isEventUpcomingOrOngoing } from '../hooks/useCivicData';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
@@ -522,8 +524,8 @@ const sp = StyleSheet.create({
   ctaText:    { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
 });
 
-// ── Ad slot CTA — sells the Featured spot instead of auto-filling it ──
-function EventAdCTA({ onPress }: { onPress: () => void }) {
+// ── Ad slot — sells the Events Featured carousel instead of one slot ──
+function EventAdSellCard({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
   return (
     <TouchableOpacity
@@ -537,7 +539,7 @@ function EventAdCTA({ onPress }: { onPress: () => void }) {
       </View>
       <Text style={adCta.title}>Put Your Event First</Text>
       <Text style={adCta.body}>
-        This slot stays at the top of Events — every filter, every day.
+        Up to {FEATURED_EVENT_SLOTS} featured events — top of Events, every filter.
       </Text>
       <View style={adCta.pricingRow}>
         {EVENT_BOOST_PRICES.map(p => (
@@ -546,11 +548,81 @@ function EventAdCTA({ onPress }: { onPress: () => void }) {
           </View>
         ))}
       </View>
+      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
+        {EVENT_BOOST_SHORT_NOTE} {EVENT_BOOST_LONG_NOTE}
+      </Text>
       <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
         <Text style={adCta.ctaBtnText}>Feature This Event</Text>
         <Ionicons name="arrow-forward" size={13} color="#000" />
       </View>
     </TouchableOpacity>
+  );
+}
+
+// ── Compact card for a single paid Featured Event within the carousel ──
+function FeaturedEventCard({ event }: { event: (typeof FEATURED_EVENTS)[number] }) {
+  const { theme } = useTheme();
+  return (
+    <TouchableOpacity
+      onPress={() => event.link && openLink(event.link)}
+      activeOpacity={event.link ? 0.85 : 1}
+      style={[evtCard.card, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.06)` }]}
+    >
+      <View style={[evtCard.badge, { backgroundColor: `rgba(${theme.accRGB},0.15)`, borderColor: `rgba(${theme.accRGB},0.35)` }]}>
+        <Ionicons name="star" size={8} color={theme.acc} />
+        <Text style={[evtCard.badgeText, { color: theme.acc }]}>FEATURED</Text>
+      </View>
+      <Text style={evtCard.title} numberOfLines={2}>{event.title}</Text>
+      <Text style={evtCard.when}>{event.when}</Text>
+      {event.location ? <Text style={evtCard.location} numberOfLines={1}>{event.location}</Text> : null}
+      {event.tagline ? <Text style={[evtCard.tagline, { color: `rgba(${theme.accRGB},0.7)` }]} numberOfLines={2}>{event.tagline}</Text> : null}
+    </TouchableOpacity>
+  );
+}
+
+// ── "N spots open" trailing tile inside the carousel ──
+function EventSlotOpenCard({ slotsLeft, onPress }: { slotsLeft: number; onPress: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[evtCard.card, evtCard.slotCard, { borderColor: `rgba(${theme.accRGB},0.25)` }]}
+    >
+      <Ionicons name="add-circle-outline" size={18} color={theme.acc} />
+      <Text style={[evtCard.slotText, { color: theme.acc }]}>
+        {slotsLeft} {slotsLeft === 1 ? 'spot' : 'spots'} open
+      </Text>
+      <Text style={evtCard.slotSub}>Feature your event</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ── Events Featured carousel — every active paid event, every filter.
+// Empty: one sell slide. 1-3 filled: horizontal carousel of all of them,
+// fair round-robin start order (same hour-based rotation as Visit's
+// Featured block — a pure function of time, no persisted state needed). ──
+function EventsFeaturedCarousel({ onAdvertise }: { onAdvertise: () => void }) {
+  const events = FEATURED_EVENTS.slice(0, FEATURED_EVENT_SLOTS);
+
+  if (events.length === 0) {
+    return <EventAdSellCard onPress={onAdvertise} />;
+  }
+
+  const startIdx = heroIndex(events.length);
+  const ordered = [...events.slice(startIdx), ...events.slice(0, startIdx)];
+  const slotsLeft = FEATURED_EVENT_SLOTS_AVAILABLE;
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={evtCard.row}
+      style={{ marginBottom: 12 }}
+    >
+      {ordered.map(ev => <FeaturedEventCard key={ev.title} event={ev} />)}
+      {slotsLeft > 0 && <EventSlotOpenCard slotsLeft={slotsLeft} onPress={onAdvertise} />}
+    </ScrollView>
   );
 }
 
@@ -563,8 +635,23 @@ const adCta = StyleSheet.create({
   pricingRow:{ flexDirection: 'row', gap: 8 },
   pricePill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
-  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
+  finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16 },
+  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 6 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
+});
+
+const evtCard = StyleSheet.create({
+  row:  { gap: 10, paddingRight: 4 },
+  card: { width: 220, borderWidth: 1, borderRadius: 16, padding: 14, gap: 6 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
+  badgeText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.6 },
+  title: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff', lineHeight: 18 },
+  when: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+  location: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)' },
+  tagline: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 15, marginTop: 2 },
+  slotCard: { alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', gap: 4 },
+  slotText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
+  slotSub: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.35)' },
 });
 
 // ── Day header ────────────────────────────────────────────────────
@@ -836,7 +923,7 @@ export default function EventsScreen() {
               <Ionicons name="star-outline" size={12} color={theme.acc} />
               <Text style={[styles.sectionLabel, { color: theme.acc }]}>Featured</Text>
             </View>
-            <EventAdCTA onPress={() => setAdFeedbackOpen(true)} />
+            <EventsFeaturedCarousel onAdvertise={() => setAdFeedbackOpen(true)} />
           </>
         )}
 
@@ -893,7 +980,7 @@ export default function EventsScreen() {
           <FeedbackScreen
             onClose={() => setAdFeedbackOpen(false)}
             initialType="event"
-            initialMessage="I'd like to reserve the Featured Event slot on Events. "
+            initialMessage="I'd like to reserve a Featured Event slot on Events. "
           />
         </View>
       )}

@@ -431,8 +431,8 @@ const adCta = StyleSheet.create({
   pricingRow:{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   pricePill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
-  finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16, marginTop: -2 },
-  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 4 },
+  finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16 },
+  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 6 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
   rateCardLink: { fontFamily: 'Outfit', fontSize: 11.5, fontWeight: '700' },
 });

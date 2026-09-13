@@ -26,6 +26,8 @@ import ParkingScreen from './parking';
 import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
 import { pickTopStory } from './news';
+import { HOME_SPONSOR } from '../data/homeSponsor';
+import FeedbackScreen from './feedback';
 const HERO_PHOTOS = Platform.OS === 'web'
   ? [
     { source: { uri: '/JTNY1.jpg' }, scale: 1.0, translateY: -65 },
@@ -81,6 +83,37 @@ function LiveDot({ color }: { color: string }) {
   }, []);
   return <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, opacity: pulse }} />;
 }
+
+// Home "Presented by" — a single sponsor slot, deliberately much quieter
+// than the Visit/Events/Sports ad cards: no border, no background, no
+// button chrome. A label and a name (or a discreet inquire link) is it.
+function PresentedByRow({ onInquire }: { onInquire: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <View style={presentedBy.row}>
+      <Text style={presentedBy.label}>PRESENTED BY</Text>
+      {HOME_SPONSOR ? (
+        <TouchableOpacity
+          onPress={() => HOME_SPONSOR!.website && openLink(HOME_SPONSOR!.website)}
+          activeOpacity={HOME_SPONSOR!.website ? 0.6 : 1}
+        >
+          <Text style={[presentedBy.name, { color: theme.acc }]}>{HOME_SPONSOR.name}</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity onPress={onInquire} activeOpacity={0.6}>
+          <Text style={[presentedBy.inquire, { color: `rgba(${theme.accRGB},0.4)` }]}>Inquire →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+const presentedBy = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, paddingHorizontal: 2 },
+  label: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.4, color: 'rgba(255,255,255,0.22)' },
+  name: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700' },
+  inquire: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '600' },
+});
 
 function getNextEvent(events: EventItem[]): EventItem | null {
   // Deliberately stricter than the full Events list: this feeds a single
@@ -146,6 +179,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [gasPrice, setGasPrice] = useState<{ regional: string | null; national: string | null; diff: number | null; period: string | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cityServicesOpen, setCityServicesOpen] = useState(false);
+  const [sponsorFeedbackOpen, setSponsorFeedbackOpen] = useState(false);
   const [recyclingOpen, setRecyclingOpen] = useState(false);
   const [parkingOpen, setParkingOpen] = useState(false);
   const { radioPlaying, radioLoading, nowPlaying, toggleRadio } = useRadio();
@@ -328,6 +362,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           />
         }
       >
+
+        <PresentedByRow onInquire={() => setSponsorFeedbackOpen(true)} />
 
         {/* @ts-ignore — glassWeb mixes web-only CSS props not recognized by RN StyleProp<ViewStyle> */}
         <View style={[styles.card, glassWeb, { minHeight: 160 }]}>
@@ -863,6 +899,16 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       {settingsOpen && (
         <View style={styles.overlay}>
           <SettingsScreen onClose={() => setSettingsOpen(false)} />
+        </View>
+      )}
+
+      {sponsorFeedbackOpen && (
+        <View style={styles.overlay}>
+          <FeedbackScreen
+            onClose={() => setSponsorFeedbackOpen(false)}
+            initialType="business"
+            initialMessage={'I\'m interested in the Home "Presented by" sponsor slot. '}
+          />
         </View>
       )}
 
