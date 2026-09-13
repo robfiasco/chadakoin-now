@@ -423,7 +423,7 @@ const curationFooter = StyleSheet.create({
 });
 
 const adCta = StyleSheet.create({
-  card:      { borderWidth: 1, borderRadius: 18, padding: 18, marginBottom: 12, gap: 10 },
+  card:      { borderWidth: 1, borderRadius: 18, padding: 20, marginBottom: 12, gap: 14 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
   title:     { fontFamily: 'Syne', fontSize: 19, fontWeight: '700', color: '#fff', letterSpacing: -0.3, lineHeight: 25 },
@@ -432,7 +432,7 @@ const adCta = StyleSheet.create({
   pricePill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   priceText: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700' },
   finePrint: { fontFamily: 'Outfit', fontSize: 11, lineHeight: 16 },
-  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 6 },
+  ctaBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12 },
   ctaBtnText:{ fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#000' },
   rateCardLink: { fontFamily: 'Outfit', fontSize: 11.5, fontWeight: '700' },
 });
