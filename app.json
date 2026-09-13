@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chadakoin Now",
     "slug": "chadakoin-now",
-    "version": "1.6.8",
+    "version": "1.6.9",
     "orientation": "portrait",
     "icon": "./assets/files/icon-chadakoin.png",
     "userInterfaceStyle": "dark",
