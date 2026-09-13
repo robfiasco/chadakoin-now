@@ -104,6 +104,11 @@ const SABRES_LOGO = 'https://a.espncdn.com/i/teamlogos/nhl/500/buf.png';
 const SABRES_ESPN = 'https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres';
 const JCC_LOGO    = require('../assets/jcc_logo.png');
 
+// Max rows shown in the compact "Live Now" list. Bumped from 3 to 5 so a
+// league with more tracked teams (MLB, 5 teams) can't fill every slot and
+// starve out a league with fewer (NFL, 3 teams) when both are live at once.
+const LIVE_COMPACT_CAP = 5;
+
 const ACC = {
   jcc:    '#34d399',  // emerald-400
   skunks: '#84cc16',  // lime-500
@@ -139,7 +144,11 @@ function sportEmoji(sport: string): string {
 // Browns). Never renders "0-0": a team with no completed regular-season
 // game shows its next kickoff instead of a record.
 function nflTeamStatus(t: NFLTeam): { pill?: string; pillLive?: boolean; line: string; record?: string } {
-  const record = t.record && t.record !== '0-0' ? t.record : undefined;
+  // t.record is only ever '' (never the literal string '0-0') when the
+  // fetch fails — see fetchTeamRecord in api/nfl.js — so a real 0-0 (e.g.
+  // Week 1, before anyone's played) is legitimate data, not a fetch
+  // failure, and should still show.
+  const record = t.record || undefined;
   if (t.liveGame) {
     const lg = t.liveGame;
     return {
@@ -1094,7 +1103,28 @@ export default function SportsScreen() {
   // favorites (BUF/CLE/PIT) over farther teams, then whatever's soonest.
   const nextCompactItems = useMemo((): NextUpItem[] => {
     if (nextUpItems.length === 0 && jccNextBySport.length === 0) return [];
-    if (nextUpItems[0]?.isLive) return nextUpItems.slice(0, 3);
+    if (nextUpItems[0]?.isLive) {
+      // Plain array order would let one league with several teams playing
+      // at once (e.g. 5 MLB games simultaneously) fill every slot before a
+      // league with fewer tracked teams (e.g. NFL) ever gets a turn — so
+      // interleave one game per league at a time instead of taking the
+      // first N in push order.
+      const bySport = new Map<string, NextUpItem[]>();
+      for (const item of nextUpItems) {
+        const key = item.sport.split('·').pop()?.trim() ?? item.sport;
+        if (!bySport.has(key)) bySport.set(key, []);
+        bySport.get(key)!.push(item);
+      }
+      const groups = [...bySport.values()];
+      const interleaved: NextUpItem[] = [];
+      for (let i = 0; interleaved.length < LIVE_COMPACT_CAP && groups.some(g => i < g.length); i++) {
+        for (const g of groups) {
+          if (i < g.length) interleaved.push(g[i]);
+          if (interleaved.length >= LIVE_COMPACT_CAP) break;
+        }
+      }
+      return interleaved;
+    }
 
     // JCC is one candidate among many here, not pinned first — a JCC game
     // tomorrow shouldn't bump MLB games happening today. Straight
@@ -1790,6 +1820,7 @@ export default function SportsScreen() {
                         line={s.line}
                         lineColor={s.pillLive ? '#fb7185' : undefined}
                         record={s.record}
+                        recordColor="#f59e0b"
                         pill={s.pill}
                         pillLive={s.pillLive}
                       />
