@@ -15,7 +15,7 @@ import { openLink } from '../lib/openLink';
 import { apiUrl } from '../lib/api';
 import { SKUNKS_SCHEDULE } from '../lib/skunksSchedule';
 import { useCivicData } from '../hooks/useCivicData';
-import { EVENT_BOOST_PRICES } from '../lib/adPricing';
+import { EVENT_BOOST_PRICES, AD_BADGE_LABEL } from '../lib/adPricing';
 import FeedbackScreen from './feedback';
 
 interface NextUpItem {
@@ -720,7 +720,7 @@ function SportsAdCTA({ onPress }: { onPress: () => void }) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={adCta.card}>
       <View style={adCta.badge}>
         <Ionicons name="megaphone-outline" size={11} color={ACC.label} />
-        <Text style={adCta.badgeText}>ADVERTISE HERE</Text>
+        <Text style={adCta.badgeText}>{AD_BADGE_LABEL}</Text>
       </View>
       <Text style={adCta.title}>Put Your Team First</Text>
       <Text style={adCta.body}>

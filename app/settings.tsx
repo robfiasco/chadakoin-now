@@ -257,11 +257,6 @@ const styles = StyleSheet.create({
   aboutRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   aboutLabel: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.8)', flex: 1 },
 
-  ctaCard: { padding: 18, borderRadius: 16, borderWidth: 1, marginTop: 4 },
-  ctaRow:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  ctaTitle:{ fontFamily: 'Syne', fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  ctaSub:  { fontFamily: 'Outfit', fontSize: 12, lineHeight: 17 },
-
   madeCard:  { padding: 20, gap: 12 },
   madeTitle: { fontFamily: 'Editorial', fontSize: 20, lineHeight: 26, marginBottom: 2 },
   madeBody:  { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 },

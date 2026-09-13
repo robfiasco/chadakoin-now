@@ -11,7 +11,7 @@ import { PLACES, CANNABIS_RULES, Place } from '../data/places';
 import { FEATURED_PARTNERS } from '../data/featuredPartners';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
-import { FEATURED_SLOTS, FEATURED_FLAT_MONTHLY, FEATURED_ANNUAL_PRICE, FEATURED_SCARCITY_NOTE } from '../lib/adPricing';
+import { FEATURED_SLOTS, FEATURED_FLAT_MONTHLY, FEATURED_ANNUAL_PRICE, FEATURED_SCARCITY_NOTE, AD_BADGE_LABEL } from '../lib/adPricing';
 import { heroIndex } from '../lib/featuredRotation';
 import FeedbackScreen from './feedback';
 import RateCardScreen from './rate-card';
@@ -267,7 +267,7 @@ function VisitAdSellCard({ onViewRateCard }: { onViewRateCard: () => void }) {
     >
       <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
         <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
-        <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
+        <Text style={[adCta.badgeText, { color: theme.acc }]}>{AD_BADGE_LABEL}</Text>
       </View>
       <Text style={adCta.title}>Get Featured on Visit</Text>
       <Text style={adCta.body}>
@@ -939,9 +939,4 @@ const styles = StyleSheet.create({
   cannabisFootnote: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.25)', lineHeight: 15 },
 
   emptyText: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 32 },
-
-  ctaCard: { borderWidth: 1, borderRadius: 14, padding: 16, marginTop: 16 },
-  ctaRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  ctaTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', marginBottom: 2 },
-  ctaSub:  { fontFamily: 'Outfit', fontSize: 11 },
 });

@@ -1,4 +1,6 @@
-// featured: true = highlighted card (paid placement or owner's pick)
+// featured: true = editorial curation boost (sort order only) — NOT paid
+// placement. Paid Featured partners live separately in
+// data/featuredPartners.ts; see that file for why the two are kept apart.
 
 export type PlaceCategory = 'coffee' | 'food' | 'drinks' | 'cannabis' | 'activity' | 'arts' | 'stay';
 
@@ -13,7 +15,6 @@ export interface Place {
   orderUrl?: string;       // online ordering link (e.g. DoorDash, Toast)
   hours?: string;
   featured: boolean;
-  featuredNote?: string;  // custom tagline shown on featured card
   visited?: boolean;       // personally visited — shows "Been there" badge
   lat?: number;
   lng?: number;
@@ -30,7 +31,6 @@ export const PLACES: Place[] = [
     website: 'https://www.labpressco.com/',
     hours: 'Tue–Sat 8am–9pm',
     featured: true,
-    featuredNote: 'Best coffee and food in downtown Jamestown.',
     visited: true,
     lat: 42.09711, lng: -79.24081,
   },
@@ -113,7 +113,6 @@ export const PLACES: Place[] = [
     orderUrl: 'https://www.doordash.com/store/pit-stop-pops-jamestown-42331609/105610547/',
     hours: 'Mon–Thu 12pm–6pm · Fri–Sat 12pm–9pm · Sun Closed',
     featured: true,
-    featuredNote: 'Pole-position dirty sodas. Pit lane vibes on E 2nd St.',
   },
   {
     id: 'paces',
@@ -125,7 +124,6 @@ export const PLACES: Place[] = [
     website: 'https://paces.pizza/',
     hours: 'Wed–Sat 4pm–9pm · Sun 4pm–8pm',
     featured: true,
-    featuredNote: "A Jamestown institution since 1953.",
     visited: true,
     lat: 42.09483, lng: -79.24954,
   },
@@ -261,7 +259,6 @@ export const PLACES: Place[] = [
     website: 'https://wickedwarrens.com/jamestown',
     hours: 'Daily 11:30am–10pm',
     featured: true,
-    featuredNote: 'Craft beer and wood-fired pizza downtown.',
     visited: true,
     lat: 42.09574, lng: -79.24332,
   },
@@ -339,7 +336,6 @@ export const PLACES: Place[] = [
     website: 'https://comedycenter.org',
     hours: 'Thu–Mon 10am–5pm · Tue–Wed Closed (Tue open Memorial Day–Labor Day)',
     featured: true,
-    featuredNote: 'The only museum of its kind in America.',
     visited: true,
     lat: 42.09467, lng: -79.24365,
   },
@@ -427,7 +423,6 @@ export const PLACES: Place[] = [
     website: 'https://www.thechautauquaharborhotel.com/',
     hours: 'Front desk open 24 hours',
     featured: true,
-    featuredNote: 'Lakeside hotel with marina views — 5 min from downtown.',
     lat: 42.11021, lng: -79.28518,
   },
 ];

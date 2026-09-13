@@ -206,22 +206,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   const dateBadge = getDateBadge();
 
-  const shimmerAnim = useRef(new Animated.Value(-100)).current;
-  useEffect(() => {
-    function runShimmer() {
-      shimmerAnim.setValue(-100);
-      Animated.timing(shimmerAnim, {
-        toValue: 320,
-        duration: 750,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start();
-    }
-    const first = setTimeout(runShimmer, 3000);
-    const id = setInterval(runShimmer, 15000);
-    return () => { clearTimeout(first); clearInterval(id); };
-  }, []);
-
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
     fetch(apiUrl('/api/gas')).then(r => r.json()).then(setGasPrice).catch(() => {});
@@ -953,9 +937,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 40, zIndex: 10 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  appNameWrap: { overflow: 'hidden' },
-  appName: { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
-  shimmer: { position: 'absolute', top: 0, bottom: 0, width: 80 },
   appCity: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: dark.category.city, letterSpacing: 1.8, textTransform: 'uppercase', marginTop: 4 },
   dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.3)' },
   dateBadgeText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: dark.category.city, textTransform: 'uppercase' },
@@ -1068,11 +1049,6 @@ const styles = StyleSheet.create({
   eventVenue: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 4 },
   eventCategory: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: 6 },
 
-  mediaCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
-    borderRadius: 16, padding: 12, marginBottom: 8, overflow: 'hidden',
-  },
   cdirCard: {
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
     borderRadius: 16, padding: 12, marginBottom: 8, overflow: 'hidden',
@@ -1090,7 +1066,6 @@ const styles = StyleSheet.create({
   mediaLabel: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   liveChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   liveLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '800', color: '#fb7185', letterSpacing: 1 },
-  epNumber: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', color: dark.text.subtle, letterSpacing: 0.5 },
   mediaTitle: { fontFamily: 'Editorial', fontSize: 14, color: dark.text.primary, lineHeight: 19 },
   mediaSub: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 2 },
   playBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
@@ -1099,13 +1074,10 @@ const styles = StyleSheet.create({
   factText: { fontFamily: 'Outfit', fontSize: 13, color: dark.text.primary, lineHeight: 20 },
   factMeta: { fontFamily: 'Outfit', fontSize: 10, color: dark.text.subtle, marginTop: 8 },
 
-  gasPriceRow:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
   gasPriceDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)' },
   gasPriceValue:   { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fb923c' },
   gasPriceUnit:    { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.35)' },
   gasPriceLabel:   { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 },
-  gasPricePill:    { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  gasPricePillText:{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', textAlign: 'right' },
   gasPriceCta:     { fontFamily: 'Outfit', fontSize: 12, fontWeight: '700', color: '#fb923c' },
   gasPriceMeta:    { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.2)' },
 

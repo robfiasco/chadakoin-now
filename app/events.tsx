@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { SkeletonPulse } from '../components/SkeletonPulse';
-import { EVENT_BOOST_PRICES, EVENT_BOOST_SHORT_NOTE, EVENT_BOOST_LONG_NOTE, FEATURED_EVENT_SLOTS, FEATURED_EVENT_SLOTS_AVAILABLE } from '../lib/adPricing';
+import { EVENT_BOOST_PRICES, EVENT_BOOST_SHORT_NOTE, EVENT_BOOST_LONG_NOTE, FEATURED_EVENT_SLOTS, FEATURED_EVENT_SLOTS_AVAILABLE, AD_BADGE_LABEL } from '../lib/adPricing';
 import { FEATURED_EVENTS } from '../data/featuredEvents';
 import { heroIndex } from '../lib/featuredRotation';
 import { useTheme } from '../lib/ThemeContext';
@@ -505,8 +505,6 @@ function SponsoredCard({ show }: { show: SponsoredShow }) {
 const sp = StyleSheet.create({
   card:       { backgroundColor: dark.surface, borderWidth: 1, borderRadius: 18, overflow: 'hidden', marginBottom: 12 },
   photoWrap:  { height: 240, position: 'relative', justifyContent: 'flex-end', overflow: 'hidden' },
-  featPill:   { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  featPillText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 1 },
   nameBlock:  { paddingHorizontal: 16, paddingBottom: 14, gap: 2 },
   nameLine1:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', color: '#ffffff', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
   nameLine2:  { fontFamily: 'Syne', fontSize: 28, fontWeight: '900', color: '#ffffff', letterSpacing: 1, lineHeight: 32, textTransform: 'uppercase' },
@@ -535,7 +533,7 @@ function EventAdSellCard({ onPress }: { onPress: () => void }) {
     >
       <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
         <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
-        <Text style={[adCta.badgeText, { color: theme.acc }]}>ADVERTISE HERE</Text>
+        <Text style={[adCta.badgeText, { color: theme.acc }]}>{AD_BADGE_LABEL}</Text>
       </View>
       <Text style={adCta.title}>Put Your Event First</Text>
       <Text style={adCta.body}>
@@ -1021,10 +1019,6 @@ const styles = StyleSheet.create({
 });
 
 const sk = StyleSheet.create({
-  featCard: {
-    backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
-    borderRadius: 18, overflow: 'hidden', marginBottom: 12,
-  },
   rowCard: {
     backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.border,
     borderRadius: 14, padding: 14, marginBottom: 6,
