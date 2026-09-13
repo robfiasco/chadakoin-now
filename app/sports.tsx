@@ -160,7 +160,6 @@ function nflTeamStatus(t: NFLTeam): { pill?: string; pillLive?: boolean; line: s
   if (t.games.length > 0) {
     const g = t.games[0];
     return {
-      pill: 'FINAL',
       line: `${g.won ? 'W' : 'L'} ${g.ourScore}–${g.theirScore} ${g.isHome ? 'vs' : '@'} ${g.opponentAbbr}`,
       record,
     };
@@ -1747,7 +1746,7 @@ export default function SportsScreen() {
               <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' }} style={styles.leagueIconImg} resizeMode="contain" />
             </View>
           }
-          iconSize={26}
+          iconSize={36}
           name="MLB"
           nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.mlb }}
           defaultOpen={false}
@@ -1794,7 +1793,7 @@ export default function SportsScreen() {
               <Image source={{ uri: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png' }} style={styles.leagueIconImg} resizeMode="contain" />
             </View>
           }
-          iconSize={26}
+          iconSize={36}
           name="NFL"
           nameStyle={{ fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ACC.nfl }}
           defaultOpen={false}
@@ -2057,7 +2056,7 @@ const styles = StyleSheet.create({
 
   // Official league mark (MLB/NFL) on a white backing — same reason as
   // team logos: league marks aren't designed to sit on a dark gradient.
-  leagueIconWrap: { width: 20, height: 20, borderRadius: 5, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 2 },
+  leagueIconWrap: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 3 },
   leagueIconImg:  { width: '100%', height: '100%' },
 
   // Section labels
