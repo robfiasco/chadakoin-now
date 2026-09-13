@@ -344,6 +344,31 @@ async function fetchMLB(): Promise<MLBTeam[]> {
   } catch { return []; }
 }
 
+// The team /schedule endpoint below never populates `score` for
+// in-progress games (only for completed ones) — ESPN doesn't hydrate live
+// scoring on that endpoint. The league scoreboard endpoint does, so it's
+// fetched once and used to patch in real live scores.
+async function fetchNFLScoreboard(): Promise<any> {
+  try {
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+function liveNFLScoreFromScoreboard(scoreboard: any, espnAbbr: string): { ourScore: string; theirScore: string } | null {
+  for (const event of (scoreboard?.events ?? [])) {
+    const comp = event.competitions?.[0];
+    if (comp?.status?.type?.state !== 'in') continue;
+    const competitors: any[] = comp.competitors ?? [];
+    const us = competitors.find(c => c.team?.abbreviation?.toLowerCase() === espnAbbr.toLowerCase());
+    if (!us) continue;
+    const them = competitors.find(c => c !== us);
+    return { ourScore: us.score ?? '0', theirScore: them?.score ?? '0' };
+  }
+  return null;
+}
+
 async function fetchNFL(): Promise<NFLTeam[]> {
   try {
     if (Platform.OS === 'web') {
@@ -352,6 +377,7 @@ async function fetchNFL(): Promise<NFLTeam[]> {
       const json = await res.json();
       return (json.teams ?? []) as NFLTeam[];
     }
+    const scoreboard = await fetchNFLScoreboard();
     const results = await Promise.all(NFL_TEAMS.map(async t => {
       const logo = `https://a.espncdn.com/i/teamlogos/nfl/500/${t.espnAbbr}.png`;
       try {
@@ -381,11 +407,13 @@ async function fetchNFL(): Promise<NFLTeam[]> {
                 isHome, won: us.winner === true,
               });
             } else if (state === 'in') {
+              const liveScore = liveNFLScoreFromScoreboard(scoreboard, t.espnAbbr);
               liveGame = {
                 week: event.week?.text ?? '',
                 opponent: them.team?.displayName ?? '???', opponentAbbr: them.team?.abbreviation ?? '???',
                 opponentLogo: them.team?.logo ?? '',
-                ourScore: us.score?.displayValue ?? '0', theirScore: them.score?.displayValue ?? '0',
+                ourScore: liveScore?.ourScore ?? us.score?.displayValue ?? '0',
+                theirScore: liveScore?.theirScore ?? them.score?.displayValue ?? '0',
                 isHome, clock: comp.status?.type?.shortDetail ?? '',
               };
             } else if (!nextGame && state === 'pre' && new Date(event.date) > new Date()) {

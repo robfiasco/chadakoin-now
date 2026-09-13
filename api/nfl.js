@@ -16,7 +16,32 @@ async function fetchTeamRecord(espnAbbr) {
   } catch { return ''; }
 }
 
-async function fetchTeamSchedule(espnAbbr) {
+// The team /schedule endpoint below never populates `score` for in-progress
+// games (only for completed ones) — ESPN just doesn't hydrate live scoring
+// on that endpoint. The league scoreboard endpoint does, so fetch it once
+// per request and use it to patch in real live scores.
+async function fetchScoreboard() {
+  try {
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard', { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+function liveScoreFromScoreboard(scoreboard, espnAbbr) {
+  for (const event of (scoreboard?.events ?? [])) {
+    const comp = event.competitions?.[0];
+    if (comp?.status?.type?.state !== 'in') continue;
+    const competitors = comp.competitors ?? [];
+    const us = competitors.find(c => c.team?.abbreviation?.toLowerCase() === espnAbbr.toLowerCase());
+    if (!us) continue;
+    const them = competitors.find(c => c !== us);
+    return { ourScore: us.score ?? '0', theirScore: them?.score ?? '0' };
+  }
+  return null;
+}
+
+async function fetchTeamSchedule(espnAbbr, scoreboard) {
   const empty = { games: [], nextGame: null, liveGame: null };
   try {
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${espnAbbr}/schedule`, { signal: AbortSignal.timeout(8000) });
@@ -50,13 +75,14 @@ async function fetchTeamSchedule(espnAbbr) {
           won: us.winner === true,
         });
       } else if (state === 'in') {
+        const liveScore = liveScoreFromScoreboard(scoreboard, espnAbbr);
         liveGame = {
           week: event.week?.text ?? '',
           opponent: them.team?.displayName ?? '???',
           opponentAbbr: them.team?.abbreviation ?? '???',
           opponentLogo: them.team?.logo ?? '',
-          ourScore: us.score?.displayValue ?? '0',
-          theirScore: them.score?.displayValue ?? '0',
+          ourScore: liveScore?.ourScore ?? us.score?.displayValue ?? '0',
+          theirScore: liveScore?.theirScore ?? them.score?.displayValue ?? '0',
           isHome,
           clock: comp.status?.type?.shortDetail ?? '',
         };
@@ -87,10 +113,11 @@ async function fetchTeamSchedule(espnAbbr) {
 
 export default async function handler(req, res) {
   try {
+    const scoreboard = await fetchScoreboard();
     const teams = await Promise.all(TEAMS.map(async t => {
       const [record, schedule] = await Promise.all([
         fetchTeamRecord(t.espnAbbr),
-        fetchTeamSchedule(t.espnAbbr),
+        fetchTeamSchedule(t.espnAbbr, scoreboard),
       ]);
       return {
         abbr: t.abbr,
