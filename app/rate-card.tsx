@@ -180,7 +180,6 @@ export default function RateCardScreen({ onClose }: { onClose: () => void }) {
             <View style={s.bulletList}>
               <Text style={s.bullet}>One sponsor only — not a Visit Featured slot, not a second logo strip.</Text>
               <Text style={s.bullet}>Placed near the top of Home, kept minimal — no coupon-style card.</Text>
-              <Text style={s.bullet}>Suggested pricing — final rate at Rob's discretion.</Text>
             </View>
             <TouchableOpacity
               onPress={() => inquire(`I'm interested in the Home "Presented by" sponsor slot ($${HOME_SPONSOR_MONTHLY}/mo or $${HOME_SPONSOR_ANNUAL}/yr). `)}
