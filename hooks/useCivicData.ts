@@ -1715,7 +1715,14 @@ async function fetchMychqEvents(): Promise<EventItem[]> {
   if (cached) return cached;
   try {
     const today = new Date().toISOString().split('T')[0];
-    const url = `${FEEDS.mychq}?per_page=100&start_date=${today}`;
+    const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // per_page=100 with no end_date silently truncated to the first 100
+    // events COUNTYWIDE (sorted chronologically, before local-town
+    // filtering below) — on a busy week that's used up by mid-morning on
+    // day 3, dropping same-day evening events (e.g. the Hispanic Heritage
+    // Festival, 3pm) and everything after. Scoping to a 30-day window and
+    // raising per_page keeps the whole window in a single uncapped page.
+    const url = `${FEEDS.mychq}?per_page=999&start_date=${today}&end_date=${in30Days}`;
     const res = await feedFetch(proxyUrl(url));
     if (!res.ok) throw new Error('mychq fetch failed');
     const json = await res.json();
