@@ -45,6 +45,21 @@ export function AppLoadingScreen({
   const textFade   = useRef(new Animated.Value(0)).current;
   const statusFade = useRef(new Animated.Value(0)).current;
   const pagesFade  = useRef(new Animated.Value(0)).current;
+  const glowAnim   = useRef(new Animated.Value(0)).current;
+
+  // "NOW" breathes like a neon sign that's lit and running — glow radius
+  // pulses continuously; textShadowRadius isn't a native-driver-supported
+  // prop, so this animation stays on the JS thread (useNativeDriver: false).
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 1, duration: 1400, useNativeDriver: false }),
+        Animated.timing(glowAnim, { toValue: 0, duration: 1400, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
   // Fade in on mount, mark sequence done after intro. Repeat web visitors
   // (skipIntro) get the branded animation collapsed to near-nothing — but
@@ -114,10 +129,19 @@ export function AppLoadingScreen({
 
         <Animated.View style={[styles.textWrap, { opacity: textFade }]}>
           <Text style={[styles.title, { color: titleClr }]}>CHADAKOIN</Text>
-          <View style={styles.nowRow}>
-            <Text style={[styles.title, { color: accent }]}>NOW</Text>
-            <View style={[styles.accentDot, { backgroundColor: accent }]} />
-          </View>
+          <Animated.Text
+            style={[
+              styles.title,
+              {
+                color: accent,
+                textShadowColor: accent,
+                textShadowOffset: { width: 0, height: 0 },
+                textShadowRadius: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [4, 18] }),
+              },
+            ]}
+          >
+            NOW
+          </Animated.Text>
           <View style={[styles.divider, { backgroundColor: dividerClr }]} />
           <Text style={[styles.subtitle, { color: subtitleClr }]}>JAMESTOWN · NEW YORK</Text>
         </Animated.View>
@@ -178,17 +202,6 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     textAlign: 'center',
     lineHeight: 42,
-  },
-  nowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  accentDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    marginTop: 6,
   },
   divider: {
     width: 64,
