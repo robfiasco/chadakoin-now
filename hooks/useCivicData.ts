@@ -367,6 +367,20 @@ function computeParking(): ParkingData {
   };
 }
 
+// Shared by computeParkingSchedule below and lib/reminders.ts, so the
+// winter parking reminder always agrees with what the Home/Parking screens
+// display — one rule, not two copies that can drift.
+export function sideForDate(d: Date): 'EVEN' | 'ODD' {
+  const m = d.getMonth() + 1;
+  if (m >= 11 || m <= 3) return d.getDate() % 2 === 0 ? 'EVEN' : 'ODD';
+  return m % 2 === 0 ? 'EVEN' : 'ODD';
+}
+
+export function isWinterMonth(d: Date): boolean {
+  const m = d.getMonth() + 1;
+  return m >= 11 || m <= 3;
+}
+
 // Compute 7-day schedule from today's week.
 // Daily mode (Nov–Mar): side flips by date. Monthly mode (Apr–Oct): same side all month.
 export function computeParkingSchedule() {
@@ -378,12 +392,6 @@ export function computeParkingSchedule() {
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-  function sideForDate(d: Date): 'EVEN' | 'ODD' {
-    const m = d.getMonth() + 1;
-    if (m >= 11 || m <= 3) return d.getDate() % 2 === 0 ? 'EVEN' : 'ODD';
-    return m % 2 === 0 ? 'EVEN' : 'ODD';
-  }
 
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);

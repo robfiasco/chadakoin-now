@@ -55,6 +55,13 @@
           "imageWidth": 200,
           "resizeMode": "contain"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/files/icon-chadakoin.png",
+          "color": "#0f0b08"
+        }
       ]
     ],
     "extra": {

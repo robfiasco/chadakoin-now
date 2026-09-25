@@ -1,14 +1,15 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Constants from 'expo-constants';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Animated, Easing, Share,
+  TouchableOpacity, Animated, Easing, Share, Switch, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { onboardingResetRef } from '../lib/onboardingReset';
 import { ThemedBackground } from '../components/ThemedBackground';
 import { useTheme } from '../lib/ThemeContext';
+import { useCivic } from '../lib/CivicDataContext';
 import PrivacyPolicyScreen from './privacy';
 import TermsOfUseScreen from './terms';
 import FeedbackScreen from './feedback';
@@ -17,6 +18,11 @@ import { dark } from '../lib/colors';
 import { FeatureYourBusiness } from '../components/FeatureYourBusiness';
 import DollarTrailScreen from './dollar-trail';
 import RateCardScreen from './rate-card';
+import {
+  getReminderPrefs, setReminderPref, requestNotificationPermission,
+  syncRecyclingReminders, syncParkingReminders,
+  RECYCLING_PREF_KEY, PARKING_PREF_KEY,
+} from '../lib/reminders';
 
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -31,12 +37,46 @@ const ABOUT_ROWS: { id: string; label: string; icon: IoniconName }[] = [
 
 export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const { theme, themeId, setThemeId } = useTheme();
+  const { recycling } = useCivic();
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState('general');
   const [dollarTrailOpen, setDollarTrailOpen] = useState(false);
   const [rateCardOpen, setRateCardOpen] = useState(false);
+
+  const [recyclingReminders, setRecyclingReminders] = useState(false);
+  const [parkingReminders, setParkingReminders] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+
+  useEffect(() => {
+    getReminderPrefs().then(({ recycling, parking }) => {
+      setRecyclingReminders(recycling);
+      setParkingReminders(parking);
+    });
+  }, []);
+
+  async function onToggleRecycling(next: boolean) {
+    if (next) {
+      const granted = await requestNotificationPermission();
+      if (!granted) { setPermissionDenied(true); return; }
+    }
+    setPermissionDenied(false);
+    setRecyclingReminders(next);
+    await setReminderPref(RECYCLING_PREF_KEY, next);
+    await syncRecyclingReminders(recycling);
+  }
+
+  async function onToggleParking(next: boolean) {
+    if (next) {
+      const granted = await requestNotificationPermission();
+      if (!granted) { setPermissionDenied(true); return; }
+    }
+    setPermissionDenied(false);
+    setParkingReminders(next);
+    await setReminderPref(PARKING_PREF_KEY, next);
+    await syncParkingReminders();
+  }
 
   // Theme description sheet
   const [descTheme, setDescTheme] = useState<Theme | null>(null);
@@ -124,6 +164,43 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
             })}
           </View>
         </View>
+
+        {/* ── Notifications ──────────────────────────────── */}
+        {Platform.OS !== 'web' && (
+          <>
+            <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.45)` }]}>Notifications</Text>
+            <View style={[styles.card, { borderColor: dark.border }]}>
+              <View style={styles.notifRow}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.notifLabel}>Recycling reminders</Text>
+                  <Text style={styles.notifSub}>A heads-up each collection week</Text>
+                </View>
+                <Switch
+                  value={recyclingReminders} onValueChange={onToggleRecycling}
+                  trackColor={{ false: 'rgba(255,255,255,0.08)', true: `${theme.acc}70` }}
+                  thumbColor={recyclingReminders ? theme.acc : 'rgba(255,255,255,0.3)'}
+                />
+              </View>
+              <View style={[styles.rowDivider, { backgroundColor: dark.border }]} />
+              <View style={styles.notifRow}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.notifLabel}>Winter parking reminders</Text>
+                  <Text style={styles.notifSub}>Daily, Nov–Mar — move your car by 10 AM</Text>
+                </View>
+                <Switch
+                  value={parkingReminders} onValueChange={onToggleParking}
+                  trackColor={{ false: 'rgba(255,255,255,0.08)', true: `${theme.acc}70` }}
+                  thumbColor={parkingReminders ? theme.acc : 'rgba(255,255,255,0.3)'}
+                />
+              </View>
+              {permissionDenied && (
+                <Text style={styles.notifDenied}>
+                  Notifications are off for Chadakoin Now — enable them in your device Settings to turn this on.
+                </Text>
+              )}
+            </View>
+          </>
+        )}
 
         {/* ── About ──────────────────────────────────────── */}
         <Text style={[styles.sectionLabel, { color: `rgba(${theme.accRGB},0.45)` }]}>About</Text>
@@ -256,6 +333,11 @@ const styles = StyleSheet.create({
 
   aboutRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   aboutLabel: { fontFamily: 'Outfit', fontSize: 14, color: 'rgba(255,255,255,0.8)', flex: 1 },
+
+  notifRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  notifLabel: { fontFamily: 'Outfit', fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  notifSub:   { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)' },
+  notifDenied: { fontFamily: 'Outfit', fontSize: 11, color: '#fb923c', paddingHorizontal: 16, paddingBottom: 14, lineHeight: 16 },
 
   madeCard:  { padding: 20, gap: 12 },
   madeTitle: { fontFamily: 'Editorial', fontSize: 20, lineHeight: 26, marginBottom: 2 },
