@@ -2333,7 +2333,12 @@ async function fetchNews(): Promise<NewsItem[]> {
       for (let i = 0; i + 1 < blocks.length; i += 2) {
         const headline = blocks[i].replace(/\.{2,}/g, ' ').replace(/\s+/g, ' ').trim();
         const body     = blocks[i + 1];
-        if (!headline || headline.length < 10) continue;
+        // Real WJTN headlines are short one-liners. When a story in the
+        // roundup doesn't have the expected blank-line break before its
+        // body, blocks[i] ends up being the whole story instead of just the
+        // headline — skip it rather than render an entire radio bulletin as
+        // a "headline" (this is what blew up the News tab's hero/list card).
+        if (!headline || headline.length < 10 || headline.length > 200) continue;
         if (!JAMESTOWN_TERMS.test(headline) && !JAMESTOWN_TERMS.test(body)) continue;
         wjtnItems.push({ title: headline, link, pubDate, excerpt: body, source: 'WJTN' });
         if (wjtnItems.length >= lim.wjtn) break;

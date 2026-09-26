@@ -290,7 +290,7 @@ function NewsRow({ item }: { item: NewsItem }) {
         <View style={row.inner}>
           <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.72}>
             <View style={row.topRow}>
-              <Text style={row.title}>{item.title}</Text>
+              <Text style={row.title} numberOfLines={4}>{item.title}</Text>
               <Ionicons
                 name={expanded ? 'chevron-up' : 'chevron-down'}
                 size={16}
