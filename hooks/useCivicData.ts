@@ -66,6 +66,11 @@ export interface EventItem {
   link?: string;
   imageUrl?: string;
   note?: string;
+  // Which feed this event's fields ultimately came from after merge — 'city'
+  // always wins on a cross-source duplicate (see fetchEvents' `sourced`
+  // priority order). Not rendered in the UI; exists so a duplicate's
+  // provenance is inspectable without re-deriving it from `tags`.
+  source?: string;
 }
 
 // Most events don't list an end time — assume a typical event runs a few
@@ -168,6 +173,12 @@ const FEEDS = {
   fenton: 'https://fentonhistorycenter.org/?post_type=mec-events&feed=rss2',
   mychq: 'https://mychq.org/wp-json/tribe/events/v1/events',
   jcc: 'https://www.jccjayhawks.com/composite?print=rss',
+  // Official City of Jamestown calendar (WordPress + All-in-One Event
+  // Calendar plugin). This ICS export is the highest-priority events
+  // source — see fetchCityEvents. Do NOT swap this for the site's
+  // "related events" widget scrape; that widget is known to show
+  // mis-mapped titles/times that don't match the real event permalinks.
+  cityEvents: 'https://www.jamestownny.gov/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true',
 };
 
 // Chautauqua County towns close enough to Jamestown to be relevant —
@@ -442,6 +453,43 @@ function parseIcsDate(raw: string): Date | null {
     return new Date(`${y}-${mo}-${d}T${h}:${mi}:00`);
   }
   return null;
+}
+
+// Same parsing as parseIcsDate, but returns a plain local-time string
+// ("2026-09-28T16:30:00") instead of a Date object — EventItem.startDate is
+// stored as a string everywhere else in this file, and round-tripping
+// through Date.toISOString() would convert to UTC and shift the displayed
+// time. The city ICS feed's DTSTART values are already Eastern wall-clock
+// times (as are every other source in this file), so no TZ math needed.
+function icsLocalDateTimeString(raw: string): string | null {
+  const clean = raw.replace(/.*:/, '').trim();
+  if (clean.length < 8) return null;
+  const y = clean.slice(0,4), mo = clean.slice(4,6), d = clean.slice(6,8);
+  const h = clean.slice(9,11) || '00', mi = clean.slice(11,13) || '00';
+  return `${y}-${mo}-${d}T${h}:${mi}:00`;
+}
+
+// myCHQ's Facebook-cross-posted event bodies commonly use a "📅 date/time"
+// line immediately followed by a "📍 location" line. Used as a fallback
+// when myCHQ's structured venue schema is a known-bad generic placeholder
+// (see fetchMychqEvents) — the body text is the trustworthy value in that
+// case, not the schema.
+function extractPinLocationFromBody(html: string): string | null {
+  // Preserve emoji alt text before stripping tags — myCHQ renders emoji as
+  // <img alt="📍">, and a plain tag-strip would silently drop it.
+  const withEmojis = html.replace(/<img[^>]*alt="([^"]*)"[^>]*\/?>/g, '$1');
+  const plain = withEmojis
+    .replace(/<\/(div|p)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&#8217;/g, '’').replace(/&nbsp;/g, ' ');
+  const lines = plain.split('\n').map(l => l.trim()).filter(Boolean);
+  const dateIdx = lines.findIndex(l => l.includes('📅'));
+  if (dateIdx === -1) return null;
+  const next = lines[dateIdx + 1];
+  if (!next || !next.includes('📍')) return null;
+  const loc = next.replace('📍', '').trim();
+  return loc || null;
 }
 
 function recyclingEmoji(lower: string): string {
@@ -1574,10 +1622,14 @@ const CURATED_EVENTS: EventItem[] = [
   { title: "Historic Walking Tour: Jamestown's Hidden Alleys", startDate: '2026-08-22T10:00:00', location: 'Downtown Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
   { title: 'Historic Walking Tour: Military Tour at Lake View Cemetery', startDate: '2026-08-29T10:00:00', location: 'Lake View Cemetery, Jamestown', category: 'Community', tags: ['Fenton History Center', 'Walking Tour', 'History'], link: 'https://www.fentonhistorycenter.org' },
 
-  // — City Council meeting schedule (not covered by any RSS/ICS feed) ————————
-  { title: 'City Council Work Session', startDate: '2026-09-14T19:30:00', location: 'Police Training Room, 4th Floor, Municipal Building, 200 E. 3rd St., Jamestown', category: 'Civic', tags: ['City Council', 'Government'], link: 'https://www.jamestownny.gov/city-council/meeting-schedule/' },
-  { title: 'City Council Work Session', startDate: '2026-09-21T19:30:00', location: 'Police Training Room, 4th Floor, Municipal Building, 200 E. 3rd St., Jamestown', category: 'Civic', tags: ['City Council', 'Government'], link: 'https://www.jamestownny.gov/city-council/meeting-schedule/' },
-  { title: 'City Council Voting Session', startDate: '2026-09-28T19:30:00', location: 'City Council Chambers, 2nd Floor, Municipal Building, 200 E. 3rd St., Jamestown', category: 'Civic', tags: ['City Council', 'Government'], link: 'https://www.jamestownny.gov/city-council/meeting-schedule/' },
+  // City Council meeting schedule used to be hand-maintained here ("not
+  // covered by any RSS/ICS feed") — it now is, via fetchCityEvents(), which
+  // also goes further out than these 3 dates ever did. Removed: when a
+  // hardcoded entry here exactly matches a live-fetched one (same day, same
+  // title), mergeCurated's two exclusion passes both fire — the fetched
+  // copy gets dropped as "superseded by curated" while the curated copy
+  // gets dropped as "already covered by fetched" — and the event vanishes
+  // from Events entirely. Found via the real Sep 28, 2026 Voting Session.
 
   // — Daniel Feather Memorial 5K (mychq lists this under a generic "Striders
   // Runner of the Year Series" title with venue "Multiple Venues", which gets
@@ -1593,13 +1645,14 @@ async function fetchEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('events_v2', TTL.events);
   if (cached) return cached;
 
-  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, mychqEvents, jccEvents] = await Promise.all([
+  const [wrfaEvents, libraryContent, regLennaEvents, fentonEvents, mychqEvents, jccEvents, cityEvents] = await Promise.all([
     fetchWrfaEvents(),
     fetchLibraryContent(),
     fetchRegLennaEvents(),
     fetchFentonEvents(),
     fetchMychqEvents(),
     fetchJCCEvents(),
+    fetchCityEvents(),
   ]);
   const libraryEvents = libraryContent.events;
 
@@ -1648,8 +1701,14 @@ async function fetchEvents(): Promise<EventItem[]> {
   const seen = new Set<string>();
   const merged: (EventItem & { _source: string })[] = [];
 
-  // Priority: Reg Lenna (structured) → Fenton → JCC → mychq → Library → WRFA → BPU
+  // Priority: City of Jamestown (authoritative) → Reg Lenna (structured) →
+  // Fenton → JCC → mychq → Library → WRFA → BPU. City is first so its
+  // fields win wholesale (title, start/end time, venue, description) on
+  // any cross-source duplicate — see isSameEvent below, and the `merged`
+  // loop, which keeps the FIRST-seen object for a given event and just
+  // discards later duplicates rather than merging field-by-field.
   const sourced = [
+    ...cityEvents.map(e => ({ ...e, _source: 'city' })),
     ...regLennaEvents.map(e => ({ ...e, _source: 'reglenna' })),
     ...fentonEvents.map(e => ({ ...e, _source: 'fenton' })),
     ...jccEvents.map(e => ({ ...e, _source: 'jcc' })),
@@ -1679,7 +1738,7 @@ async function fetchEvents(): Promise<EventItem[]> {
   const result: EventItem[] = merged
     .filter(e => new Date(e.startDate) >= cutoff)
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-    .map(({ _source, ...e }) => e);
+    .map(({ _source, ...e }) => ({ ...e, source: _source }));
 
   await setCache('events_v2', result);
   return result;
@@ -1718,6 +1777,90 @@ function mergeCurated(fetched: EventItem[]): EventItem[] {
   return combined.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 }
 
+// City of Jamestown's official calendar (ICS export from the WordPress
+// All-in-One Event Calendar plugin) — the authoritative source for city
+// meetings, hearings, and civic events. This is the HIGHEST-priority
+// events source: see the `sourced` priority order in fetchEvents, where
+// city is listed first so its fields win wholesale on any cross-source
+// duplicate (title, start/end time, venue, description).
+async function fetchCityEvents(): Promise<EventItem[]> {
+  const cached = await getCached<EventItem[]>('cityEvents', TTL.events);
+  if (cached) return cached;
+  try {
+    const res = await feedFetch(proxyUrl(FEEDS.cityEvents));
+    if (!res.ok) throw new Error(`City ICS fetch failed: ${res.status}`);
+    const text = await res.text();
+
+    const eventRx = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
+    // Captures the full property key (with params, e.g. "DTSTART;VALUE=DATE"
+    // or "DTSTART;TZID=America/New_York") so callers can branch on params.
+    const fieldRx = /^([A-Z][A-Z0-9\-]*(?:;[^:]+)?):(.*)/;
+
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+
+    const events: EventItem[] = [];
+    let m;
+    while ((m = eventRx.exec(text)) !== null) {
+      const unfolded = m[1].replace(/\r?\n[ \t]/g, '');
+      const lines = unfolded.split(/\r?\n/);
+
+      let summary = '', dtstartKey = '', dtstart = '', dtend = '';
+      let location = '', description = '', url = '';
+      for (const line of lines) {
+        const fm = fieldRx.exec(line);
+        if (!fm) continue;
+        const [, rawKey, rawVal] = fm;
+        // X-ALT-DESC (rich-HTML description) is double-backslash-escaped by
+        // this feed's ICS generator in a way that doesn't survive a clean
+        // unescape, and is often just a wrapped flyer <img> anyway —
+        // DESCRIPTION is the reliable plain-text field, so it's the only
+        // one read for notes.
+        const k = rawKey.split(';')[0].toUpperCase();
+        const val = rawVal.replace(/\\,/g, ',').replace(/\\n/g, '\n').trim();
+        if (k === 'SUMMARY')     summary = val;
+        if (k === 'DTSTART')   { dtstart = val; dtstartKey = rawKey.toUpperCase(); }
+        if (k === 'DTEND')      dtend = val;
+        if (k === 'LOCATION')   location = val;
+        if (k === 'DESCRIPTION') description = val;
+        if (k === 'URL')        url = val;
+      }
+      if (!summary || !dtstart) continue;
+      // All-day entries in this feed are holiday closures/observances
+      // ("City Hall Closed", "Daylight Savings"), not events residents
+      // would browse — skip them, keep only real timed meetings/events.
+      if (dtstartKey.includes('VALUE=DATE')) continue;
+
+      const start = icsLocalDateTimeString(dtstart);
+      if (!start) continue;
+      const end = icsLocalDateTimeString(dtend) ?? undefined;
+      if (new Date(start) < cutoff) continue;
+
+      let note = description;
+      if (note.length > 400) note = note.slice(0, 400).trimEnd() + '…';
+
+      events.push({
+        title: summary,
+        startDate: start,
+        endDate: end,
+        location: location || 'Jamestown, NY',
+        category: 'Civic',
+        tags: ['City of Jamestown'],
+        link: url || undefined,
+        note: note || undefined,
+        source: 'city',
+      });
+    }
+
+    await setCache('cityEvents', events);
+    return events;
+  } catch {
+    const stale = await AsyncStorage.getItem(`${CACHE_PREFIX}cityEvents`);
+    if (stale) { try { return JSON.parse(stale).data ?? []; } catch { return []; } }
+    return [];
+  }
+}
+
 async function fetchMychqEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('mychq', TTL.events);
   if (cached) return cached;
@@ -1740,16 +1883,32 @@ async function fetchMychqEvents(): Promise<EventItem[]> {
       .map((e: any) => {
         const category = e.categories?.[0]?.name ? stripHtml(e.categories[0].name) : 'Community';
         const venueName = e.venue?.venue ? stripHtml(e.venue.venue) : '';
+        const address = e.venue?.address ? stripHtml(e.venue.address) : '';
         const city = e.venue?.city ? stripHtml(e.venue.city) : '';
+
+        // Known bug: some myCHQ events are tagged to a generic catch-all
+        // "Downtown Jamestown, 19 W 3rd St" venue record that doesn't
+        // reflect where the event actually is — the poster's body text
+        // (cross-posted from Facebook, "📅 ... / 📍 ...") is the correct
+        // source in that specific case. Only overrides for this exact
+        // placeholder venue, so correctly-tagged events are untouched.
+        const isGenericPlaceholderVenue = venueName === 'Downtown Jamestown' && address === '19 W 3rd St';
+        const bodyLocation = isGenericPlaceholderVenue ? extractPinLocationFromBody(e.description ?? '') : null;
+
+        const location = bodyLocation
+          || [venueName, city].filter(Boolean).join(', ')
+          || 'Chautauqua County';
+
         return {
           title: stripHtml(e.title ?? ''),
           startDate: (e.start_date ?? '').replace(' ', 'T'),
           endDate: (e.end_date ?? e.start_date ?? '').replace(' ', 'T'),
-          location: [venueName, city].filter(Boolean).join(', ') || 'Chautauqua County',
+          location,
           category,
           tags: [category],
           link: e.url || undefined,
           imageUrl: e.image?.url || undefined,
+          source: 'mychq',
         } as EventItem;
       })
       .filter((e: EventItem) => e.title && e.startDate);
