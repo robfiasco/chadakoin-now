@@ -71,15 +71,47 @@ const STATUS_COLORS: Record<ServiceStatus, string> = {
   'year-round': dark.category.city,   // cyan
 };
 
-function StatusPill({ status }: { status: ServiceStatus }) {
+function StatusPill({ status, label }: { status: ServiceStatus; label?: string }) {
   const color = STATUS_COLORS[status];
   const pulse = status === 'active' || status === 'imminent';
   return (
     <View style={[pill.wrap, { borderColor: `${color}40`, backgroundColor: `${color}18` }]}>
       {pulse && <PulsingDot color={color} size={6} />}
-      <Text style={[pill.text, { color }]}>{STATUS_LABELS[status]}</Text>
+      <Text style={[pill.text, { color }]}>{label ?? STATUS_LABELS[status]}</Text>
     </View>
   );
+}
+
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Site hours (per jamestownnybpu.gov/233/Yard-Waste): Saturdays Apr 11–Nov
+// 14, 7am–1pm; Wednesdays May 13–Sep 30, 4pm–7pm. Boundaries use the
+// current year so this keeps working next year without edits, as long as
+// BPU republishes similar month/day windows — update YARD_WASTE_SAT_CLOSURES
+// annually, same as the recycling holiday lists in useCivicData.ts.
+const YARD_WASTE_SAT_CLOSURES = ['2026-05-30', '2026-07-11', '2026-09-12']; // Saturdays after summer holidays
+
+function computeYardWasteService(base: CityService): CityService {
+  const now = new Date();
+  const todayKey = localDateKey(now);
+  const dow = now.getDay(); // 0=Sun..6=Sat, 3=Wed
+  const hour = now.getHours();
+  const y = now.getFullYear();
+
+  const satSeason = now >= new Date(y, 3, 11) && now <= new Date(y, 10, 14, 23, 59, 59);
+  const wedSeason = now >= new Date(y, 4, 13) && now <= new Date(y, 8, 30, 23, 59, 59);
+  const openSatNow = dow === 6 && satSeason && !YARD_WASTE_SAT_CLOSURES.includes(todayKey) && hour >= 7 && hour < 13;
+  const openWedNow = dow === 3 && wedSeason && hour >= 16 && hour < 19;
+
+  if (openSatNow || openWedNow) {
+    return { ...base, status: 'active', badgeLabel: 'OPEN NOW', defaultExpanded: true };
+  }
+  if (satSeason) {
+    return { ...base, status: 'coming-up', badgeLabel: 'OPEN SAT 7AM–1PM', defaultExpanded: false };
+  }
+  return { ...base, status: 'coming-up', badgeLabel: 'CLOSED FOR SEASON', defaultExpanded: false };
 }
 
 const pill = StyleSheet.create({
@@ -117,7 +149,7 @@ function ServiceCard({ service }: { service: CityService }) {
             <Text style={svc.title}>{service.title}</Text>
             <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]}>{service.summary}</Text>
           </View>
-          <StatusPill status={service.status} />
+          <StatusPill status={service.status} label={service.badgeLabel} />
           <Ionicons
             name={expanded ? 'chevron-up' : 'chevron-down'}
             size={13}
@@ -244,11 +276,16 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
 
-  const allServices = dpw && dpw.items.length > 0 ? [buildDpwService(dpw), ...CITY_SERVICES] : CITY_SERVICES;
+  const servicesWithComputed = CITY_SERVICES.map(s => s.id === 'yardwaste' ? computeYardWasteService(s) : s);
+  const allServices = dpw && dpw.items.length > 0 ? [buildDpwService(dpw), ...servicesWithComputed] : servicesWithComputed;
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  // Date-only expiresAfter strings (e.g. '2026-09-30') parse as UTC midnight
+  // via `new Date(...)` — in Eastern time that's 4-5 hours before local
+  // midnight, so a card could expire hours early. Compare as local date
+  // strings instead, which sidesteps the UTC conversion entirely.
+  const todayKey = localDateKey(new Date());
   const filtered = allServices.filter(s => {
-    if (s.expiresAfter && today > new Date(s.expiresAfter)) return false;
+    if (s.expiresAfter && todayKey > s.expiresAfter) return false;
     return filter === 'all' || s.status === filter || (filter === 'coming-up' && s.status === 'imminent');
   });
 

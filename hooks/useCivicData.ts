@@ -1639,6 +1639,13 @@ const CURATED_EVENTS: EventItem[] = [
 
   { title: 'Tailgate Party ft. Special Guest Mark Kelso', startDate: '2026-09-13T11:00:00', endDate: '2026-09-13T20:00:00', location: 'The Empty Pint, Lakewood', category: 'Sports & Recreation', tags: ['Bills', 'Tailgate', 'Lakewood'], note: 'Meet Mark Kelso + autograph signing · pregame beer pong · tailgate food · halftime wing-eating contest · Buffalo merch vendor on site', link: 'https://lakewood.stbcbeer.com' },
   { title: 'Bemus Point Fall Fest', startDate: '2026-09-18T10:00:00', endDate: '2026-09-20T17:00:00', location: 'Bemus Point, NY', category: 'Festival', tags: ['Bemus Point', 'Fall Fest', 'Street Market'], note: 'Street market (70+ vendors, Fri–Sun 10–5) · Draw-a-Leaf discounts around the village · classic car cruise-in Sat 12–5 · petting zoo & face painting · beer garden Fri–Sun · last weekend for the Bemus-Stow ferry' },
+
+  // — Chautauqua County Mobile Health Clinic stops (no RSS/ICS feed found on
+  // chautauquacountyny.gov's Drupal events pages — added here like the
+  // other hand-maintained entries above). Service lists differ per stop per
+  // the county's own event pages — not copy-pasted identically.
+  { title: 'Mobile Health Clinic — Love Elementary', startDate: '2026-10-08T10:00:00', endDate: '2026-10-08T15:00:00', location: 'Love Elementary School, 50 E 8th St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Mobile Health Clinic'], note: 'Free: childhood immunizations (appt required), child development screenings, breastfeeding support, STD education, blood pressure screenings. Call 716-753-4491.', link: 'https://chautauquacountyny.gov/public-health/event/jamestown-mobile-health-clinic-love-school-1' },
+  { title: 'Mobile Health Clinic — Salvation Army / Food Express', startDate: '2026-10-28T10:00:00', endDate: '2026-10-28T15:30:00', location: 'Salvation Army (Food Express), 83 S Main St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Mobile Health Clinic'], note: 'Free: immunizations (appt required), Narcan/fentanyl test strips, STD education, condoms, breastfeeding support, screenings. Call 716-753-4491.', link: 'https://chautauquacountyny.gov/public-health/event/jamestown-mobile-health-clinic-food-express-4' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {

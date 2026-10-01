@@ -26,6 +26,11 @@ export interface CityService {
   tip?: string;
   links?: { label: string; url: string }[];
   expiresAfter?: string; // ISO date — card hidden after this date (e.g. '2026-05-13')
+  // Overrides the generic STATUS_LABELS[status] text in StatusPill — for a
+  // card whose status needs more precision than the shared 4-value enum
+  // gives (e.g. yard waste: "OPEN SAT 7AM–1PM" vs. a flat "OPEN NOW" that's
+  // wrong half the week). Computed at render time; see city-services.tsx.
+  badgeLabel?: string;
 }
 
 export const CITY_SERVICES: CityService[] = [
