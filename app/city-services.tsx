@@ -114,6 +114,19 @@ function computeYardWasteService(base: CityService): CityService {
   return { ...base, status: 'coming-up', badgeLabel: 'CLOSED FOR SEASON', defaultExpanded: false };
 }
 
+// Nov 3, 2026 General Election — badge text advances through the calendar
+// instead of staying a static "REGISTER BY OCT 24" that goes stale the
+// moment that date passes (same staleness bug this whole pass started
+// from — see computeYardWasteService above).
+function computeElection2026Service(base: CityService): CityService {
+  const todayKey = localDateKey(new Date());
+  let badgeLabel = 'REGISTER BY OCT 24';
+  if (todayKey >= '2026-11-03') badgeLabel = 'VOTE TODAY';
+  else if (todayKey >= '2026-11-02') badgeLabel = 'VOTE TOMORROW';
+  else if (todayKey >= '2026-10-24') badgeLabel = 'EARLY VOTING NOW';
+  return { ...base, badgeLabel };
+}
+
 const pill = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, flexShrink: 0 },
   text: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
@@ -276,7 +289,11 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
 
-  const servicesWithComputed = CITY_SERVICES.map(s => s.id === 'yardwaste' ? computeYardWasteService(s) : s);
+  const servicesWithComputed = CITY_SERVICES.map(s => {
+    if (s.id === 'yardwaste') return computeYardWasteService(s);
+    if (s.id === 'election2026') return computeElection2026Service(s);
+    return s;
+  });
   const allServices = dpw && dpw.items.length > 0 ? [buildDpwService(dpw), ...servicesWithComputed] : servicesWithComputed;
 
   // Date-only expiresAfter strings (e.g. '2026-09-30') parse as UTC midnight
