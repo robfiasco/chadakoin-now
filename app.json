@@ -14,7 +14,7 @@
     "ios": {
       "bundleIdentifier": "com.chadakoinnow",
       "appleTeamId": "3UM77ULJKQ",
-      "buildNumber": "37",
+      "buildNumber": "38",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
