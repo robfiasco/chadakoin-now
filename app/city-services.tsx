@@ -117,13 +117,30 @@ function computeYardWasteService(base: CityService): CityService {
 // Nov 3, 2026 General Election — badge text advances through the calendar
 // instead of staying a static "REGISTER BY OCT 24" that goes stale the
 // moment that date passes (same staleness bug this whole pass started
-// from — see computeYardWasteService above).
+// from — see computeYardWasteService above). Dates are local-device
+// calendar dates (localDateKey), same ET assumption every other computed
+// card in this file already makes — this app's whole audience is in
+// Jamestown, NY. No unit test harness in this repo to force dates against,
+// so the 4 phases are spelled out here instead:
+//   < Oct 24            "REGISTER BY OCT 24" — registration must be
+//                        RECEIVED by this date (not postmarked).
+//   Oct 24 – Nov 1       "EARLY VOTING OPEN" — the actual early-voting
+//                        window (confirmed against the county's own
+//                        early-voting page: Sat/Sun 9am-5pm, Mon/Tue
+//                        noon-8pm, Wed-Fri 10am-6pm, repeating).
+//   Nov 2 (no voting)    "VOTE TOMORROW" — early voting sites are closed
+//                        the day before an election; Election Day hasn't
+//                        started yet either.
+//   >= Nov 3             "VOTE TODAY" — polls are open 6am-9pm. The card
+//                        itself expires after Nov 3 (expiresAfter on the
+//                        data entry), so this label is only ever seen on
+//                        Election Day itself, never stale afterward.
 function computeElection2026Service(base: CityService): CityService {
   const todayKey = localDateKey(new Date());
   let badgeLabel = 'REGISTER BY OCT 24';
   if (todayKey >= '2026-11-03') badgeLabel = 'VOTE TODAY';
   else if (todayKey >= '2026-11-02') badgeLabel = 'VOTE TOMORROW';
-  else if (todayKey >= '2026-10-24') badgeLabel = 'EARLY VOTING NOW';
+  else if (todayKey >= '2026-10-24') badgeLabel = 'EARLY VOTING OPEN';
   return { ...base, badgeLabel };
 }
 
@@ -173,6 +190,16 @@ function ServiceCard({ service }: { service: CityService }) {
 
       {expanded && (
         <View style={[svc.expanded, { borderTopColor: `rgba(${rgb},0.1)` }]}>
+          {service.primaryLink && (
+            <TouchableOpacity
+              style={[svc.primaryCta, { backgroundColor: service.badgeColor }]}
+              activeOpacity={0.85}
+              onPress={() => openLink(service.primaryLink!.url)}
+            >
+              <Text style={svc.primaryCtaText}>{service.primaryLink.label}</Text>
+              <Ionicons name="arrow-forward" size={14} color="#fff" />
+            </TouchableOpacity>
+          )}
           {service.details.length > 0 && (
             <View style={svc.detailGrid}>
               {service.details.map(d => (
@@ -273,6 +300,13 @@ const svc = StyleSheet.create({
   linksHeader: { fontFamily: 'DMSans_600SemiBold', fontSize: 9, letterSpacing: 1.5, marginBottom: 2 },
   linkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   linkText: { fontFamily: 'DMSans_500Medium', fontSize: 12, flex: 1, lineHeight: 17 },
+
+  // Filled, not outlined like linkRow — the one obvious "do this now"
+  // action on a card gets more visual weight than the reference-link list
+  // below it. Solid badgeColor fill + white text, so this reads as a
+  // button, not another list row.
+  primaryCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, paddingVertical: 12, marginBottom: 12 },
+  primaryCtaText: { fontFamily: 'DMSans_600SemiBold', fontSize: 13, color: '#fff' },
 });
 
 const FILTERS: { id: FilterOption; label: string }[] = [

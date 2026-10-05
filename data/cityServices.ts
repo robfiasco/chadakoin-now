@@ -31,6 +31,11 @@ export interface CityService {
   // gives (e.g. yard waste: "OPEN SAT 7AM–1PM" vs. a flat "OPEN NOW" that's
   // wrong half the week). Computed at render time; see city-services.tsx.
   badgeLabel?: string;
+  // One prominent filled button, rendered above the regular detail grid —
+  // for a card with one obvious "do this now" action (e.g. the election
+  // card's voter-registration lookup) that shouldn't get lost in the plain
+  // "MAPS & DOCUMENTS" links list below it. Optional; most cards don't need it.
+  primaryLink?: { label: string; url: string };
 }
 
 export const CITY_SERVICES: CityService[] = [
@@ -162,7 +167,7 @@ export const CITY_SERVICES: CityService[] = [
     icon: 'checkbox-outline',
     title: 'Nov 3 General Election',
     badge: 'REGISTER BY OCT 24',
-    badgeColor: '#818cf8',
+    badgeColor: '#1e3a8a', // deep navy — civic, card-only accent, not the app's bright-cyan "city" color
     status: 'active',
     summary: 'Register by Sat Oct 24 · Early voting Oct 24–Nov 1 · Election Day Tue Nov 3, 6am–9pm',
     details: [
@@ -175,10 +180,16 @@ export const CITY_SERVICES: CityService[] = [
       { label: 'Board of Elections', value: '716-753-4580 · vote@chqgov.com · 7 N Erie St, Mayville' },
     ],
     tip: 'Early voting lets you skip Election Day lines — any county site works, not just your assigned precinct.',
+    // Primary CTA: the actual interactive NYS BOE lookup tool (confirmed
+    // live — "Poll Site Search, Voter Registration, and Mail Ballot
+    // Tracker"), not the static info page. That stays below as a
+    // secondary reference link, alongside county early-voting/mail-ballot
+    // pages and BOE contact (details row above).
+    primaryLink: { label: 'Check if you’re registered', url: 'https://voterlookup.elections.ny.gov/' },
     links: [
-      { label: 'Registration & voting deadlines', url: 'https://elections.ny.gov/registration-and-voting-deadlines' },
       { label: 'Early voting sites & hours', url: 'https://chautauquacountyny.gov/board-of-elections/Early-Voting-Information' },
       { label: 'Request a mail ballot', url: 'https://chautauquacountyny.gov/board-elections/requesting-ballot' },
+      { label: 'Registration & voting deadlines', url: 'https://elections.ny.gov/registration-and-voting-deadlines' },
     ],
     expiresAfter: '2026-11-03',
   },
