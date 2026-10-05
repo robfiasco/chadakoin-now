@@ -66,3 +66,4 @@ These are not committed — just tracking for future discussion:
 - **Snow emergency mode** — Full-screen override UI when a snow emergency is declared
 - **Address-specific pickup** — BPU has zone-based schedules; could personalize by address
 - **Offline-first** — Cache all data on last successful fetch, show "last updated" prominently
+- **Spanish language option** — Jamestown has a sizable Puerto Rican/Latino population; in-app content only (UI chrome + translated headlines), not third-party article pages. Two phases: (1) static UI strings + a LanguageContext mirroring ThemeContext — bounded, one-time; (2) live headline translation via API at the news/events fetch point in useCivicData.ts — ongoing cost/dependency since headlines change daily, not a one-time job
