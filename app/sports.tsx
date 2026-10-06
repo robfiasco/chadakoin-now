@@ -64,6 +64,8 @@ interface MLBTeam {
   liveGame?: MLBLiveGame | null;
   communityPick?: string;
   inPostseason?: boolean;
+  postseasonRound?: string | null;
+  seriesRecord?: string | null;
 }
 
 // MLB team ID → ESPN CDN abbreviation (reliable fallback when API omits abbreviation)
@@ -74,6 +76,16 @@ const MLB_ID_ESPN: Record<number, string> = {
   134:'pit', 135:'sd',  136:'sea', 137:'sf',  138:'stl',
   139:'tb',  140:'tex', 141:'tor', 142:'min', 143:'phi',
   144:'atl', 145:'cws', 146:'mia', 147:'nyy', 158:'mil',
+};
+// MLB's own seriesDescription strings, shortened to fit a status-pill label.
+const MLB_ROUND_LABELS: Record<string, string> = {
+  'AL Wild Card Series':     'AL WILD CARD',
+  'NL Wild Card Series':     'NL WILD CARD',
+  'AL Division Series':      'ALDS',
+  'NL Division Series':      'NLDS',
+  'AL Championship Series':  'ALCS',
+  'NL Championship Series':  'NLCS',
+  'World Series':            'WORLD SERIES',
 };
 interface PlayoffSeries {
   round: number; roundLabel: string;
@@ -272,7 +284,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         // gameType R = regular season only — include postseason rounds (Wild
         // Card/Division/League Championship/World Series) too, or this stays
         // frozen on a team's last regular-season result through October.
-        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
+        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue,seriesStatus`;
         const [res, statsRes] = await Promise.all([
           fetch(scheduleUrl),
           fetch(`https://statsapi.mlb.com/api/v1/teams/${t.id}/stats?stats=season&group=hitting,pitching&season=${year}`),
@@ -294,10 +306,21 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         let nextGame: MLBNextGame | null = null;
         let liveGame: MLBLiveGame | null = null;
         let inPostseason = false;
+        let postseasonRound: string | null = null;
+        let seriesRecord: string | null = null;
         for (const dateObj of (json.dates ?? [])) {
           for (const g of (dateObj.games ?? [])) {
             const state = g.status?.detailedState ?? '';
-            if (g.gameType && g.gameType !== 'R') inPostseason = true;
+            if (g.gameType && g.gameType !== 'R') {
+              inPostseason = true;
+              postseasonRound = MLB_ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? postseasonRound;
+              const ss = g.seriesStatus;
+              if (ss) {
+                const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
+                const weAreLeadOrTied = !ss.winningTeam || ss.winningTeam.id === t.id;
+                seriesRecord = weAreLeadOrTied ? `${wins}-${losses}` : `${losses}-${wins}`;
+              }
+            }
             if (state === 'Final' || state === 'Completed Early') {
               const weAreHome = g.teams?.home?.team?.id === t.id;
               const us   = weAreHome ? g.teams.home : g.teams.away;
@@ -344,7 +367,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         return {
           ...t,
           games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
-          nextGame, liveGame, inPostseason,
+          nextGame, liveGame, inPostseason, postseasonRound, seriesRecord,
           record: standing?.record ?? '',
           divisionRank: standing?.divisionRank,
           gamesBack: standing?.gamesBack,
@@ -1782,8 +1805,9 @@ export default function SportsScreen() {
                       name={t.name}
                       line={t.liveGame ? `LIVE · ${t.liveGame.ourScore}–${t.liveGame.theirScore}` : mlbLastOrNext(t, alreadyInNext)}
                       lineColor={t.liveGame ? '#fb7185' : undefined}
-                      record={t.record}
+                      record={t.inPostseason && t.seriesRecord ? t.seriesRecord : t.record}
                       recordColor="#f59e0b"
+                      pill={t.inPostseason && t.postseasonRound ? t.postseasonRound : undefined}
                     />
                   );
                 })}

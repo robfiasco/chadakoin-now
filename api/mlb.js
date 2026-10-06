@@ -9,6 +9,17 @@ const TEAMS = [
   { id: 147, name: 'Yankees',   abbr: 'NYY' },
 ];
 
+// MLB's own seriesDescription strings, shortened to fit a status-pill label.
+const ROUND_LABELS = {
+  'AL Wild Card Series':     'AL WILD CARD',
+  'NL Wild Card Series':     'NL WILD CARD',
+  'AL Division Series':      'ALDS',
+  'NL Division Series':      'NLDS',
+  'AL Championship Series':  'ALCS',
+  'NL Championship Series':  'NLCS',
+  'World Series':            'WORLD SERIES',
+};
+
 async function fetchStandings() {
   const year = new Date().getFullYear();
   const url  = `https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${year}&standingsTypes=regularSeason`;
@@ -62,7 +73,7 @@ async function fetchTeamGames(teamId) {
     // its Wild Card (F) / Division (D) / League Championship (L) / World
     // Series (W) games included too, or this silently freezes on their last
     // regular-season result for the rest of the playoffs.
-    const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
+    const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue,seriesStatus`;
 
     const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return empty;
@@ -76,11 +87,28 @@ async function fetchTeamGames(teamId) {
     // regular season ends, instead of leaving their frozen final record on
     // screen as if it still mattered this week.
     let inPostseason = false;
+    // Round + series score (e.g. "ALDS" / "0-2") instead of the frozen
+    // regular-season record, which reads as current but isn't once a team
+    // is actually playing a best-of-N series. Games arrive chronologically,
+    // so the last non-R game seen (completed, live, or still-scheduled —
+    // seriesStatus already reflects the series' current state either way)
+    // is always the right one to read this from.
+    let postseasonRound = null;
+    let seriesRecord = null;
 
     for (const dateObj of (json.dates ?? [])) {
       for (const g of (dateObj.games ?? [])) {
         const state = g.status?.detailedState ?? '';
-        if (g.gameType && g.gameType !== 'R') inPostseason = true;
+        if (g.gameType && g.gameType !== 'R') {
+          inPostseason = true;
+          postseasonRound = ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? postseasonRound;
+          const ss = g.seriesStatus;
+          if (ss) {
+            const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
+            const weAreLeadOrTied = !ss.winningTeam || ss.winningTeam.id === teamId;
+            seriesRecord = weAreLeadOrTied ? `${wins}-${losses}` : `${losses}-${wins}`;
+          }
+        }
 
         if (state === 'Final' || state === 'Completed Early') {
           const weAreHome = g.teams?.home?.team?.id === teamId;
@@ -140,6 +168,8 @@ async function fetchTeamGames(teamId) {
       nextGame,
       liveGame,
       inPostseason,
+      postseasonRound,
+      seriesRecord,
     };
   } catch { return empty; }
 }
