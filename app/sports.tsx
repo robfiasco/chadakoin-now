@@ -63,6 +63,7 @@ interface MLBTeam {
   games: MLBGame[]; nextGame?: MLBNextGame | null;
   liveGame?: MLBLiveGame | null;
   communityPick?: string;
+  inPostseason?: boolean;
 }
 
 // MLB team ID → ESPN CDN abbreviation (reliable fallback when API omits abbreviation)
@@ -292,9 +293,11 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         const games: MLBGame[] = [];
         let nextGame: MLBNextGame | null = null;
         let liveGame: MLBLiveGame | null = null;
+        let inPostseason = false;
         for (const dateObj of (json.dates ?? [])) {
           for (const g of (dateObj.games ?? [])) {
             const state = g.status?.detailedState ?? '';
+            if (g.gameType && g.gameType !== 'R') inPostseason = true;
             if (state === 'Final' || state === 'Completed Early') {
               const weAreHome = g.teams?.home?.team?.id === t.id;
               const us   = weAreHome ? g.teams.home : g.teams.away;
@@ -341,7 +344,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         return {
           ...t,
           games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
-          nextGame, liveGame,
+          nextGame, liveGame, inPostseason,
           record: standing?.record ?? '',
           divisionRank: standing?.divisionRank,
           gamesBack: standing?.gamesBack,
@@ -830,6 +833,14 @@ export default function SportsScreen() {
     fetchSabres().then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  // Once any tracked team is confirmed in the postseason, drop the others —
+  // showing Pirates/Mets/Blue Jays-style frozen regular-season finales next
+  // to teams playing real October games reads as stale clutter. Regular
+  // season / full offseason (no one has inPostseason set) shows all 5 as
+  // before.
+  const mlbTeams = data?.mlb ?? [];
+  const visibleMlb = mlbTeams.some(t => t.inPostseason) ? mlbTeams.filter(t => t.inPostseason) : mlbTeams;
+
   // Auto-poll every 60s when any live game is in progress
   const hasLive = !!(data?.liveGame?.status === 'live' || data?.mlb?.some(t => t.liveGame) || data?.nfl?.some(t => t.liveGame));
   useEffect(() => {
@@ -936,7 +947,7 @@ export default function SportsScreen() {
         });
       }
     }
-    for (const team of (data.mlb ?? [])) {
+    for (const team of visibleMlb) {
       if (team.liveGame) {
         const lg = team.liveGame;
         const pairKey = [team.id, lg.opponentId ?? 0].sort((a, b) => a - b).join('-');
@@ -1758,10 +1769,10 @@ export default function SportsScreen() {
           glanceRow={
             loading ? (
               <SkeletonPulse width="100%" height={140} borderRadius={8} accRGB="167,139,250" />
-            ) : (data?.mlb ?? []).length > 0 ? (
+            ) : visibleMlb.length > 0 ? (
               <View style={{ gap: 10 }}>
                 {['PIT', 'NYY', 'CLE', 'NYM', 'TOR'].map(abbr => {
-                  const t = (data?.mlb ?? []).find(x => x.abbr === abbr);
+                  const t = visibleMlb.find(x => x.abbr === abbr);
                   if (!t) return null;
                   const alreadyInNext = nextCompactItems.some(n => n.sport === `${t.name} · MLB`);
                   return (

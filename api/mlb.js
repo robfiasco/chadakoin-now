@@ -51,7 +51,7 @@ async function fetchTeamStats(teamId, year) {
 }
 
 async function fetchTeamGames(teamId) {
-  const empty = { games: [], nextGame: null, liveGame: null };
+  const empty = { games: [], nextGame: null, liveGame: null, inPostseason: false };
   try {
     const now   = new Date();
     const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -71,10 +71,16 @@ async function fetchTeamGames(teamId) {
     const completed = [];
     let nextGame = null;
     let liveGame = null;
+    // Any non-'R' game in this window means the team actually made the
+    // postseason — used to hide regional teams that didn't once the
+    // regular season ends, instead of leaving their frozen final record on
+    // screen as if it still mattered this week.
+    let inPostseason = false;
 
     for (const dateObj of (json.dates ?? [])) {
       for (const g of (dateObj.games ?? [])) {
         const state = g.status?.detailedState ?? '';
+        if (g.gameType && g.gameType !== 'R') inPostseason = true;
 
         if (state === 'Final' || state === 'Completed Early') {
           const weAreHome = g.teams?.home?.team?.id === teamId;
@@ -133,6 +139,7 @@ async function fetchTeamGames(teamId) {
         .slice(0, 10),
       nextGame,
       liveGame,
+      inPostseason,
     };
   } catch { return empty; }
 }
