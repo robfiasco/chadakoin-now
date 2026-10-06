@@ -268,7 +268,10 @@ async function fetchMLB(): Promise<MLBTeam[]> {
 
     const results = await Promise.all(MLB_TEAMS.map(async t => {
       try {
-        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
+        // gameType R = regular season only — include postseason rounds (Wild
+        // Card/Division/League Championship/World Series) too, or this stays
+        // frozen on a team's last regular-season result through October.
+        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
         const [res, statsRes] = await Promise.all([
           fetch(scheduleUrl),
           fetch(`https://statsapi.mlb.com/api/v1/teams/${t.id}/stats?stats=season&group=hitting,pitching&season=${year}`),

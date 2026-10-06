@@ -57,7 +57,12 @@ async function fetchTeamGames(teamId) {
     const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
     const fmt   = d => d.toISOString().split('T')[0];
-    const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
+    // gameType R = regular season only — once the regular season ends (late
+    // Sept) and the postseason starts, a team still alive in October needs
+    // its Wild Card (F) / Division (D) / League Championship (L) / World
+    // Series (W) games included too, or this silently freezes on their last
+    // regular-season result for the rest of the playoffs.
+    const url   = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${teamId}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue`;
 
     const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return empty;
