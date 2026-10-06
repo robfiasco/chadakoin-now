@@ -1646,6 +1646,8 @@ const CURATED_EVENTS: EventItem[] = [
   // the county's own event pages — not copy-pasted identically.
   { title: 'Mobile Health Clinic — Love Elementary', startDate: '2026-10-08T10:00:00', endDate: '2026-10-08T15:00:00', location: 'Love Elementary School, 50 E 8th St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Mobile Health Clinic'], note: 'Free: childhood immunizations (appt required), child development screenings, breastfeeding support, STD education, blood pressure screenings. Call 716-753-4491.', link: 'https://chautauquacountyny.gov/public-health/event/jamestown-mobile-health-clinic-love-school-1' },
   { title: 'Mobile Health Clinic — Salvation Army / Food Express', startDate: '2026-10-28T10:00:00', endDate: '2026-10-28T15:30:00', location: 'Salvation Army (Food Express), 83 S Main St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Mobile Health Clinic'], note: 'Free: immunizations (appt required), Narcan/fentanyl test strips, STD education, condoms, breastfeeding support, screenings. Call 716-753-4491.', link: 'https://chautauquacountyny.gov/public-health/event/jamestown-mobile-health-clinic-food-express-4' },
+
+  { title: 'Medicare 101 Forum', startDate: '2026-10-23T10:00:00', location: '3rd floor, The Chautauqua Center, 107 Institute St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Office for the Aging', 'Medicare'], note: 'Free · "Medicare 101 and Plan Finder Basics" — how Medicare works and comparing plans. Register by Oct 21 via NY Connects: 716-753-4582 or CCNYC@chqgov.com.', link: 'https://chautauquacountyny.gov/office-aging/event/medicare-101-forum' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {

@@ -96,8 +96,14 @@ async function fetchPlayoffSeries(signal) {
   try {
     const now = new Date();
     const year = now.getFullYear();
-    // NHL season ID format: "{priorYear}{currentYear}" e.g. "20252026"
-    const seasonId = `${year - 1}${year}`;
+    // NHL season ID format: "{startYear}{startYear+1}" e.g. "20262027" for the
+    // season that opens in Oct 2026. The season flips over at the draft/free
+    // agency in late June/July, well after the prior season's playoffs end —
+    // using a fixed "${year-1}${year}" broke every Jul-Dec by pointing at the
+    // ALREADY-FINISHED prior season's carousel (which stays queryable forever,
+    // so it kept returning BUF's last completed, decided series as if live).
+    const seasonStartYear = now.getMonth() >= 6 ? year : year - 1; // getMonth() 6 = July
+    const seasonId = `${seasonStartYear}${seasonStartYear + 1}`;
     const res = await fetch(`https://api-web.nhle.com/v1/playoff-series/carousel/${seasonId}`, { signal });
     if (!res.ok) return null;
     const data = await res.json();
@@ -109,6 +115,7 @@ async function fetchPlayoffSeries(signal) {
         const top = series.topSeed ?? {};
         const bot = series.bottomSeed ?? {};
         if (top.abbrev !== 'BUF' && bot.abbrev !== 'BUF') continue;
+        if (series.winningTeamId != null) continue; // decided — don't show a final score as if it's live
         if (latest && round.roundNumber <= latest.round) continue;
         const bufWins = top.abbrev === 'BUF' ? top.wins : bot.wins;
         const oppWins = top.abbrev === 'BUF' ? bot.wins : top.wins;
@@ -166,6 +173,18 @@ export default async function handler(req, res) {
       }));
 
     const games = schedJson.games ?? [];
+
+    // Second gate on top of fetchPlayoffSeries' own season/decided-series checks:
+    // only trust a playoff series if BUF's own season schedule currently has a
+    // playoff game (gameType 3) near "now" — regular season (gameType 2) and
+    // preseason (gameType 1) games never satisfy this.
+    const nowMs = Date.now();
+    const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+    const isCurrentlyPlayoffs = games.some(g => {
+      if (g.gameType !== 3) return false;
+      const t = new Date(g.startTimeUTC ?? g.gameDate).getTime();
+      return Math.abs(t - nowMs) <= twoWeeksMs;
+    });
 
     const past = games
       .filter(g => g.gameState === 'FINAL' || g.gameState === 'OFF')
@@ -250,7 +269,7 @@ export default async function handler(req, res) {
       nextGame:      parseGame(upcoming[0]),
       topScorers,
       jcc:           jccResults,
-      playoffSeries: playoffSeries ?? null,
+      playoffSeries: isCurrentlyPlayoffs ? (playoffSeries ?? null) : null,
     };
 
     // Tighter cache during live games so scores refresh quickly

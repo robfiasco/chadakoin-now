@@ -59,7 +59,7 @@ type FilterOption = 'all' | ServiceStatus;
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
   active: 'OPEN NOW',
-  imminent: 'STARTS MAY 1',
+  imminent: 'SOON', // was a hardcoded "STARTS MAY 1" that went stale the instant May passed — see badgeLabel/badge fallback below, this text is now a last-resort only
   'coming-up': 'COMING UP',
   'year-round': 'YEAR ROUND',
 };
@@ -144,6 +144,19 @@ function computeElection2026Service(base: CityService): CityService {
   return { ...base, badgeLabel };
 }
 
+// Flushing's own remaining window this fall is Mon Oct 5 – Wed Oct 7,
+// 8am–4:30pm (confirmed against jamestownnybpu.gov's own flushing-dates
+// post) — on the two days the card is still visible for (expiresAfter is
+// Oct 7), call out that it's happening today instead of the static
+// "SEP 25 – OCT 7" date-range badge.
+function computeWatermainService(base: CityService): CityService {
+  const todayKey = localDateKey(new Date());
+  if (todayKey === '2026-10-06' || todayKey === '2026-10-07') {
+    return { ...base, badgeLabel: 'FLUSHING TODAY' };
+  }
+  return base;
+}
+
 const pill = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, flexShrink: 0 },
   text: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.8 },
@@ -179,7 +192,12 @@ function ServiceCard({ service }: { service: CityService }) {
             <Text style={svc.title}>{service.title}</Text>
             <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]}>{service.summary}</Text>
           </View>
-          <StatusPill status={service.status} label={service.badgeLabel} />
+          {/* badgeLabel (computed, e.g. yardwaste/election2026) wins when set;
+              otherwise fall back to the entry's own `badge` text (e.g.
+              watermain's "SEP 25 – OCT 7", dpw's "THIS WEEK") instead of
+              skipping straight to the generic STATUS_LABELS[status] text,
+              which was wrong for every card that doesn't set badgeLabel. */}
+          <StatusPill status={service.status} label={service.badgeLabel ?? service.badge} />
           <Ionicons
             name={expanded ? 'chevron-up' : 'chevron-down'}
             size={13}
@@ -326,6 +344,7 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
   const servicesWithComputed = CITY_SERVICES.map(s => {
     if (s.id === 'yardwaste') return computeYardWasteService(s);
     if (s.id === 'election2026') return computeElection2026Service(s);
+    if (s.id === 'watermain') return computeWatermainService(s);
     return s;
   });
   const allServices = dpw && dpw.items.length > 0 ? [buildDpwService(dpw), ...servicesWithComputed] : servicesWithComputed;
