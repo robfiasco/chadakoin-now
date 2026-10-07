@@ -190,7 +190,7 @@ function ServiceCard({ service }: { service: CityService }) {
         <View style={svc.cardTop}>
           <View style={{ flex: 1 }}>
             <Text style={svc.title}>{service.title}</Text>
-            <Text style={[svc.summary, { color: `rgba(${rgb},0.65)` }]}>{service.summary}</Text>
+            <Text style={[svc.summary, { color: service.textColor ?? `rgba(${rgb},0.65)` }]}>{service.summary}</Text>
           </View>
           {/* badgeLabel (computed, e.g. yardwaste/election2026) wins when set;
               otherwise fall back to the entry's own `badge` text (e.g.
@@ -264,7 +264,7 @@ function ServiceCard({ service }: { service: CityService }) {
           )}
           {service.links && service.links.length > 0 && (
             <View style={svc.linksBlock}>
-              <Text style={[svc.linksHeader, { color: `rgba(${rgb},0.45)` }]}>MAPS & DOCUMENTS</Text>
+              <Text style={[svc.linksHeader, { color: service.textColor ?? `rgba(${rgb},0.45)` }]}>MAPS & DOCUMENTS</Text>
               {service.links.map(link => (
                 <TouchableOpacity
                   key={link.url}
@@ -273,7 +273,7 @@ function ServiceCard({ service }: { service: CityService }) {
                   onPress={() => openLink(link.url)}
                 >
                   <Ionicons name="map-outline" size={13} color={`rgba(${rgb},0.7)`} style={{ marginTop: 1 }} />
-                  <Text style={[svc.linkText, { color: `rgba(${rgb},0.85)` }]}>{link.label}</Text>
+                  <Text style={[svc.linkText, { color: service.textColor ?? `rgba(${rgb},0.85)` }]}>{link.label}</Text>
                   <Ionicons name="open-outline" size={12} color={`rgba(${rgb},0.4)`} />
                 </TouchableOpacity>
               ))}

@@ -36,6 +36,14 @@ export interface CityService {
   // card's voter-registration lookup) that shouldn't get lost in the plain
   // "MAPS & DOCUMENTS" links list below it. Optional; most cards don't need it.
   primaryLink?: { label: string; url: string };
+  // Overrides every text color this card would otherwise derive from
+  // badgeColor (summary line, "MAPS & DOCUMENTS" header, link labels — all
+  // normally badgeColor at some opacity). Needed for low-luminance
+  // badgeColors (e.g. deep navy) where those formulas read as low-contrast
+  // text-on-near-black; most cards' brighter category colors don't need
+  // this. Doesn't touch decorative uses (icons, borders, tints), which stay
+  // legible at low opacity regardless of hue.
+  textColor?: string;
 }
 
 export const CITY_SERVICES: CityService[] = [
@@ -168,6 +176,11 @@ export const CITY_SERVICES: CityService[] = [
     title: 'Nov 3 General Election',
     badge: 'REGISTER BY OCT 24',
     badgeColor: '#1e3a8a', // deep navy — civic, card-only accent, not the app's bright-cyan "city" color
+    // badgeColor's own luminance is too low for the rgba(badgeColor, alpha)
+    // text formulas this card would otherwise use (summary, links header,
+    // link labels) — reads as near-unreadable blue-on-near-black. Light
+    // slate-blue keeps the civic tone while actually being legible.
+    textColor: '#9db8e8',
     status: 'active',
     summary: 'Register by Sat Oct 24 · Early voting Oct 24–Nov 1 · Election Day Tue Nov 3, 6am–9pm',
     details: [
