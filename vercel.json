@@ -21,6 +21,13 @@
     { "source": "/api/nfl",           "destination": "/api/nfl" },
     { "source": "/api/feedback",      "destination": "/api/feedback" },
     { "source": "/api/source-health", "destination": "/api/source-health" },
-    { "source": "/api/gas",           "destination": "/api/gas" }
+    { "source": "/api/gas",           "destination": "/api/gas" },
+    { "source": "/api/dpw",           "destination": "/api/dpw" }
+  ],
+  "functions": {
+    "api/dpw.js": { "maxDuration": 60 }
+  },
+  "crons": [
+    { "path": "/api/dpw", "schedule": "0 11 * * 1-5" }
   ]
 }

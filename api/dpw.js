@@ -99,9 +99,11 @@ function parseWorkItem(raw, weekYear) {
 }
 
 async function scrape() {
+  // The city's own page routinely takes ~40s to respond — a 10s abort was
+  // killing nearly every cold-start scrape before it could ever succeed.
   const res = await fetch(SOURCE_URL, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ChadakoinNow/1.0)' },
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`DPW page fetch failed: ${res.status}`);
   const html = await res.text();
@@ -147,18 +149,29 @@ async function scrape() {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=3600');
-
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+    res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=3600');
     return res.status(200).json(cached.data);
   }
 
   try {
     const data = await scrape();
     cached = { data, fetchedAt: Date.now() };
+    // Only a real payload is worth pinning at the edge for 6h — this is the
+    // response nearly every user actually gets, since the in-memory cache
+    // above only helps repeat hits on the same warm instance.
+    res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=3600');
     return res.status(200).json(data);
   } catch (err) {
-    if (cached) return res.status(200).json(cached.data); // serve stale over nothing
+    if (cached) {
+      // Stale-but-real beats nothing — still worth caching at the edge,
+      // just for a short window so a real refresh gets picked up soon.
+      res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=900');
+      return res.status(200).json({ ...cached.data, stale: true });
+    }
+    // No good payload anywhere yet — never cache this at the edge, or one
+    // unlucky cold-start scrape poisons every user's response for hours.
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json(null);
   }
 }

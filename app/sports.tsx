@@ -474,147 +474,22 @@ async function fetchNFL(): Promise<NFLTeam[]> {
   } catch { return []; }
 }
 
-async function fetchJCCNative(): Promise<JCCData> {
-  const empty: JCCData = { results: [], upcoming: [], records: {} };
-  try {
-    const res = await fetch('https://jccjayhawks.com/composite?print=rss');
-    if (!res.ok) return empty;
-    const text = await res.text();
-    const results: JCCResult[] = [];
-    const upcoming: JCCUpcoming[] = [];
-    const itemRx = /<item>([\s\S]*?)<\/item>/g;
-    let m;
-    while ((m = itemRx.exec(text)) !== null) {
-      const block = m[1];
-      const RX: Record<string, RegExp> = {
-        'ps:score':    /<ps:score[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:score>|<ps:score[^>]*>([^<]*)<\/ps:score>/,
-        'pubDate':     /<pubDate[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/pubDate>|<pubDate[^>]*>([^<]*)<\/pubDate>/,
-        'ps:opponent': /<ps:opponent[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ps:opponent>|<ps:opponent[^>]*>([^<]*)<\/ps:opponent>/,
-        'category':    /<category[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category[^>]*>([^<]*)<\/category>/,
-        'link':        /<link[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/link>|<link[^>]*>([^<]*)<\/link>/,
-      };
-      const get = (tag: string) => { const match = RX[tag]?.exec(block); return match ? (match[1] ?? match[2] ?? '').trim() : ''; };
-      const score    = get('ps:score');
-      const pubDate  = get('pubDate');
-      const opponent = get('ps:opponent');
-      const category = get('category');
-      const link     = get('link');
-      if (!pubDate) continue;
-      const date = new Date(pubDate);
-      const now  = new Date();
-      const opponentClean = opponent
-        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-        .replace(/^(at|vs\.?)\s*/i, '');
-      const hasResult = score && score.trim() !== '';
-      if (hasResult && date < now) {
-        const parts = score.split(',').map((s: string) => s.trim());
-        const wl = parts[0]; const final = parts[1] ?? '';
-        if (final === '0-0') continue;
-        // Cross country (and similar) report a meet placement here (e.g. "100th")
-        // instead of W/L — skip rather than mis-recording it as a loss.
-        if (wl !== 'W' && wl !== 'L') continue;
-        results.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), result: wl, score: final, won: wl === 'W', link });
-      } else if (!hasResult && date >= now) {
-        upcoming.push({ date: date.toISOString(), sport: category, opponent: opponentClean, isHome: !opponent.toLowerCase().startsWith('at '), link });
-      }
-    }
-    results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const records: Record<string, { w: number; l: number }> = {};
-    for (const r of results) {
-      if (!records[r.sport]) records[r.sport] = { w: 0, l: 0 };
-      if (r.won) records[r.sport].w++; else records[r.sport].l++;
-    }
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const recentResults = results.filter(r => new Date(r.date) >= sevenDaysAgo);
-    return { results: recentResults.slice(0, 8), upcoming: upcoming.slice(0, 8), records };
-  } catch { return empty; }
-}
-
-async function fetchPlayoffSeries(): Promise<PlayoffSeries | null> {
-  try {
-    const year = new Date().getFullYear();
-    const seasonId = `${year - 1}${year}`;
-    const res = await fetch(`https://api-web.nhle.com/v1/playoff-series/carousel/${seasonId}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    // Pick the highest round BUF appears in — earlier rounds remain in the carousel
-    // after they end, so a first-match return would stay stuck on round 1.
-    let latest: PlayoffSeries | null = null;
-    for (const round of (data.rounds ?? [])) {
-      for (const series of (round.series ?? [])) {
-        const top = series.topSeed ?? {};
-        const bot = series.bottomSeed ?? {};
-        if (top.abbrev !== 'BUF' && bot.abbrev !== 'BUF') continue;
-        if (latest && round.roundNumber <= latest.round) continue;
-        const bufWins = top.abbrev === 'BUF' ? top.wins : bot.wins;
-        const oppWins = top.abbrev === 'BUF' ? bot.wins : top.wins;
-        latest = {
-          round: round.roundNumber,
-          roundLabel: round.roundLabel ?? `Round ${round.roundNumber}`,
-          opponent: top.abbrev === 'BUF' ? bot.abbrev : top.abbrev,
-          bufWins, oppWins,
-          neededToWin: series.neededToWin ?? 4,
-        };
-      }
-    }
-    return latest;
-  } catch { return null; }
-}
-
 async function fetchSabres(): Promise<SabresData> {
-  if (Platform.OS === 'web') {
-    const [sabresRes, mlbRes, nflRes] = await Promise.all([fetch(apiUrl('/api/sabres')), fetchMLB(), fetchNFL()]);
-    if (!sabresRes.ok) throw new Error('Sabres API failed');
-    const json = await sabresRes.json();
-    const rawJcc = json.jcc;
-    const jcc: JCCData = rawJcc && typeof rawJcc === 'object' && !Array.isArray(rawJcc)
-      ? rawJcc
-      : { results: [], upcoming: [], records: {} };
-    return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, nfl: nflRes, playoffSeries: json.playoffSeries ?? null };
-  }
-  const [schedRes, standRes, statsRes, jcc, mlb, nfl, playoffSeries] = await Promise.all([
-    fetch('https://api-web.nhle.com/v1/club-schedule-season/BUF/now'),
-    fetch('https://api-web.nhle.com/v1/standings/now'),
-    fetch('https://api-web.nhle.com/v1/club-stats/BUF/now'),
-    fetchJCCNative(),
-    fetchMLB(),
-    fetchNFL(),
-    fetchPlayoffSeries(),
-  ]);
-  const schedJson = await schedRes.json();
-  const standJson = standRes.ok ? await standRes.json() : null;
-  const statsJson = statsRes.ok ? await statsRes.json() : null;
-  const bufStanding = standJson?.standings?.find((t: any) => t.teamAbbrev?.default === 'BUF');
-  const wins     = bufStanding?.wins     ?? 0;
-  const losses   = bufStanding?.losses   ?? 0;
-  const otLosses = bufStanding?.otLosses ?? 0;
-  const points   = bufStanding?.points   ?? 0;
-  const record   = bufStanding ? `${wins}-${losses}-${otLosses}` : '';
-  const standing = bufStanding?.divisionName ?? '';
-  const games: any[] = schedJson.games ?? [];
-  const now = new Date();
-  const past = games
-    .filter((g: any) => g.gameState === 'FINAL' || g.gameState === 'OFF')
-    .sort((a: any, b: any) => new Date(b.startTimeUTC).getTime() - new Date(a.startTimeUTC).getTime());
-  const upcoming = games
-    .filter((g: any) => (g.gameState === 'FUT' || g.gameState === 'PRE') && new Date(g.startTimeUTC) >= now)
-    .sort((a: any, b: any) => new Date(a.startTimeUTC).getTime() - new Date(b.startTimeUTC).getTime());
-  const topScorers: Scorer[] = (statsJson?.skaters ?? [])
-    .sort((a: any, b: any) => (b.points ?? 0) - (a.points ?? 0))
-    .slice(0, 5)
-    .map((p: any) => ({
-      name: `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(),
-      position: p.positionCode ?? '',
-      goals: p.goals ?? 0,
-      assists: p.assists ?? 0,
-      points: p.points ?? 0,
-      headshot: p.headshot ?? '',
-    }));
-  const liveGames: any[] = games.filter((g: any) => g.gameState === 'LIVE' || g.gameState === 'CRIT');
-  const liveGame: GameResult | null = liveGames[0] ? (parseNHLGame(liveGames[0]) ?? null) : null;
-  return { record, standing, points, wins, losses, otLosses, recentGame: past[0] ? parseNHLGame(past[0]) ?? undefined : undefined, nextGame: upcoming[0] ? parseNHLGame(upcoming[0]) ?? undefined : undefined, liveGame, topScorers, jcc, mlb, nfl, playoffSeries };
+  // Native used to hit the raw NHL endpoints directly instead of /api/sabres,
+  // duplicating the server's schedule/standings/playoff-series parsing in a
+  // second copy that never got the season-ID and decided-series fixes made
+  // server-side — which is exactly how iOS ended up stuck showing Buffalo's
+  // already-decided 2nd-round loss to Montreal as a live "playoffs" banner
+  // long after the regular season resumed. Both platforms now go through the
+  // one already-correct /api/sabres implementation.
+  const [sabresRes, mlbRes, nflRes] = await Promise.all([fetch(apiUrl('/api/sabres')), fetchMLB(), fetchNFL()]);
+  if (!sabresRes.ok) throw new Error('Sabres API failed');
+  const json = await sabresRes.json();
+  const rawJcc = json.jcc;
+  const jcc: JCCData = rawJcc && typeof rawJcc === 'object' && !Array.isArray(rawJcc)
+    ? rawJcc
+    : { results: [], upcoming: [], records: {} };
+  return { record: json.record ?? '', standing: json.standing ?? '', recentGame: json.recentGame, nextGame: json.nextGame, liveGame: json.liveGame ?? null, topScorers: json.topScorers ?? [], jcc, mlb: mlbRes, nfl: nflRes, playoffSeries: json.playoffSeries ?? null };
 }
 
 function ordinal(n: number): string {
