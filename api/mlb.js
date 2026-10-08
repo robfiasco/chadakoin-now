@@ -62,7 +62,7 @@ async function fetchTeamStats(teamId, year) {
 }
 
 async function fetchTeamGames(teamId) {
-  const empty = { games: [], nextGame: null, liveGame: null, inPostseason: false };
+  const empty = { games: [], nextGame: null, liveGame: null, inPostseason: false, eliminated: false };
   try {
     const now   = new Date();
     const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -95,6 +95,12 @@ async function fetchTeamGames(teamId) {
     // is always the right one to read this from.
     let postseasonRound = null;
     let seriesRecord = null;
+    // Set true only by a *decided* series (seriesStatus.isOver) we didn't
+    // win — a team swept out of the ALDS still has "Scheduled" Games 4/5
+    // sitting in this same window (MLB doesn't remove them), so without
+    // this, inPostseason stayed true forever post-elimination and kept
+    // showing a dead team's last series as if it were still live.
+    let eliminated = false;
 
     for (const dateObj of (json.dates ?? [])) {
       for (const g of (dateObj.games ?? [])) {
@@ -105,8 +111,10 @@ async function fetchTeamGames(teamId) {
           const ss = g.seriesStatus;
           if (ss) {
             const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
-            const weAreLeadOrTied = !ss.winningTeam || ss.winningTeam.id === teamId;
+            const weWon = ss.winningTeam?.id === teamId;
+            const weAreLeadOrTied = !ss.winningTeam || weWon;
             seriesRecord = weAreLeadOrTied ? `${wins}-${losses}` : `${losses}-${wins}`;
+            eliminated = !!ss.isOver && !weWon;
           }
         }
 
@@ -167,7 +175,13 @@ async function fetchTeamGames(teamId) {
         .slice(0, 10),
       nextGame,
       liveGame,
-      inPostseason,
+      // Eliminated reads as "not in the postseason" for the client's
+      // existing inPostseason filter/pill logic, but keeps the round name
+      // around (eliminatedRound) so a "Season over · ALDS" label is still
+      // possible instead of the team just silently vanishing.
+      inPostseason: inPostseason && !eliminated,
+      eliminated,
+      eliminatedRound: eliminated ? postseasonRound : null,
       postseasonRound,
       seriesRecord,
     };

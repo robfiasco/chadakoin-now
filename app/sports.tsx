@@ -66,6 +66,8 @@ interface MLBTeam {
   inPostseason?: boolean;
   postseasonRound?: string | null;
   seriesRecord?: string | null;
+  eliminated?: boolean;
+  eliminatedRound?: string | null;
 }
 
 // MLB team ID → ESPN CDN abbreviation (reliable fallback when API omits abbreviation)
@@ -308,6 +310,10 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         let inPostseason = false;
         let postseasonRound: string | null = null;
         let seriesRecord: string | null = null;
+        // Set true only by a *decided* series we didn't win — a team swept
+        // out still has "Scheduled" games sitting in this same window, so
+        // without this, inPostseason stayed true forever post-elimination.
+        let eliminated = false;
         for (const dateObj of (json.dates ?? [])) {
           for (const g of (dateObj.games ?? [])) {
             const state = g.status?.detailedState ?? '';
@@ -317,8 +323,10 @@ async function fetchMLB(): Promise<MLBTeam[]> {
               const ss = g.seriesStatus;
               if (ss) {
                 const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
-                const weAreLeadOrTied = !ss.winningTeam || ss.winningTeam.id === t.id;
+                const weWon = ss.winningTeam?.id === t.id;
+                const weAreLeadOrTied = !ss.winningTeam || weWon;
                 seriesRecord = weAreLeadOrTied ? `${wins}-${losses}` : `${losses}-${wins}`;
+                eliminated = !!ss.isOver && !weWon;
               }
             }
             if (state === 'Final' || state === 'Completed Early') {
@@ -367,7 +375,10 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         return {
           ...t,
           games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
-          nextGame, liveGame, inPostseason, postseasonRound, seriesRecord,
+          nextGame, liveGame,
+          inPostseason: inPostseason && !eliminated,
+          eliminated, eliminatedRound: eliminated ? postseasonRound : null,
+          postseasonRound, seriesRecord,
           record: standing?.record ?? '',
           divisionRank: standing?.divisionRank,
           gamesBack: standing?.gamesBack,
@@ -605,11 +616,15 @@ function NextRow({ item, onPress, isLast }: { item: NextUpItem; onPress: () => v
     >
       <View style={[styles.nextRowStripe, { backgroundColor: item.accent }]} />
       <Text style={styles.nextRowEmoji}>{item.emoji}</Text>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.nextRowSport, { color: item.accent }]} numberOfLines={1}>{item.sport}</Text>
-        <Text style={styles.nextRowMatchup} numberOfLines={1}>{item.matchup}</Text>
+        {/* Long college opponent names (e.g. "vs Midwestern Ontario") wrap
+            instead of clipping mid-word — the date/time column below is
+            pinned to flexShrink:0 + flex-start so it never shrinks or
+            re-centers against a taller, wrapped sibling. */}
+        <Text style={styles.nextRowMatchup} numberOfLines={2}>{item.matchup}</Text>
       </View>
-      <View style={{ alignItems: 'flex-end' }}>
+      <View style={{ alignItems: 'flex-end', alignSelf: 'flex-start', flexShrink: 0 }}>
         <Text style={[styles.nextRowDate, item.isLive && { color: '#fb7185' }]}>{item.dateLabel}</Text>
         {item.time ? <Text style={styles.nextRowTime}>{item.time}</Text> : null}
       </View>

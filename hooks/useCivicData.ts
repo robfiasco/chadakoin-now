@@ -1650,6 +1650,8 @@ const CURATED_EVENTS: EventItem[] = [
   { title: 'Medicare 101 Forum', startDate: '2026-10-23T10:00:00', location: '3rd floor, The Chautauqua Center, 107 Institute St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Office for the Aging', 'Medicare'], note: 'Free · "Medicare 101 and Plan Finder Basics" — how Medicare works and comparing plans. Register by Oct 21 via NY Connects: 716-753-4582 or CCNYC@chqgov.com.', link: 'https://chautauquacountyny.gov/office-aging/event/medicare-101-forum' },
 
   { title: 'Jamestown Energy Workshop: Save Energy, Save Dollars', startDate: '2026-11-04T10:30:00', location: 'The Chautauqua Center, 107 Institute St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Office for the Aging', 'Energy'], note: 'Free · WNY Clean Energy Hub workshop on reading your utility bill and cutting energy use. Registered participants get a free energy-saving kit. Call 716-753-4582 to register.', link: 'https://chautauquacountyny.gov/office-aging/event/jamestown-energy-workshop-save-energy-save-dollars' },
+
+  { title: 'Tony Dolce Riverwalk Bike Path Unveiling', startDate: '2026-10-15T15:30:00', location: 'Greater Jamestown Riverwalk bike path, 8th St entrance, Jamestown', category: 'Community', tags: ['City of Jamestown', 'Riverwalk', 'Dedication'], note: 'Free · The City renames the Riverwalk bike path for the late Councilman Tony Dolce, its longest-serving council member. Hosted by Mayor Kim Ecklund.', link: 'https://www.jamestownny.gov/city-of-jamestown-to-honor-the-life-legacy-of-tony-dolce-with-riverwalk-bike-path-renaming/' },
 ];
 
 async function fetchEvents(): Promise<EventItem[]> {

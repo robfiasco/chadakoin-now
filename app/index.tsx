@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Image,
-  TouchableOpacity, Animated, Easing, Platform, RefreshControl,
+  TouchableOpacity, Animated, Easing, Platform, RefreshControl, Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -45,6 +45,28 @@ const HERO_PHOTOS = Platform.OS === 'web'
 const HERO_PHOTO = Platform.OS === 'web'
   ? HERO_PHOTOS[0]
   : HERO_PHOTOS[Math.floor(Math.random() * HERO_PHOTOS.length)];
+
+// Hand-curated like the Medicare 101 / Energy Workshop events — no feed for
+// county health alerts. Hidden after expiresAfter (local-date comparison,
+// see localDateKey below, to dodge the UTC-midnight Date-parsing trap);
+// bump expiresAfter instead if the county posts new exposure windows.
+const HEALTH_NOTICE = {
+  title: 'Measles in Chautauqua County',
+  badge: 'HEALTH NOTICE',
+  expiresAfter: '2026-10-20',
+  body: 'The county has 3 confirmed measles cases this year and NY has declared a State Disaster Emergency. If you were at the UPMC Chautauqua Emergency Dept (207 Foote Ave) Sat 9/26 9pm–Sun 9/27 1am, watch for symptoms through Oct 17. If you were there Tue 9/29 9am–4pm, watch through Oct 20. Symptoms: fever, cough, runny nose, red eyes, then a rash. Call your doctor or the ER before you go in. Not sure you’re immune (2 MMR doses, or born before 1957)? Call your provider or the county health department.',
+  phoneLabel: 'Call County Health 716-753-4491',
+  phone: 'tel:7167534491',
+  linkLabel: 'County exposure notice',
+  link: 'https://chautauquacountyny.gov/public-health/news/chautauqua-county-health-department-alerts-community-potential-measles-exposures',
+};
+// Local-date (not UTC) comparison — same reasoning as computeElection2026Service
+// etc. in city-services.tsx: a date-only string parses as UTC midnight via
+// the Date constructor, which is hours before actual local midnight.
+function localDateKey(d: Date): string {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 function getDateBadge() {
   const d = new Date();
@@ -225,6 +247,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     a.title.toLowerCase().includes('snow emergency')
   );
 
+  const showHealthNotice = localDateKey(new Date()) <= HEALTH_NOTICE.expiresAfter;
+
   // School delays/closings — scan news for delay keywords, show within school-year months (Sep–Jun)
   const schoolMonth = (() => { const m = new Date().getMonth() + 1; return m >= 9 || m <= 6; })();
   const DELAY_PATTERN = /\b(delay|delayed|closing|closed|cancel|cancellation|2.hour)\b/i;
@@ -322,6 +346,37 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           </View>
           <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" />
         </TouchableOpacity>
+      )}
+
+      {showHealthNotice && (
+        <View style={styles.healthBanner}>
+          <View style={styles.healthBannerHeader}>
+            <Ionicons name="medkit-outline" size={16} color="#fff" />
+            <View style={styles.healthBannerBadge}>
+              <Text style={styles.healthBannerBadgeText}>{HEALTH_NOTICE.badge}</Text>
+            </View>
+          </View>
+          <Text style={styles.healthBannerTitle}>{HEALTH_NOTICE.title}</Text>
+          <Text style={styles.healthBannerBody}>{HEALTH_NOTICE.body}</Text>
+          <View style={styles.healthBannerCtaRow}>
+            <TouchableOpacity
+              style={styles.healthBannerCta}
+              activeOpacity={0.8}
+              onPress={() => Linking.openURL(HEALTH_NOTICE.phone)}
+            >
+              <Ionicons name="call-outline" size={13} color="#fff" />
+              <Text style={styles.healthBannerCtaText}>{HEALTH_NOTICE.phoneLabel}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.healthBannerCta, styles.healthBannerCtaOutline]}
+              activeOpacity={0.8}
+              onPress={() => openLink(HEALTH_NOTICE.link)}
+            >
+              <Text style={[styles.healthBannerCtaText, styles.healthBannerCtaOutlineText]}>{HEALTH_NOTICE.linkLabel}</Text>
+              <Ionicons name="open-outline" size={12} color="#e11d48" />
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
 
 
@@ -921,6 +976,24 @@ const styles = StyleSheet.create({
   },
   schoolBannerTitle: { fontFamily: 'Syne', fontSize: 13, fontWeight: '700', color: '#fde047' },
   schoolBannerBody:  { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 15 },
+
+  healthBanner: {
+    gap: 8, backgroundColor: 'rgba(225,29,72,0.14)', borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(225,29,72,0.32)', paddingHorizontal: 18, paddingVertical: 14,
+  },
+  healthBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  healthBannerBadge: { backgroundColor: 'rgba(225,29,72,0.9)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 },
+  healthBannerBadgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1, color: '#fff' },
+  healthBannerTitle: { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', color: '#fff' },
+  healthBannerBody: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 17 },
+  healthBannerCtaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
+  healthBannerCta: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#e11d48',
+  },
+  healthBannerCtaOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(225,29,72,0.5)' },
+  healthBannerCtaText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#fff' },
+  healthBannerCtaOutlineText: { color: '#e11d48' },
 
 
   scroll: { flex: 1 },
