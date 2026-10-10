@@ -14,7 +14,7 @@ import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import type { NewsItem } from '../hooks/useCivicData';
 import { useOldJamestown } from '../lib/OldJamestownContext';
-import { oldJamestownImageSource } from '../lib/oldJamestownImages';
+import { oldJamestownHeaderSource } from '../lib/oldJamestownImages';
 import type { OldJamestownStory } from '../data/oldJamestown';
 
 
@@ -469,7 +469,7 @@ const oj = StyleSheet.create({
 function OldJamestownRow({ story, onPress }: { story: OldJamestownStory; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={oj.row}>
-      <Image source={oldJamestownImageSource(story.image)} style={oj.rowImage} resizeMode="cover" />
+      <Image source={oldJamestownHeaderSource(story.headerImage)} style={oj.rowImage} resizeMode="cover" accessibilityLabel={story.headerImageAlt} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={oj.rowLabel}>{story.year}</Text>
         <Text style={oj.rowTitle} numberOfLines={2}>{story.title}</Text>
@@ -577,7 +577,7 @@ export default function NewsScreen() {
         {releasedStories.length > 0 && (
           <View style={{ marginTop: 4, marginBottom: 8 }}>
             <View style={oj.sectionHeaderRow}>
-              <Text style={oj.sectionLabel}>OLD JAMESTOWN</Text>
+              <Text style={oj.sectionLabel}>FROM JAMESTOWN’S ARCHIVES · NEW STORIES WEEKLY</Text>
               <LinearGradient
                 colors={['rgba(212,165,116,0.3)', 'transparent'] as any}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}

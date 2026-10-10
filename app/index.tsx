@@ -19,7 +19,8 @@ import { getTodaysFact } from '../data/jamestown-facts';
 import { openLink } from '../lib/openLink';
 import { useRadio } from '../lib/RadioContext';
 import { useOldJamestown } from '../lib/OldJamestownContext';
-import { oldJamestownImageSource } from '../lib/oldJamestownImages';
+import { oldJamestownHeaderSource } from '../lib/oldJamestownImages';
+import { OLD_JAMESTOWN_HEADER_ASPECT } from '../data/oldJamestown';
 import { apiUrl } from '../lib/api';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
@@ -713,11 +714,12 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             activeOpacity={0.85}
             style={styles.ojCard}
           >
-            <View style={styles.ojImageWrap}>
+            <View style={[styles.ojImageWrap, { aspectRatio: OLD_JAMESTOWN_HEADER_ASPECT }]}>
               <Image
-                source={oldJamestownImageSource(latestStory.image)}
-                style={[styles.ojImage, { aspectRatio: latestStory.imageWidth / latestStory.imageHeight }]}
+                source={oldJamestownHeaderSource(latestStory.headerImage)}
+                style={styles.ojImage}
                 resizeMode="cover"
+                accessibilityLabel={latestStory.headerImageAlt}
               />
               <LinearGradient
                 colors={['transparent', 'rgba(26,16,8,0.9)']}
@@ -725,9 +727,10 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               />
             </View>
             <View style={styles.ojContent}>
-              <Text style={styles.ojLabel}>OLD JAMESTOWN · {latestStory.year}</Text>
+              <Text style={styles.ojLabel}>FROM JAMESTOWN’S ARCHIVES · {latestStory.year}</Text>
               <Text style={styles.ojTitle} numberOfLines={2}>{latestStory.title}</Text>
               <Text style={styles.ojTeaser} numberOfLines={2}>{latestStory.teaser}</Text>
+              <Text style={styles.ojNewEvery}>New every week</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -1135,23 +1138,22 @@ const styles = StyleSheet.create({
   moreServicesLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10, paddingVertical: 4 },
   moreServicesText: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle },
 
-  // "Old Jamestown" — warm sepia accent, card-only (rest of Home stays dark).
+  // "From Jamestown's Archives" — warm sepia accent, card-only (rest of
+  // Home stays dark).
   ojCard: {
     marginTop: 20, borderRadius: 14, overflow: 'hidden',
     backgroundColor: 'rgba(42,28,16,0.5)', borderWidth: 1, borderColor: 'rgba(196,154,97,0.3)',
   },
-  ojImageWrap: { height: 110, overflow: 'hidden', backgroundColor: '#1a1008' },
-  // width:'100%' + aspectRatio (set per-story from imageWidth/imageHeight)
-  // renders the image at its true proportions with no internal crop, so
-  // position:absolute + top:0 against the shorter, overflow:hidden wrap
-  // clips to the image's actual TOP (the headline) — resizeMode="cover"
-  // with a mismatched fixed height instead center-crops before this
-  // positioning ever applies, which showed body text, not the headline,
-  // for the 492×2042 near-vertical 1902 scan.
-  ojImage: { width: '100%', position: 'absolute', top: 0 },
+  // Fixed 1200:630 header image — resizeMode="cover" at this wide aspect
+  // ratio fills the full-width wrap with no letterboxing, unlike the old
+  // full-clipping hero (some clippings were tall/narrow, so "contain" left
+  // dark bars down the sides).
+  ojImageWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#1a1008' },
+  ojImage: { width: '100%', height: '100%' },
   ojContent: { padding: 14, gap: 4 },
   ojLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: '#d4a574' },
   ojTitle: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', lineHeight: 19 },
+  ojNewEvery: { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(212,165,116,0.6)', marginTop: 2 },
   ojTeaser: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(237,220,200,0.7)', lineHeight: 17 },
 
   heroCard: { height: 220, borderRadius: 16, overflow: 'hidden', position: 'relative', marginHorizontal: 0 },

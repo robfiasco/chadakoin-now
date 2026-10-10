@@ -13,18 +13,27 @@ export interface OldJamestownStory {
   year: number;
   teaser: string;
   body: string[]; // paragraphs, in order
+  // Sepia 1200×630 headline-only hero — used on the Home card and atop the
+  // detail screen. Same fixed aspect ratio for all stories (OLD_JAMESTOWN_HEADER_ASPECT
+  // below), so no per-story width/height needed the way the clipping has.
+  headerImage: string; // filename in assets/old-jamestown/headers/ and public/old-jamestown/headers/
+  headerImageAlt: string;
+  // Full original clipping — secondary now, shown further down the detail
+  // screen as "See the original page," not the hero.
   image: string;  // filename in assets/old-jamestown/ and public/old-jamestown/
-  imageWidth: number;  // native pixel dimensions — lets the Home card crop
-  imageHeight: number; // to the image's actual top (via aspectRatio) instead
-                        // of resizeMode="cover" center-cropping a hardcoded
-                        // box height, which showed body text instead of the
-                        // headline for the extreme-aspect-ratio 1902 scan.
+  imageWidth: number;  // native pixel dimensions — lets the "original page"
+  imageHeight: number; // tile crop to the image's actual top (via aspectRatio)
+                        // instead of resizeMode="cover" center-cropping a
+                        // hardcoded box height, which showed body text instead
+                        // of the headline for the extreme-aspect-ratio 1902 scan.
   imageAlt: string;
   sourceLabel: string;
   sourceUrl: string;
   credit: string;
   tags: string[];
 }
+
+export const OLD_JAMESTOWN_HEADER_ASPECT = 1200 / 630;
 
 export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
   {
@@ -42,6 +51,8 @@ export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
       'Police added special officers for the night. The older boys’ favorite stunt was tipping outhouses near Hedges Avenue and watching them roll down the hill. One rolled right up to a waiting officer, and two boys went to court. The judge let them go on one condition: they had to put the outhouses back.',
       'The paper’s verdict was "lots of fun going on" but "no great damage was done." The same page also covered a run of house parties, including one on West Eighth Street that served Halloween supper inside hollowed-out pumpkins.',
     ],
+    headerImage: '1902-halloween-pranks.jpg',
+    headerImageAlt: '"Halloween Pranks — A Perfect Night for Outdoor Sports" headline, The Evening Journal, Nov. 1, 1902',
     image: '1902-halloween-pranks.jpg',
     imageWidth: 492,
     imageHeight: 2042,
@@ -66,6 +77,8 @@ export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
       'Meanwhile, the well-behaved crowd was partying. Genevieve Aldrich and 20 friends gathered at her parents’ Allen Street home in sheets and pillowcases, and nobody knew who was who until a supper of pumpkin pie, doughnuts and cider around 10:30. The Luther League of the English Lutheran church held its annual social at 38 Harrison Street, with jack-o’-lanterns everywhere and a witch telling fortunes from a dark corner under the stairs. And in Falconer, the young women of the American Aristotype office surprised their hostess, Miss Fenton, by showing up in costume, fortune teller included.',
       'So enjoy the parties, Jamestown. Then check your fence in the morning.',
     ],
+    headerImage: '1900-halloween-pranks.jpg',
+    headerImageAlt: '"Halloween Pranks — The Usual Number of Annoying Mischief-Making Escapades Are Reported Today" headline, The Evening Journal, Nov. 1, 1900',
     image: '1900-halloween-pranks.jpg',
     imageWidth: 700,
     imageHeight: 850,
@@ -91,6 +104,8 @@ export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
       'And that’s where the story ends. The paper doesn’t say who did it, whether the trouble it predicted ever showed up, or what the motorman said when the car jerked to a stop. We can guess that last part wasn’t printable. The whole report is barely a paragraph, but it packs in a bonfire, a missing outhouse, a village full of misplaced belongings and one very confused streetcar.',
       'So this Halloween, Falconer, keep the shed locked and the barber pole bolted down. And before you pull out of the driveway on November 1, take a quick look and make sure nobody tied your bumper to the mailbox.',
     ],
+    headerImage: '1896-falconer-mischief.jpg',
+    headerImageAlt: '"Halloween Mischief at Falconer" dispatch, The Evening Journal, Nov. 2, 1896',
     image: '1896-falconer-mischief.jpg',
     imageWidth: 648,
     imageHeight: 720,
@@ -115,6 +130,8 @@ export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
       'We don’t know who A. S. D. was, or whether the gate-lifters of 1891 were reading the letters page. (Probably not.) But the argument sounds pretty familiar: tradition versus rowdiness, police versus parenting.',
       'Two years later, on Halloween 1893, the Journal skipped the lecture and offered a better way to spend the evening: "Russet cider and doughnuts are very suitable refreshments for the occasion." Jamestown, that one still holds up.',
     ],
+    headerImage: '1891-disgraceful-observance.jpg',
+    headerImageAlt: '"A Disgraceful Observance" letter to the editor, The Evening Journal, Oct. 28, 1891',
     image: '1891-disgraceful-observance.jpg',
     imageWidth: 580,
     imageHeight: 715,
