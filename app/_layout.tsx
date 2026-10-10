@@ -9,6 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
 import { CivicDataProvider, useCivic } from '../lib/CivicDataContext';
 import { RadioProvider, useRadio } from '../lib/RadioContext';
+import { OldJamestownProvider, useOldJamestown } from '../lib/OldJamestownContext';
+import OldJamestownScreen from './old-jamestown';
 import { Image } from 'react-native';
 import { AppLoadingScreen } from '../components/AppLoadingScreen';
 import { AddToHomeScreen } from '../components/AddToHomeScreen';
@@ -85,6 +87,7 @@ function AppLayout() {
   const { theme } = useTheme();
   const { loading: dataLoading } = useCivic();
   const { required: updateRequired, storeUrl } = useUpdateCheck();
+  const { selectedStory, closeStory } = useOldJamestown();
   const [activePage, setActivePage] = useState(0);
   const pagerRef = useRef<PagerViewHandle>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
@@ -222,6 +225,15 @@ function AppLayout() {
 
       {/* PWA install banner — floats above tab bar, shown after loading */}
       {!showLoading && !updateRequired && <AddToHomeScreen />}
+
+      {/* Old Jamestown story detail — opened from either the Home card or
+          the News archive list, so it's rendered once here rather than
+          duplicated in both tabs (same reasoning as RadioContext). */}
+      {selectedStory && (
+        <View style={[StyleSheet.absoluteFillObject, { zIndex: 900 }]}>
+          <OldJamestownScreen story={selectedStory} onClose={closeStory} />
+        </View>
+      )}
     </View>
   );
 }
@@ -260,7 +272,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <CivicDataProvider>
           <RadioProvider>
-            <AppLayout />
+            <OldJamestownProvider>
+              <AppLayout />
+            </OldJamestownProvider>
           </RadioProvider>
         </CivicDataProvider>
       </ThemeProvider>

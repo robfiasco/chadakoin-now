@@ -18,6 +18,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { getTodaysFact } from '../data/jamestown-facts';
 import { openLink } from '../lib/openLink';
 import { useRadio } from '../lib/RadioContext';
+import { useOldJamestown } from '../lib/OldJamestownContext';
+import { oldJamestownImageSource } from '../lib/oldJamestownImages';
 import { apiUrl } from '../lib/api';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
@@ -240,6 +242,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
     : {};
 
   const { parking, recycling, alerts, dpw } = civic;
+  const { latestStory, openStory } = useOldJamestown();
 
   const dpwStreetItems = dpw?.items.filter(i => !i.isCitywideSupport) ?? [];
 
@@ -661,6 +664,35 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
           <Ionicons name="chevron-forward" size={12} color={dark.text.subtle} />
         </TouchableOpacity>
 
+        {/* Below the time-sensitive civic cards above (election/health
+            notice live further up; city services via the link just above),
+            above the general news/events feeds below — never pushes civic
+            alerts down since it only renders once a story has released. */}
+        {latestStory && (
+          <TouchableOpacity
+            onPress={() => openStory(latestStory.slug)}
+            activeOpacity={0.85}
+            style={styles.ojCard}
+          >
+            <View style={styles.ojImageWrap}>
+              <Image
+                source={oldJamestownImageSource(latestStory.image)}
+                style={[styles.ojImage, { aspectRatio: latestStory.imageWidth / latestStory.imageHeight }]}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(26,16,8,0.9)']}
+                style={StyleSheet.absoluteFillObject}
+              />
+            </View>
+            <View style={styles.ojContent}>
+              <Text style={styles.ojLabel}>OLD JAMESTOWN · {latestStory.year}</Text>
+              <Text style={styles.ojTitle} numberOfLines={2}>{latestStory.title}</Text>
+              <Text style={styles.ojTeaser} numberOfLines={2}>{latestStory.teaser}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {(civic.loading || topStory) && (
           <>
             <View style={styles.sectionHeader}>
@@ -1057,6 +1089,25 @@ const styles = StyleSheet.create({
 
   moreServicesLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10, paddingVertical: 4 },
   moreServicesText: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.subtle },
+
+  // "Old Jamestown" — warm sepia accent, card-only (rest of Home stays dark).
+  ojCard: {
+    marginTop: 20, borderRadius: 14, overflow: 'hidden',
+    backgroundColor: 'rgba(42,28,16,0.5)', borderWidth: 1, borderColor: 'rgba(196,154,97,0.3)',
+  },
+  ojImageWrap: { height: 110, overflow: 'hidden', backgroundColor: '#1a1008' },
+  // width:'100%' + aspectRatio (set per-story from imageWidth/imageHeight)
+  // renders the image at its true proportions with no internal crop, so
+  // position:absolute + top:0 against the shorter, overflow:hidden wrap
+  // clips to the image's actual TOP (the headline) — resizeMode="cover"
+  // with a mismatched fixed height instead center-crops before this
+  // positioning ever applies, which showed body text, not the headline,
+  // for the 492×2042 near-vertical 1902 scan.
+  ojImage: { width: '100%', position: 'absolute', top: 0 },
+  ojContent: { padding: 14, gap: 4 },
+  ojLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: '#d4a574' },
+  ojTitle: { fontFamily: 'Syne', fontSize: 15, fontWeight: '700', color: '#fff', lineHeight: 19 },
+  ojTeaser: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(237,220,200,0.7)', lineHeight: 17 },
 
   heroCard: { height: 220, borderRadius: 16, overflow: 'hidden', position: 'relative', marginHorizontal: 0 },
   heroAccentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2, zIndex: 2 },

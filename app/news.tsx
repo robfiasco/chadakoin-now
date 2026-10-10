@@ -13,6 +13,9 @@ import { useCivic } from '../lib/CivicDataContext';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
 import type { NewsItem } from '../hooks/useCivicData';
+import { useOldJamestown } from '../lib/OldJamestownContext';
+import { oldJamestownImageSource } from '../lib/oldJamestownImages';
+import type { OldJamestownStory } from '../data/oldJamestown';
 
 
 const HERO_PHOTOS = [
@@ -448,12 +451,41 @@ const sec = StyleSheet.create({
   line:  { flex: 1, height: 1 },
 });
 
+const OJ_SEPIA = '#d4a574';
+
+const oj = StyleSheet.create({
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, marginTop: 4 },
+  sectionLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', letterSpacing: 1.8, color: OJ_SEPIA },
+  sectionLine: { flex: 1, height: 1 },
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, marginBottom: 8,
+    borderRadius: 10, backgroundColor: 'rgba(42,28,16,0.4)', borderWidth: 1, borderColor: 'rgba(196,154,97,0.22)',
+  },
+  rowImage: { width: 48, height: 48, borderRadius: 6, backgroundColor: '#1a1008' },
+  rowLabel: { fontFamily: 'Outfit', fontSize: 10, fontWeight: '700', color: OJ_SEPIA },
+  rowTitle: { fontFamily: 'DMSans_600SemiBold', fontSize: 13, color: '#fff', marginTop: 2, lineHeight: 17 },
+});
+
+function OldJamestownRow({ story, onPress }: { story: OldJamestownStory; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={oj.row}>
+      <Image source={oldJamestownImageSource(story.image)} style={oj.rowImage} resizeMode="cover" />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={oj.rowLabel}>{story.year}</Text>
+        <Text style={oj.rowTitle} numberOfLines={2}>{story.title}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={13} color="rgba(212,165,116,0.4)" />
+    </TouchableOpacity>
+  );
+}
+
 export default function NewsScreen() {
   const { theme } = useTheme();
   const civic = useCivic();
   const { news, loading } = civic;
   const [refreshing, setRefreshing] = useState(false);
   const [blotterOpen, setBlotterOpen] = useState(false);
+  const { releasedStories, openStory } = useOldJamestown();
 
   async function onRefresh() {
     setRefreshing(true);
@@ -540,6 +572,22 @@ export default function NewsScreen() {
               );
             })}
           </>
+        )}
+
+        {releasedStories.length > 0 && (
+          <View style={{ marginTop: 4, marginBottom: 8 }}>
+            <View style={oj.sectionHeaderRow}>
+              <Text style={oj.sectionLabel}>OLD JAMESTOWN</Text>
+              <LinearGradient
+                colors={['rgba(212,165,116,0.3)', 'transparent'] as any}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={oj.sectionLine}
+              />
+            </View>
+            {releasedStories.map(story => (
+              <OldJamestownRow key={story.id} story={story} onPress={() => openStory(story.slug)} />
+            ))}
+          </View>
         )}
 
         <Text style={[styles.footer, { color: `rgba(${theme.accRGB},0.2)` }]}>
