@@ -211,6 +211,11 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [refreshing, setRefreshing] = useState(false);
   const [widgetBanner, setWidgetBanner] = useState(false);
   const [alertExpanded, setAlertExpanded] = useState(false);
+  // Keyed to the notice's own title (not a flat constant) so a future,
+  // different health notice isn't pre-dismissed by an old flag left over
+  // from this one.
+  const HEALTH_NOTICE_DISMISS_KEY = `health_notice_dismissed_${HEALTH_NOTICE.title}`;
+  const [healthNoticeDismissed, setHealthNoticeDismissed] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -218,6 +223,21 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       if (!v) setWidgetBanner(true);
     });
   }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem(HEALTH_NOTICE_DISMISS_KEY).then(v => {
+      if (v === '1') setHealthNoticeDismissed(true);
+    });
+  }, []);
+
+  function dismissHealthNotice() {
+    setHealthNoticeDismissed(true);
+    AsyncStorage.setItem(HEALTH_NOTICE_DISMISS_KEY, '1').catch(() => {});
+  }
+  function reopenHealthNotice() {
+    setHealthNoticeDismissed(false);
+    AsyncStorage.removeItem(HEALTH_NOTICE_DISMISS_KEY).catch(() => {});
+  }
 
   const civic = useCivic();
 
@@ -351,13 +371,32 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </TouchableOpacity>
       )}
 
-      {showHealthNotice && (
+      {showHealthNotice && (healthNoticeDismissed ? (
+        // Dismissed but still reachable — a small persistent row rather
+        // than disappearing outright, since this is safety information
+        // someone might want to re-check later in the week.
+        <TouchableOpacity
+          onPress={reopenHealthNotice}
+          activeOpacity={0.8}
+          style={styles.healthBannerCollapsed}
+        >
+          <Ionicons name="medkit-outline" size={14} color="#e11d48" />
+          <Text style={styles.healthBannerCollapsedText} numberOfLines={1}>
+            Health Notice: {HEALTH_NOTICE.title}
+          </Text>
+          <Ionicons name="chevron-forward" size={12} color="rgba(225,29,72,0.5)" />
+        </TouchableOpacity>
+      ) : (
         <View style={styles.healthBanner}>
           <View style={styles.healthBannerHeader}>
             <Ionicons name="medkit-outline" size={16} color="#fff" />
             <View style={styles.healthBannerBadge}>
               <Text style={styles.healthBannerBadgeText}>{HEALTH_NOTICE.badge}</Text>
             </View>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity onPress={dismissHealthNotice} activeOpacity={0.7} hitSlop={8}>
+              <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
           </View>
           <Text style={styles.healthBannerTitle}>{HEALTH_NOTICE.title}</Text>
           <Text style={styles.healthBannerBody}>{HEALTH_NOTICE.body}</Text>
@@ -380,7 +419,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      ))}
 
 
 
@@ -1026,6 +1065,12 @@ const styles = StyleSheet.create({
   healthBannerCtaOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(225,29,72,0.5)' },
   healthBannerCtaText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '700', color: '#fff' },
   healthBannerCtaOutlineText: { color: '#e11d48' },
+  healthBannerCollapsed: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(225,29,72,0.08)', borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(225,29,72,0.2)', paddingHorizontal: 18, paddingVertical: 10,
+  },
+  healthBannerCollapsedText: { flex: 1, fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
 
 
   scroll: { flex: 1 },
