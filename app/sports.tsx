@@ -68,6 +68,7 @@ interface MLBTeam {
   seriesRecord?: string | null;
   eliminated?: boolean;
   eliminatedRound?: string | null;
+  lastRoundResult?: string | null;
 }
 
 // MLB team ID → ESPN CDN abbreviation (reliable fallback when API omits abbreviation)
@@ -195,6 +196,10 @@ function nflTeamStatus(t: NFLTeam): { pill?: string; pillLive?: boolean; line: s
 // time when the same club is already shown with a time in the NEXT list,
 // to avoid repeating it.
 function mlbLastOrNext(t: MLBTeam, alreadyInNext: boolean): string {
+  // Between rounds, the most recent game is the PREVIOUS series' clincher,
+  // so showing it raw ("W 2–0 vs Sox") sat under a pill naming the round
+  // that hasn't started yet. Caption it by the round it actually decided.
+  if (t.lastRoundResult) return t.lastRoundResult;
   if (t.games[0]) {
     const g = t.games[0];
     return `${g.won ? 'W' : 'L'} ${g.ourScore}–${g.theirScore} ${g.isHome ? 'vs' : '@'} ${g.opponent.split(' ').pop()}`;
@@ -211,6 +216,15 @@ function mlbLastOrNext(t: MLBTeam, alreadyInNext: boolean): string {
   return 'Schedule TBD';
 }
 
+
+// ESPN usually supplies an absolute opponent logo, but when it omits one the
+// crest slot rendered empty. MLB and NHL both already fall back to building
+// an espncdn URL from the team abbreviation; do the same here.
+function nflLogoFor(logo: string | undefined, abbr: string | undefined): string | undefined {
+  if (logo) return logo;
+  if (!abbr || abbr === '???') return undefined;
+  return `https://a.espncdn.com/i/teamlogos/nfl/500/${abbr.toLowerCase()}.png`;
+}
 
 // Transforms an NHL API v1 game (native — different shape from ESPN).
 function parseNHLGame(g: any): GameResult | null {
@@ -314,19 +328,38 @@ async function fetchMLB(): Promise<MLBTeam[]> {
         // out still has "Scheduled" games sitting in this same window, so
         // without this, inPostseason stayed true forever post-elimination.
         let eliminated = false;
+        // Mirrors api/mlb.js — see the long comment there for why the round
+        // of the last PLAYED game is tracked separately from the round of
+        // the next scheduled one, and why winningTeam can't be trusted.
+        let playedRound: string | null = null;
+        let upcomingRound: string | null = null;
+        let lastRoundResult: string | null = null;
         for (const dateObj of (json.dates ?? [])) {
           for (const g of (dateObj.games ?? [])) {
             const state = g.status?.detailedState ?? '';
+            const isFinal = state === 'Final' || state === 'Completed Early';
             if (g.gameType && g.gameType !== 'R') {
               inPostseason = true;
-              postseasonRound = MLB_ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? postseasonRound;
+              const round = MLB_ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? null;
               const ss = g.seriesStatus;
-              if (ss) {
-                const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
-                const weWon = ss.winningTeam?.id === t.id;
-                const weAreLeadOrTied = !ss.winningTeam || weWon;
-                seriesRecord = weAreLeadOrTied ? `${wins}-${losses}` : `${losses}-${wins}`;
-                eliminated = !!ss.isOver && !weWon;
+              if (isFinal) {
+                playedRound = round ?? playedRound;
+                if (ss) {
+                  const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
+                  const weAreHome = g.teams?.home?.team?.id === t.id;
+                  const weWonThisGame = (weAreHome ? g.teams?.home : g.teams?.away)?.isWinner === true;
+                  const ourAbbr = (weAreHome ? g.teams?.home : g.teams?.away)?.team?.abbreviation ?? '';
+                  const weLead = ss.isOver
+                    ? weWonThisGame
+                    : (ourAbbr && typeof ss.result === 'string' ? ss.result.startsWith(ourAbbr) : false);
+                  seriesRecord = weLead ? `${wins}-${losses}` : `${losses}-${wins}`;
+                  eliminated = !!ss.isOver && !weWonThisGame;
+                  lastRoundResult = ss.isOver && weWonThisGame && round
+                    ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
+                    : null;
+                }
+              } else if (!upcomingRound) {
+                upcomingRound = round ?? null;
               }
             }
             if (state === 'Final' || state === 'Completed Early') {
@@ -377,13 +410,17 @@ async function fetchMLB(): Promise<MLBTeam[]> {
           games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
           nextGame, liveGame,
           inPostseason: inPostseason && !eliminated,
-          eliminated, eliminatedRound: eliminated ? postseasonRound : null,
-          postseasonRound, seriesRecord,
+          eliminated, eliminatedRound: eliminated ? playedRound : null,
+          postseasonRound: (lastRoundResult && upcomingRound) ? upcomingRound : (playedRound ?? upcomingRound),
+          seriesRecord: (lastRoundResult && upcomingRound) ? null : seriesRecord,
+          lastRoundResult: upcomingRound ? lastRoundResult : null,
           record: standing?.record ?? '',
           divisionRank: standing?.divisionRank,
-          gamesBack: standing?.gamesBack,
-          streak: standing?.streak,
-          last10: standing?.last10,
+          // Regular-season standings values — meaningless once the
+          // postseason starts (see api/mlb.js for the full reasoning).
+          gamesBack: (inPostseason || eliminated) ? undefined : standing?.gamesBack,
+          streak:    (inPostseason || eliminated) ? undefined : standing?.streak,
+          last10:    (inPostseason || eliminated) ? undefined : standing?.last10,
           teamBA, teamERA,
         };
       } catch { return { ...t, games: [], nextGame: null, liveGame: null, record: '' }; }
@@ -559,7 +596,9 @@ function TeamCard({
       </LinearGradient>
       <View style={{ flex: 1 }}>
         <Text style={[styles.teamCardName, nameStyle]}>{name}</Text>
-        {subtitle ? <Text style={[styles.teamCardSub, { color: dark.text.subtle }]}>{subtitle}</Text> : null}
+        {/* muted, not subtle — these cards render over a photo (arena/ballpark),
+            where subtle grey fell to roughly 2.6:1 against the lighter areas. */}
+        {subtitle ? <Text style={[styles.teamCardSub, { color: dark.text.muted }]}>{subtitle}</Text> : null}
       </View>
       {!hideChevron && (
         <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
@@ -668,35 +707,24 @@ function LeagueTeamRow({
   );
 }
 
-// Ad slot — sells the Featured spot, never mixed into standings/score rows.
-// Reuses the same pricing constant as the Events tab's ad CTA.
+// Unsold Featured slot. Deliberately a single quiet line rather than the
+// half-screen pitch card this used to be: with no sponsor booked, a large
+// self-promo block is the most prominent thing on the screen, which both
+// reads as an ad and pushes the actual scores down. The pitch (pricing,
+// details) lives behind the tap, in the feedback sheet.
 function SportsAdCTA({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={adCta.card}>
-      <View style={adCta.badge}>
-        <Ionicons name="megaphone-outline" size={11} color={ACC.label} />
-        <Text style={adCta.badgeText}>{AD_BADGE_LABEL}</Text>
-      </View>
-      <Text style={adCta.title}>Put Your Team First</Text>
-      <Text style={adCta.body}>
-        This slot stays at the top of Sports — seen every time residents check scores.
-      </Text>
-      <View style={adCta.pricingRow}>
-        {EVENT_BOOST_PRICES.map(p => (
-          <View key={p} style={adCta.pricePill}>
-            <Text style={adCta.priceText}>{p}</Text>
-          </View>
-        ))}
-      </View>
-      <View style={adCta.ctaBtn}>
-        <Text style={adCta.ctaBtnText}>Feature This Team</Text>
-        <Ionicons name="arrow-forward" size={13} color="#000" />
-      </View>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={adCta.slimRow}>
+      <Ionicons name="megaphone-outline" size={13} color={ACC.label} />
+      <Text style={adCta.slimText}>Feature your local business here</Text>
+      <Ionicons name="arrow-forward" size={12} color={ACC.label} />
     </TouchableOpacity>
   );
 }
 
 const adCta = StyleSheet.create({
+  slimRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: `${ACC.label}33`, backgroundColor: `${ACC.label}0d` },
+  slimText:  { flex: 1, fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: ACC.label },
   card:      { borderWidth: 1, borderColor: `${ACC.label}48`, backgroundColor: `${ACC.label}0d`, borderRadius: 18, padding: 18, gap: 10 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: `${ACC.label}4d`, backgroundColor: `${ACC.label}1f`, borderRadius: 20 },
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, color: ACC.label },
@@ -917,7 +945,7 @@ export default function SportsScreen() {
           dateLabel: lg.week,
           time: `${lg.ourScore}–${lg.theirScore} · ${lg.clock}`,
           accent: ACC.nfl, gradStart: 'rgba(251,146,60,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
-          ourLogoUrl: team.logo, oppLogoUrl: lg.opponentLogo || undefined,
+          ourLogoUrl: team.logo, oppLogoUrl: nflLogoFor(lg.opponentLogo, lg.opponentAbbr),
           isLive: true,
         });
       } else if (team.nextGame) {
@@ -932,7 +960,7 @@ export default function SportsScreen() {
             dateLabel: '',
             time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
             accent: ACC.nfl, gradStart: 'rgba(251,146,60,0.28)', gradEnd: 'rgba(6,14,24,0.7)',
-            ourLogoUrl: team.logo, oppLogoUrl: ng.opponentLogo || undefined,
+            ourLogoUrl: team.logo, oppLogoUrl: nflLogoFor(ng.opponentLogo, ng.opponentAbbr),
             record: team.record,
             opponentName: ng.opponent, isHome: ng.isHome,
             venue: ng.venue || undefined, broadcast: ng.broadcast || undefined,
@@ -1560,7 +1588,8 @@ export default function SportsScreen() {
                 {data.standing ? (
                   <>
                     <Text style={{ color: dark.text.subtle, fontSize: 11 }}>·</Text>
-                    <Text style={[styles.glanceText, { color: dark.text.subtle }]}>{data.standing}</Text>
+                    {/* over the arena image — see teamCardSub above */}
+                    <Text style={[styles.glanceText, { color: dark.text.muted }]}>{data.standing}</Text>
                   </>
                 ) : null}
               </View>

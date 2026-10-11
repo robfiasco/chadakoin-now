@@ -149,8 +149,8 @@ export default function RecyclingScreen() {
                       ) : null}
                       {week.exclusions && week.isThis ? (
                         <View style={styles.exclusionRow}>
-                          <Ionicons name="close-circle" size={11} color={`${color}80`} />
-                          <Text style={[styles.exclusions, { color: `${color}80` }]}>{week.exclusions}</Text>
+                          <Ionicons name="close-circle" size={13} color={`${color}cc`} />
+                          <Text style={[styles.exclusions, { color: `${color}e6` }]}>{week.exclusions}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -259,8 +259,10 @@ const styles = StyleSheet.create({
 
   materialName:    { fontFamily: 'Syne', fontSize: 14, fontWeight: '700', lineHeight: 19 },
   materialDetail:  { fontFamily: 'Outfit', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2, lineHeight: 14 },
-  exclusionRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  exclusions:      { fontFamily: 'Outfit', fontSize: 10, lineHeight: 14 },
+  // flex-start + more top margin so a wrapped exclusion list doesn't sit
+  // vertically centred against its icon or crowd the line above it.
+  exclusionRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 7 },
+  exclusions:      { fontFamily: 'Outfit', fontSize: 12, lineHeight: 16, flex: 1 },
 
   infoCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 16,

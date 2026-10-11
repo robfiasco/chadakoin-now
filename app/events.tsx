@@ -522,37 +522,21 @@ const sp = StyleSheet.create({
   ctaText:    { fontFamily: 'Outfit', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
 });
 
-// ── Ad slot — sells the Events Featured carousel instead of one slot ──
+// Unsold Featured slot — a single quiet line, not the half-screen pitch
+// card this used to be. See the matching note in app/sports.tsx: with no
+// sponsor booked, a big self-promo block is the loudest thing on screen and
+// reads as an ad. Pricing and details live behind the tap.
 function EventAdSellCard({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.85}
-      style={[adCta.card, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
+      activeOpacity={0.7}
+      style={[adCta.slimRow, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
     >
-      <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
-        <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
-        <Text style={[adCta.badgeText, { color: theme.acc }]}>{AD_BADGE_LABEL}</Text>
-      </View>
-      <Text style={adCta.title}>Put Your Event First</Text>
-      <Text style={adCta.body}>
-        Up to {FEATURED_EVENT_SLOTS} featured events — top of Events, every filter.
-      </Text>
-      <View style={adCta.pricingRow}>
-        {EVENT_BOOST_PRICES.map(p => (
-          <View key={p} style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-            <Text style={[adCta.priceText, { color: theme.acc }]}>{p}</Text>
-          </View>
-        ))}
-      </View>
-      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        {EVENT_BOOST_SHORT_NOTE} {EVENT_BOOST_LONG_NOTE}
-      </Text>
-      <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
-        <Text style={adCta.ctaBtnText}>Feature This Event</Text>
-        <Ionicons name="arrow-forward" size={13} color="#000" />
-      </View>
+      <Ionicons name="megaphone-outline" size={13} color={theme.acc} />
+      <Text style={[adCta.slimText, { color: theme.acc }]}>Feature your local event here</Text>
+      <Ionicons name="arrow-forward" size={12} color={theme.acc} />
     </TouchableOpacity>
   );
 }
@@ -625,6 +609,8 @@ function EventsFeaturedCarousel({ onAdvertise }: { onAdvertise: () => void }) {
 }
 
 const adCta = StyleSheet.create({
+  slimRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, marginBottom: 12 },
+  slimText:  { flex: 1, fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
   card:      { borderWidth: 1, borderRadius: 18, padding: 20, marginBottom: 12, gap: 14 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },
   badgeText: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },

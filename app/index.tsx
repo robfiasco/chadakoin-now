@@ -215,8 +215,17 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   // Keyed to the notice's own title (not a flat constant) so a future,
   // different health notice isn't pre-dismissed by an old flag left over
   // from this one.
-  const HEALTH_NOTICE_DISMISS_KEY = `health_notice_dismissed_${HEALTH_NOTICE.title}`;
-  const [healthNoticeDismissed, setHealthNoticeDismissed] = useState(false);
+  // Starts collapsed. Expanded, this banner ran ~40% of a phone screen and
+  // sits above everything else on Home, so it buried the weather/civic
+  // cards on every visit. Collapsed-by-default keeps the notice present and
+  // one tap away without taking the screen hostage.
+  //
+  // This also replaces the old persisted "dismissed" flag: collapsed IS the
+  // dismissed state now, so there's nothing left for it to control. The
+  // one-line form stays until the notice's expiresAfter date rather than
+  // being permanently dismissible — it's public-health info with a short
+  // shelf life, and one line is a fair standing cost.
+  const [healthNoticeExpanded, setHealthNoticeExpanded] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -224,21 +233,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
       if (!v) setWidgetBanner(true);
     });
   }, []);
-
-  useEffect(() => {
-    AsyncStorage.getItem(HEALTH_NOTICE_DISMISS_KEY).then(v => {
-      if (v === '1') setHealthNoticeDismissed(true);
-    });
-  }, []);
-
-  function dismissHealthNotice() {
-    setHealthNoticeDismissed(true);
-    AsyncStorage.setItem(HEALTH_NOTICE_DISMISS_KEY, '1').catch(() => {});
-  }
-  function reopenHealthNotice() {
-    setHealthNoticeDismissed(false);
-    AsyncStorage.removeItem(HEALTH_NOTICE_DISMISS_KEY).catch(() => {});
-  }
 
   const civic = useCivic();
 
@@ -372,12 +366,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
         </TouchableOpacity>
       )}
 
-      {showHealthNotice && (healthNoticeDismissed ? (
-        // Dismissed but still reachable — a small persistent row rather
-        // than disappearing outright, since this is safety information
-        // someone might want to re-check later in the week.
+      {showHealthNotice && (!healthNoticeExpanded ? (
+        // Default state, and also where "dismissed" lands — a single line
+        // rather than disappearing outright, since this is safety
+        // information someone might want to re-check later in the week.
+        // Dismissed differs only in that the AsyncStorage flag persists,
+        // so the banner never auto-expands again on a later launch.
         <TouchableOpacity
-          onPress={reopenHealthNotice}
+          onPress={() => setHealthNoticeExpanded(true)}
           activeOpacity={0.8}
           style={styles.healthBannerCollapsed}
         >
@@ -395,8 +391,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               <Text style={styles.healthBannerBadgeText}>{HEALTH_NOTICE.badge}</Text>
             </View>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={dismissHealthNotice} activeOpacity={0.7} hitSlop={8}>
-              <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
+            <TouchableOpacity onPress={() => setHealthNoticeExpanded(false)} activeOpacity={0.7} hitSlop={8}>
+              <Ionicons name="chevron-up" size={18} color="rgba(255,255,255,0.5)" />
             </TouchableOpacity>
           </View>
           <Text style={styles.healthBannerTitle}>{HEALTH_NOTICE.title}</Text>
@@ -1129,7 +1125,9 @@ const styles = StyleSheet.create({
   todayCategoryLabel: { fontFamily: 'Outfit', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
   todayCardTitle: { fontFamily: 'Editorial', fontSize: 16, color: dark.text.primary, lineHeight: 21 },
   todayCardSub: { fontFamily: 'Outfit', fontSize: 11, color: dark.text.muted, marginTop: 1 },
-  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 10, marginTop: 1 },
+  // 10px jammed 1px under the title read as part of it; this is the one
+  // line telling you what NOT to put out, so give it room and size.
+  todayCardExclusion: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 16, marginTop: 5 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', textAlign: 'right' },
 
   holidayStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },

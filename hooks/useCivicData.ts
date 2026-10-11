@@ -5,6 +5,7 @@ import SharedGroupPreferences from 'react-native-shared-group-preferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { XMLParser } from 'fast-xml-parser';
 import { fetchSourceHealth } from './useSourceHealth';
+import { apiUrl } from '../lib/api';
 
 export interface RecyclingWeek {
   material: string;
@@ -161,7 +162,6 @@ const FEEDS = {
   wgrzSports: 'https://www.wgrz.com/feeds/syndication/rss/sports',
   wgrzWNY:         'https://www.wgrz.com/feeds/syndication/rss/news/local/wny',
   wgrzSouthernTier: 'https://www.wgrz.com/feeds/syndication/rss/news/local/southern-tier',
-  spectrumWNY:     'https://spectrumlocalnews.com/nys/buffalo/rss/local-news.rss',
   wnyNewsNow:      'https://wnynewsnow.com/category/jamestown/feed/',
   // WRFA-down fallback — Media One Radio Group daily Jamestown/Chautauqua roundups
   wjtn: 'https://wjtn.com/news-and-closings/local-news-headlines/feed.xml',
@@ -253,10 +253,10 @@ const DEFAULTS: Omit<CivicData, 'refresh'> = {
 // Web needs it for CORS; native needs it because many news sources
 // (WordPress, WGRZ, etc.) reject non-browser user agents and the
 // edge function adds proper headers. Both platforms go through proxy.
-const NATIVE_API_HOST = 'https://now.chadakoindigital.com';
 function proxyUrl(url: string): string {
-  const path = `/api/proxy?url=${encodeURIComponent(url)}`;
-  return Platform.OS === 'web' ? path : `${NATIVE_API_HOST}${path}`;
+  // apiUrl() is the single place that knows the native host — a local
+  // copy of that constant here drifted out of sync once already.
+  return apiUrl(`/api/proxy?url=${encodeURIComponent(url)}`);
 }
 
 // Web goes through the Vercel proxy which has its own timeouts.
@@ -295,18 +295,29 @@ function getItemText(field: any): string {
   return String(field);
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  nbsp: ' ', hellip: '…', mdash: '—', ndash: '–',
+  lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
+  lt: '<', gt: '>', quot: '"', apos: "'",
+};
+
 function stripHtml(html: string): string {
   return html
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#x[0-9a-fA-F]+;/g, '')
-    .replace(/&#\d+;/g, '')
-    .replace(/&[a-z]+;/g, '')
+    // Entities used to be DELETED rather than decoded, which quietly ate
+    // characters mid-headline: "&#x2019;" dropped the apostrophe out of
+    // "Sheriff's", and "&hellip;" left a dangling space behind ("...lean ").
+    // Decode what we recognise, numeric included, and only then drop the
+    // leftovers.
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&([a-zA-Z]+);/g, (m, name) => NAMED_ENTITIES[name.toLowerCase()] ?? (name.toLowerCase() === 'amp' ? '&' : m))
+    // Unknown entities only — anything recognised was handled above.
+    .replace(/&[a-zA-Z]+;/g, '')
     .replace(/\s{2,}/g, ' ')
+    // Tidy spacing the decode can leave behind: a space pushed up against
+    // closing punctuation, or a trailing ellipsis separated from its word.
+    .replace(/\s+([,.;:!?…])/g, '$1')
     .trim();
 }
 
@@ -689,7 +700,7 @@ async function fetchDpwUpdate(): Promise<DpwWeekUpdate | null> {
   const cached = await getCached<DpwWeekUpdate>('dpw', TTL.dpw);
   if (cached) return cached;
   try {
-    const path = Platform.OS === 'web' ? '/api/dpw' : `${NATIVE_API_HOST}/api/dpw`;
+    const path = apiUrl('/api/dpw');
     const res = await feedFetch(path);
     if (!res.ok) throw new Error(`DPW fetch failed: ${res.status}`);
     const data: DpwWeekUpdate | null = await res.json();
@@ -2393,14 +2404,16 @@ async function fetchNews(): Promise<NewsItem[]> {
     // Fall through to fresh fetch so WJTN and boosted limits kick in
   }
 
-  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, spectrumRes, wnyNewsNowRes, wjtnRes] = await Promise.allSettled([
+  // NOTE: this destructure is positional — adding or removing a feed here
+  // without changing BOTH lists in step silently shifts every later
+  // response onto the wrong variable.
+  const [wrfaRes, cityRes, jacksonRes, wgrzSportsRes, wgrzWNYRes, wgrzSTRes, wnyNewsNowRes, wjtnRes] = await Promise.allSettled([
     feedFetch(proxyUrl(FEEDS.news)),
     feedFetch(proxyUrl(FEEDS.cityNews)),
     feedFetch(proxyUrl(FEEDS.jackson)),
     feedFetch(proxyUrl(FEEDS.wgrzSports)),
     feedFetch(proxyUrl(FEEDS.wgrzWNY)),
     feedFetch(proxyUrl(FEEDS.wgrzSouthernTier)),
-    feedFetch(proxyUrl(FEEDS.spectrumWNY)),
     feedFetch(proxyUrl(FEEDS.wnyNewsNow)),
     feedFetch(proxyUrl(FEEDS.wjtn)),
   ]);
@@ -2473,10 +2486,6 @@ async function fetchNews(): Promise<NewsItem[]> {
 
   const wgrzSTItems = wgrzSTRes.status === 'fulfilled' && wgrzSTRes.value.ok
     ? toWGRZItems(await wgrzSTRes.value.text(), 'WGRZ', lim.wgrzST)
-    : [];
-
-  const spectrumItems = spectrumRes.status === 'fulfilled' && spectrumRes.value.ok
-    ? toWGRZItems(await spectrumRes.value.text(), 'Spectrum News')
     : [];
 
   const wnyNewsNowItems = wnyNewsNowRes.status === 'fulfilled' && wnyNewsNowRes.value.ok
@@ -2573,7 +2582,6 @@ async function fetchNews(): Promise<NewsItem[]> {
   addUnique(wgrzSTItems, 'wgrzst');
   addUnique(wgrzSportsItems, 'wgrzsports');
   addUnique(wgrzWNYItems, 'wgrzwny');
-  addUnique(spectrumItems, 'spectrum');
   addUnique(wjtnItems, 'wjtn');
 
   // Dedup is source-priority-ordered (WRFA-LP wins ties above); final display order is purely by date, newest first

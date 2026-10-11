@@ -256,38 +256,22 @@ function OpenBadge() {
   );
 }
 
-// ─── Ad slot — sells equal-visibility Featured placement, not one slot ──
+// Unsold Featured slot — a single quiet line, not the half-screen pitch
+// card this used to be. On Visit this is the whole section when no partner
+// is booked (which is the case today), so a full-size sell card meant the
+// first thing a visitor saw on the tab was an ad for ad space. Pricing and
+// the founding offer live behind the tap, on the rate card.
 function VisitAdSellCard({ onViewRateCard }: { onViewRateCard: () => void }) {
   const { theme } = useTheme();
   return (
     <TouchableOpacity
       onPress={onViewRateCard}
-      activeOpacity={0.85}
-      style={[adCta.card, adCta.cardTouchable, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
+      activeOpacity={0.7}
+      style={[adCta.slimRow, { borderColor: `rgba(${theme.accRGB},0.28)`, backgroundColor: `rgba(${theme.accRGB},0.05)` }]}
     >
-      <View style={[adCta.badge, { backgroundColor: `rgba(${theme.accRGB},0.12)`, borderColor: `rgba(${theme.accRGB},0.3)` }]}>
-        <Ionicons name="megaphone-outline" size={11} color={theme.acc} />
-        <Text style={[adCta.badgeText, { color: theme.acc }]}>{AD_BADGE_LABEL}</Text>
-      </View>
-      <Text style={adCta.title}>Get Featured on Visit</Text>
-      <Text style={adCta.body}>
-        Up to {FEATURED_SLOTS} local partners, shown to every visitor, every time they open Visit — not just one slot at the top.
-      </Text>
-      <View style={adCta.pricingRow}>
-        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_FLAT_MONTHLY} / mo</Text>
-        </View>
-        <View style={[adCta.pricePill, { borderColor: `rgba(${theme.accRGB},0.3)`, backgroundColor: `rgba(${theme.accRGB},0.1)` }]}>
-          <Text style={[adCta.priceText, { color: theme.acc }]}>${FEATURED_ANNUAL_PRICE} / yr</Text>
-        </View>
-      </View>
-      <Text style={[adCta.finePrint, { color: `rgba(${theme.accRGB},0.5)` }]}>
-        {FEATURED_SCARCITY_NOTE}.
-      </Text>
-      <View style={[adCta.ctaBtn, { backgroundColor: theme.acc }]}>
-        <Text style={adCta.ctaBtnText}>See Pricing & Founding Offer</Text>
-        <Ionicons name="arrow-forward" size={13} color="#000" />
-      </View>
+      <Ionicons name="megaphone-outline" size={13} color={theme.acc} />
+      <Text style={[adCta.slimText, { color: theme.acc }]}>Feature your local business here</Text>
+      <Ionicons name="arrow-forward" size={12} color={theme.acc} />
     </TouchableOpacity>
   );
 }
@@ -422,6 +406,8 @@ const curationFooter = StyleSheet.create({
 });
 
 const adCta = StyleSheet.create({
+  slimRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, marginBottom: 12 },
+  slimText:  { flex: 1, fontFamily: 'Outfit', fontSize: 12, fontWeight: '600' },
   card:      { borderWidth: 1, borderRadius: 18, padding: 20, marginBottom: 12, gap: 14 },
   cardTouchable: { gap: 14 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderRadius: 20 },

@@ -1,37 +1,23 @@
 import { Platform, ImageSourcePropType } from 'react-native';
 
+const SITE_ORIGIN = 'https://now.chadakoindigital.com';
+
 // React Native's bundler needs static require() calls — can't require() a
-// variable path — so every image gets an explicit entry here, same pattern
-// as the tspark.jpg/hockey.jpg background images in app/sports.tsx. Native
-// bundles these from assets/old-jamestown/; web serves the same files from
-// public/old-jamestown/ (both populated from old-jamestown/images/ and
-// old-jamestown/headers/ at authoring time — keep them in sync if an image
-// is ever swapped).
-const NATIVE_CLIPPINGS: Record<string, ImageSourcePropType> = Platform.OS === 'web' ? {} : {
-  '1902-halloween-pranks.jpg':      require('../assets/old-jamestown/1902-halloween-pranks.jpg'),
-  '1900-halloween-pranks.jpg':      require('../assets/old-jamestown/1900-halloween-pranks.jpg'),
-  '1896-falconer-mischief.jpg':     require('../assets/old-jamestown/1896-falconer-mischief.jpg'),
-  '1891-disgraceful-observance.jpg': require('../assets/old-jamestown/1891-disgraceful-observance.jpg'),
-};
-
-// Sepia, headline-only 1200×630 hero images — used on the Home card and at
-// the top of the detail screen. The full clipping (above) is secondary now,
-// reachable further down the detail screen as "See the original page."
+// variable path — so each bundled fallback image gets an explicit entry,
+// same pattern as the tspark.jpg/hockey.jpg backgrounds in app/sports.tsx.
+// Only already-released stories are bundled (see data/oldJamestown.ts), so
+// this map is small by design; anything newer arrives from /api/archives
+// with an absolute URL and loads over the network instead.
 const NATIVE_HEADERS: Record<string, ImageSourcePropType> = Platform.OS === 'web' ? {} : {
-  '1902-halloween-pranks.jpg':      require('../assets/old-jamestown/headers/1902-halloween-pranks.jpg'),
-  '1900-halloween-pranks.jpg':      require('../assets/old-jamestown/headers/1900-halloween-pranks.jpg'),
-  '1896-falconer-mischief.jpg':     require('../assets/old-jamestown/headers/1896-falconer-mischief.jpg'),
-  '1891-disgraceful-observance.jpg': require('../assets/old-jamestown/headers/1891-disgraceful-observance.jpg'),
+  '1902-halloween-pranks.jpg': require('../assets/old-jamestown/headers/1902-halloween-pranks.jpg'),
 };
 
-export function oldJamestownImageSource(filename: string): ImageSourcePropType {
-  return Platform.OS === 'web'
-    ? { uri: `/old-jamestown/${filename}` }
-    : NATIVE_CLIPPINGS[filename];
-}
-
-export function oldJamestownHeaderSource(filename: string): ImageSourcePropType {
-  return Platform.OS === 'web'
-    ? { uri: `/old-jamestown/headers/${filename}` }
-    : NATIVE_HEADERS[filename];
+// Accepts either an absolute URL (what /api/archives returns) or a bare
+// filename (what a bundled fallback story stores). A relative path would
+// resolve against the app bundle on iOS rather than the site, so the native
+// branch always ends up at either a bundled asset or an absolute URL.
+export function oldJamestownHeaderSource(headerImage: string): ImageSourcePropType {
+  if (/^https?:\/\//i.test(headerImage)) return { uri: headerImage };
+  if (Platform.OS === 'web') return { uri: `/old-jamestown/headers/${headerImage}` };
+  return NATIVE_HEADERS[headerImage] ?? { uri: `${SITE_ORIGIN}/old-jamestown/headers/${headerImage}` };
 }

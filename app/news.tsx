@@ -590,7 +590,8 @@ export default function NewsScreen() {
           </View>
         )}
 
-        <Text style={[styles.footer, { color: `rgba(${theme.accRGB},0.2)` }]}>
+        {/* was 0.2 alpha — effectively invisible against the dark page */}
+        <Text style={[styles.footer, { color: `rgba(${theme.accRGB},0.55)` }]}>
           WRFA-LP 107.9 · jamestownny.gov · roberthjackson.org
         </Text>
       </ScrollView>

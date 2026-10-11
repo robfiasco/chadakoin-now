@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, Platform, Share } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
-import { OLD_JAMESTOWN_STORIES, OLD_JAMESTOWN_HEADER_ASPECT, OldJamestownStory } from '../data/oldJamestown';
-import { oldJamestownImageSource, oldJamestownHeaderSource } from '../lib/oldJamestownImages';
+import { OLD_JAMESTOWN_HEADER_ASPECT, OldJamestownStory } from '../data/oldJamestown';
+import { oldJamestownHeaderSource } from '../lib/oldJamestownImages';
 import { openLink } from '../lib/openLink';
 
 const SEPIA = '#d4a574';
@@ -18,20 +18,12 @@ function shareStory(story: OldJamestownStory) {
   }).catch(() => {});
 }
 
-// The chronologically next story after this one, regardless of whether it
-// has itself released yet — that's the point of a "coming up" teaser. Only
-// the year + title are ever shown, never body text, per the brief's
-// constraint on not revealing a story early.
-function findNextStory(story: OldJamestownStory): OldJamestownStory | null {
-  const sorted = [...OLD_JAMESTOWN_STORIES].sort((a, b) => a.publishDate.localeCompare(b.publishDate));
-  const idx = sorted.findIndex(s => s.slug === story.slug);
-  return idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
-}
-
 export default function OldJamestownScreen({ story, onClose }: { story: OldJamestownStory; onClose?: () => void }) {
-  const [zoomed, setZoomed] = useState(false);
-  const clippingSource = oldJamestownImageSource(story.image);
-  const nextStory = findNextStory(story);
+  // Supplied by /api/archives — year + title of the upcoming story, which
+  // the client can no longer work out for itself now that unreleased
+  // stories don't ship in the bundle. Absent on bundled fallback entries,
+  // in which case the teaser box just shows the generic weekly line.
+  const nextStory = story.next ?? null;
 
   return (
     <ThemedBackground>
@@ -57,7 +49,10 @@ export default function OldJamestownScreen({ story, onClose }: { story: OldJames
         </View>
       </SafeAreaView>
 
-      <ScrollView style={ojs.scroll} contentContainerStyle={ojs.scrollContent}>
+      {/* Indicator hidden — on web RN renders the platform's default light
+          scrollbar, which reads as a bright white strip against this
+          screen's dark/sepia chrome. */}
+      <ScrollView style={ojs.scroll} contentContainerStyle={ojs.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={[ojs.heroFrame, { aspectRatio: OLD_JAMESTOWN_HEADER_ASPECT }]}>
           <Image
             source={oldJamestownHeaderSource(story.headerImage)}
@@ -80,15 +75,6 @@ export default function OldJamestownScreen({ story, onClose }: { story: OldJames
           )}
         </View>
 
-        <TouchableOpacity activeOpacity={0.85} onPress={() => setZoomed(true)} style={ojs.originalTile}>
-          <Image source={clippingSource} style={ojs.originalThumb} resizeMode="cover" accessibilityLabel={story.imageAlt} />
-          <View style={{ flex: 1 }}>
-            <Text style={ojs.originalTitle}>See the original page</Text>
-            <Text style={ojs.originalSub}>Tap to zoom the full clipping</Text>
-          </View>
-          <Ionicons name="expand-outline" size={16} color={SEPIA} />
-        </TouchableOpacity>
-
         <View style={ojs.sourceBlock}>
           <TouchableOpacity onPress={() => openLink(story.sourceUrl)} activeOpacity={0.75}>
             <Text style={ojs.sourceLine}>
@@ -100,36 +86,6 @@ export default function OldJamestownScreen({ story, onClose }: { story: OldJames
         </View>
       </ScrollView>
 
-      <Modal visible={zoomed} transparent animationType="fade" onRequestClose={() => setZoomed(false)}>
-        <View style={ojs.zoomOverlay}>
-          <TouchableOpacity
-            onPress={() => setZoomed(false)}
-            activeOpacity={0.7}
-            style={ojs.zoomCloseBtn}
-          >
-            <Ionicons name="close" size={22} color="#fff" />
-          </TouchableOpacity>
-          {Platform.OS === 'web' ? (
-            <ScrollView
-              contentContainerStyle={ojs.zoomScrollContent}
-              maximumZoomScale={3}
-              minimumZoomScale={1}
-            >
-              <Image source={clippingSource} style={ojs.zoomImage} resizeMode="contain" accessibilityLabel={story.imageAlt} />
-            </ScrollView>
-          ) : (
-            <ScrollView
-              contentContainerStyle={ojs.zoomScrollContent}
-              maximumZoomScale={3}
-              minimumZoomScale={1}
-              centerContent
-              bouncesZoom
-            >
-              <Image source={clippingSource} style={ojs.zoomImage} resizeMode="contain" accessibilityLabel={story.imageAlt} />
-            </ScrollView>
-          )}
-        </View>
-      </Modal>
     </ThemedBackground>
   );
 }
@@ -166,14 +122,6 @@ const ojs = StyleSheet.create({
   moreComingText: { fontFamily: 'Outfit', fontSize: 12, fontWeight: '600', color: SEPIA },
   moreComingNext: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(237,220,200,0.6)' },
 
-  originalTile: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 10,
-    backgroundColor: 'rgba(42,28,16,0.45)', borderWidth: 1, borderColor: 'rgba(196,154,97,0.25)',
-  },
-  originalThumb: { width: 44, height: 44, borderRadius: 6, backgroundColor: '#1a1008' },
-  originalTitle: { fontFamily: 'DMSans_600SemiBold', fontSize: 13, color: '#fff' },
-  originalSub: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(237,220,200,0.55)', marginTop: 1 },
-
   sourceBlock: {
     padding: 14, borderRadius: 10,
     backgroundColor: 'rgba(42,28,16,0.45)', borderWidth: 1, borderColor: 'rgba(196,154,97,0.25)', gap: 4,
@@ -181,12 +129,4 @@ const ojs = StyleSheet.create({
   sourceLine: { fontFamily: 'Outfit', fontSize: 12, color: 'rgba(237,220,200,0.7)', lineHeight: 18 },
   sourceLink: { color: SEPIA, fontWeight: '700' },
   creditLine: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(237,220,200,0.5)' },
-
-  zoomOverlay: { flex: 1, backgroundColor: 'rgba(6,3,1,0.97)' },
-  zoomCloseBtn: {
-    position: 'absolute', top: 48, right: 20, zIndex: 10, padding: 10, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  zoomScrollContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
-  zoomImage: { width: '100%', height: 600 },
 });

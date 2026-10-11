@@ -54,7 +54,9 @@ const LOCAL_SLIDES: Slide[] = [
     cards: [
       { label: 'City services', desc: 'Info & contacts in Settings' },
       { label: 'Feedback',      desc: 'Goes straight to me' },
-      { label: 'Free',          desc: 'No account, no ads, no tracking', wide: true },
+      // Not "no ads": Sports/Events/Visit each carry a slot local businesses
+      // can pay to appear in, so claiming an ad-free app would be untrue.
+      { label: 'Free',          desc: 'No account. No tracking. Only local businesses.', wide: true },
     ],
   },
 ];

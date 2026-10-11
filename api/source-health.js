@@ -1,5 +1,3 @@
-const STALE_THRESHOLD_MS = 36 * 60 * 60 * 1000; // 36 hours
-
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
 
@@ -7,10 +5,13 @@ export default async function handler(req, res) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
 
-    // Check both the RSS feed AND the homepage in parallel
+    // www, matching FEEDS.news in hooks/useCivicData.ts. The bare host 301s
+    // here anyway, so this only mattered if WRFA ever stopped redirecting —
+    // at which point health would have failed while the real feed kept
+    // working. Check the same URL the app actually reads.
     const [feedRes, homeRes] = await Promise.all([
-      fetch('https://wrfalp.com/feed/', { signal: ctrl.signal }),
-      fetch('https://wrfalp.com/', { signal: ctrl.signal }),
+      fetch('https://www.wrfalp.com/feed/', { signal: ctrl.signal }),
+      fetch('https://www.wrfalp.com/', { signal: ctrl.signal }),
     ]);
     clearTimeout(t);
 
@@ -26,14 +27,14 @@ export default async function handler(req, res) {
     const isRss = text.trimStart().startsWith('<?xml') || /<rss[\s>]/i.test(text.slice(0, 500));
     if (!isRss) return res.json({ wrfa: false });
 
-    // Check freshness: if the most recent article is >36h old, treat the source as down.
-    const pubDateMatch = text.match(/<pubDate>([^<]+)<\/pubDate>/);
-    if (pubDateMatch) {
-      const latest = new Date(pubDateMatch[1].trim());
-      const ageMs = Date.now() - latest.getTime();
-      if (ageMs > STALE_THRESHOLD_MS) return res.json({ wrfa: false });
-    }
-
+    // Deliberately NO freshness check. There used to be one (36h), but
+    // "hasn't published recently" is not the same as "is broken": WRFA is a
+    // small volunteer station that routinely goes quiet over a weekend, and
+    // a 49h gap was enough to mark a perfectly healthy 200 RSS feed as down.
+    // Because callers hard-drop WRFA items when this is false (see wrfaUp in
+    // hooks/useCivicData.ts), that quietly emptied the news feed of its main
+    // local source for no reason. Genuine breakage still gets caught by the
+    // non-200, maintenance-mode and not-actually-RSS checks above.
     res.json({ wrfa: true });
   } catch {
     res.json({ wrfa: true }); // fail open

@@ -101,20 +101,48 @@ async function fetchTeamGames(teamId) {
     // this, inPostseason stayed true forever post-elimination and kept
     // showing a dead team's last series as if it were still live.
     let eliminated = false;
+    // Round of the most recent COMPLETED postseason game, tracked apart from
+    // the round of whatever is scheduled next. Reading one value off "the
+    // last non-R game in the window" conflated the two: once Cleveland
+    // clinched the ALDS, the scheduled ALCS games made postseasonRound
+    // "ALCS" while the result line still showed the ALDS clincher, so the
+    // card read "ALCS 0-0" next to a win from the previous round.
+    let playedRound = null;
+    let upcomingRound = null;
+    let lastRoundResult = null;
 
     for (const dateObj of (json.dates ?? [])) {
       for (const g of (dateObj.games ?? [])) {
         const state = g.status?.detailedState ?? '';
+        const isFinal = state === 'Final' || state === 'Completed Early';
         if (g.gameType && g.gameType !== 'R') {
           inPostseason = true;
-          postseasonRound = ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? postseasonRound;
+          const round = ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? null;
           const ss = g.seriesStatus;
-          if (ss) {
-            const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
-            const weWon = ss.winningTeam?.id === teamId;
-            const weAreLeadOrTied = !ss.winningTeam || weWon;
-            seriesRecord = weAreLeadOrTied ? `${wins}-${losses}` : `${losses}-${wins}`;
-            eliminated = !!ss.isOver && !weWon;
+
+          if (isFinal) {
+            playedRound = round ?? playedRound;
+            if (ss) {
+              const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
+              // seriesStatus.wins/losses is the LEADING team's record, and
+              // winningTeam is frequently null even on a clinching game, so
+              // neither can tell us who the leader is. The game itself can:
+              // whoever won the clincher won the series, and for an
+              // in-progress series the result string names the leader.
+              const weAreHome = g.teams?.home?.team?.id === teamId;
+              const weWonThisGame = (weAreHome ? g.teams?.home : g.teams?.away)?.isWinner === true;
+              const ourAbbr = (weAreHome ? g.teams?.home : g.teams?.away)?.team?.abbreviation ?? '';
+              const weLead = ss.isOver
+                ? weWonThisGame
+                : (ourAbbr && typeof ss.result === 'string' ? ss.result.startsWith(ourAbbr) : false);
+              seriesRecord = weLead ? `${wins}-${losses}` : `${losses}-${wins}`;
+              eliminated = !!ss.isOver && !weWonThisGame;
+              lastRoundResult = ss.isOver && weWonThisGame && round
+                ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
+                : null;
+            }
+          } else if (!upcomingRound) {
+            upcomingRound = round ?? null;
           }
         }
 
@@ -181,9 +209,17 @@ async function fetchTeamGames(teamId) {
       // possible instead of the team just silently vanishing.
       inPostseason: inPostseason && !eliminated,
       eliminated,
-      eliminatedRound: eliminated ? postseasonRound : null,
-      postseasonRound,
-      seriesRecord,
+      eliminatedRound: eliminated ? playedRound : null,
+      // The round the team is IN: whatever is scheduled next once the last
+      // series finished, otherwise the one still being played.
+      postseasonRound: (lastRoundResult && upcomingRound) ? upcomingRound : (playedRound ?? upcomingRound),
+      // Suppressed between rounds — the next series genuinely is 0-0, but
+      // rendering that next to the previous round's clincher just looked
+      // like a wrong score.
+      seriesRecord: (lastRoundResult && upcomingRound) ? null : seriesRecord,
+      // e.g. "Won ALDS 3–2" — shown instead of the raw last-game result so
+      // a clinching win isn't captioned with the next round's name.
+      lastRoundResult: upcomingRound ? lastRoundResult : null,
     };
   } catch { return empty; }
 }
@@ -203,13 +239,20 @@ export default async function handler(req, res) {
 
     const teams = teamResults.map(t => {
       const standing = standings[t.id];
+      // streak/last10/gamesBack come from standingsTypes=regularSeason, so
+      // once the postseason starts they're frozen at whatever the team's
+      // final regular-season form was — which is why Cleveland showed "L1"
+      // after three straight playoff wins and the swept Yankees showed "W1".
+      // They describe a season that's over; drop them rather than present
+      // stale numbers as current.
+      const postseason = t.inPostseason || t.eliminated;
       return {
         ...t,
         record:      standing?.record      ?? '',
         divisionRank: standing?.divisionRank,
-        gamesBack:   standing?.gamesBack,
-        streak:      standing?.streak,
-        last10:      standing?.last10,
+        gamesBack:   postseason ? undefined : standing?.gamesBack,
+        streak:      postseason ? undefined : standing?.streak,
+        last10:      postseason ? undefined : standing?.last10,
       };
     });
 

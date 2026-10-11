@@ -22,7 +22,8 @@
     { "source": "/api/feedback",      "destination": "/api/feedback" },
     { "source": "/api/source-health", "destination": "/api/source-health" },
     { "source": "/api/gas",           "destination": "/api/gas" },
-    { "source": "/api/dpw",           "destination": "/api/dpw" }
+    { "source": "/api/dpw",           "destination": "/api/dpw" },
+    { "source": "/api/archives",      "destination": "/api/archives" }
   ],
   "functions": {
     "api/dpw.js": { "maxDuration": 60 }

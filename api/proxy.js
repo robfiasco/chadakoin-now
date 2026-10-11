@@ -31,14 +31,16 @@ const ALLOWED_HOSTS = new Set([
   'www.chautauquacountyny.gov',
   'wnynewsnow.com',
   'www.wnynewsnow.com',
-  'spectrumlocalnews.com',
-  'www.spectrumlocalnews.com',
   'wjtn.com',
   'www.wjtn.com',
   'mediaonegroupradio.com',
   'www.mediaonegroupradio.com',
   'mychq.org',
   'www.mychq.org',
+  // Fenton History Center events feed. Both forms: FEEDS.fenton uses the
+  // bare host, the hardcoded detail links elsewhere use www.
+  'fentonhistorycenter.org',
+  'www.fentonhistorycenter.org',
 ]);
 
 const rateLimitMap = new Map();
