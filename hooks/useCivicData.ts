@@ -314,10 +314,19 @@ function stripHtml(html: string): string {
     .replace(/&([a-zA-Z]+);/g, (m, name) => NAMED_ENTITIES[name.toLowerCase()] ?? (name.toLowerCase() === 'amp' ? '&' : m))
     // Unknown entities only — anything recognised was handled above.
     .replace(/&[a-zA-Z]+;/g, '')
+    // Zero-width and BOM characters survive every \s-based cleanup below
+    // (JS \s does not match U+200B/U+FEFF), so a headline carrying one
+    // renders with an invisible gap — e.g. 'lean ' with no visible cause.
+    .replace(/[​-‍﻿]/g, '')
     .replace(/\s{2,}/g, ' ')
     // Tidy spacing the decode can leave behind: a space pushed up against
     // closing punctuation, or a trailing ellipsis separated from its word.
     .replace(/\s+([,.;:!?…])/g, '$1')
+    // Padding inside typographic quotes — “ lean ” → “lean”. Only the
+    // curly forms: for a straight " the direction is ambiguous, and
+    // stripping the space before one would weld it to the previous word.
+    .replace(/([“‘])\s+/g, '$1')
+    .replace(/\s+([”’])/g, '$1')
     .trim();
 }
 

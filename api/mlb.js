@@ -137,8 +137,13 @@ async function fetchTeamGames(teamId) {
                 : (ourAbbr && typeof ss.result === 'string' ? ss.result.startsWith(ourAbbr) : false);
               seriesRecord = weLead ? `${wins}-${losses}` : `${losses}-${wins}`;
               eliminated = !!ss.isOver && !weWonThisGame;
-              lastRoundResult = ss.isOver && weWonThisGame && round
-                ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
+              // Same clinching-game logic either way — whoever won the game
+              // that ended the series won the series. wins/losses is the
+              // winner's record, so a loss reads low-to-high.
+              lastRoundResult = ss.isOver && round
+                ? (weWonThisGame
+                    ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
+                    : `Lost ${round} ${Math.min(wins, losses)}–${Math.max(wins, losses)}`)
                 : null;
             }
           } else if (!upcomingRound) {
@@ -217,9 +222,12 @@ async function fetchTeamGames(teamId) {
       // rendering that next to the previous round's clincher just looked
       // like a wrong score.
       seriesRecord: (lastRoundResult && upcomingRound) ? null : seriesRecord,
-      // e.g. "Won ALDS 3–2" — shown instead of the raw last-game result so
-      // a clinching win isn't captioned with the next round's name.
-      lastRoundResult: upcomingRound ? lastRoundResult : null,
+      // e.g. "Won ALDS 3–2" / "Lost ALDS 0–3" — shown instead of the raw
+      // last-game result, so a series-deciding game isn't captioned with
+      // the next round's name (win) or shown as a bare loss with no
+      // indication the season just ended (elimination). An eliminated team
+      // has no upcomingRound, hence the second branch.
+      lastRoundResult: (upcomingRound || eliminated) ? lastRoundResult : null,
     };
   } catch { return empty; }
 }

@@ -354,8 +354,10 @@ async function fetchMLB(): Promise<MLBTeam[]> {
                     : (ourAbbr && typeof ss.result === 'string' ? ss.result.startsWith(ourAbbr) : false);
                   seriesRecord = weLead ? `${wins}-${losses}` : `${losses}-${wins}`;
                   eliminated = !!ss.isOver && !weWonThisGame;
-                  lastRoundResult = ss.isOver && weWonThisGame && round
-                    ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
+                  lastRoundResult = ss.isOver && round
+                    ? (weWonThisGame
+                        ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
+                        : `Lost ${round} ${Math.min(wins, losses)}–${Math.max(wins, losses)}`)
                     : null;
                 }
               } else if (!upcomingRound) {
@@ -413,7 +415,7 @@ async function fetchMLB(): Promise<MLBTeam[]> {
           eliminated, eliminatedRound: eliminated ? playedRound : null,
           postseasonRound: (lastRoundResult && upcomingRound) ? upcomingRound : (playedRound ?? upcomingRound),
           seriesRecord: (lastRoundResult && upcomingRound) ? null : seriesRecord,
-          lastRoundResult: upcomingRound ? lastRoundResult : null,
+          lastRoundResult: (upcomingRound || eliminated) ? lastRoundResult : null,
           record: standing?.record ?? '',
           divisionRank: standing?.divisionRank,
           // Regular-season standings values — meaningless once the
@@ -629,7 +631,21 @@ function TeamCard({
   if (bgImage) {
     return (
       // @ts-ignore
-      <ImageBackground source={bgImage} style={[styles.teamCard, glassWeb]} imageStyle={{ borderRadius: 16, opacity: 0.18 }} resizeMode="cover">
+      <ImageBackground source={bgImage} style={[styles.teamCard, glassWeb]} imageStyle={{ borderRadius: 16, opacity: 0.32 }} resizeMode="cover">
+        {/* Scrim behind the text column. The photo used to carry the whole
+            job at 0.18 opacity, which washed it into a flat grey haze AND
+            still left the subtitle sitting on whatever happened to be
+            under it. Now the image stays legible (0.32) and this gradient
+            — opaque on the left where the name/subtitle sit, clearing to
+            the right where the arena shows — guarantees the text contrast
+            instead of leaving it up to the photo. */}
+        <LinearGradient
+          colors={['rgba(6,14,24,0.95)', 'rgba(6,14,24,0.8)', 'rgba(6,14,24,0.25)']}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={[StyleSheet.absoluteFillObject, { borderRadius: 16 }]}
+          pointerEvents="none"
+        />
         {cardContent}
       </ImageBackground>
     );
@@ -774,13 +790,17 @@ export default function SportsScreen() {
     fetchSabres().then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  // Once any tracked team is confirmed in the postseason, drop the others —
-  // showing Pirates/Mets/Blue Jays-style frozen regular-season finales next
-  // to teams playing real October games reads as stale clutter. Regular
-  // season / full offseason (no one has inPostseason set) shows all 5 as
-  // before.
+  // Once October starts, show only the teams whose postseason is actually
+  // relevant — still alive, OR knocked out (those get a "Lost ALDS 0–3"
+  // line, which is news; a team that never made it just shows a frozen
+  // regular-season finale, which is clutter). Live teams sort first so an
+  // eliminated club never sits above one still playing. Regular season and
+  // full offseason, when nobody is flagged either way, show all five.
   const mlbTeams = data?.mlb ?? [];
-  const visibleMlb = mlbTeams.some(t => t.inPostseason) ? mlbTeams.filter(t => t.inPostseason) : mlbTeams;
+  const postseasonMlb = mlbTeams.filter(t => t.inPostseason || t.eliminated);
+  const visibleMlb = (postseasonMlb.length > 0 ? postseasonMlb : mlbTeams)
+    .slice()
+    .sort((a, b) => Number(!!b.inPostseason) - Number(!!a.inPostseason));
 
   // Auto-poll every 60s when any live game is in progress
   const hasLive = !!(data?.liveGame?.status === 'live' || data?.mlb?.some(t => t.liveGame) || data?.nfl?.some(t => t.liveGame));
@@ -1713,19 +1733,23 @@ export default function SportsScreen() {
               <SkeletonPulse width="100%" height={140} borderRadius={8} accRGB="167,139,250" />
             ) : visibleMlb.length > 0 ? (
               <View style={{ gap: 10 }}>
-                {['PIT', 'NYY', 'CLE', 'NYM', 'TOR'].map(abbr => {
-                  const t = visibleMlb.find(x => x.abbr === abbr);
-                  if (!t) return null;
+                {/* Iterates visibleMlb directly — it's already ordered
+                    (alive before eliminated), which a fixed abbr list
+                    couldn't express. */}
+                {visibleMlb.map(t => {
                   const alreadyInNext = nextCompactItems.some(n => n.sport === `${t.name} · MLB`);
                   return (
                     <LeagueTeamRow
-                      key={abbr}
-                      logo={`https://a.espncdn.com/i/teamlogos/mlb/500/${abbr.toLowerCase()}.png`}
+                      key={t.abbr}
+                      logo={`https://a.espncdn.com/i/teamlogos/mlb/500/${t.abbr.toLowerCase()}.png`}
                       name={t.name}
                       line={t.liveGame ? `LIVE · ${t.liveGame.ourScore}–${t.liveGame.theirScore}` : mlbLastOrNext(t, alreadyInNext)}
-                      lineColor={t.liveGame ? '#fb7185' : undefined}
+                      lineColor={t.liveGame ? '#fb7185' : t.eliminated ? 'rgba(255,255,255,0.45)' : undefined}
                       record={t.inPostseason && t.seriesRecord ? t.seriesRecord : t.record}
                       recordColor="#f59e0b"
+                      // No round pill for an eliminated team — its line
+                      // already names the round ("Lost ALDS 0–3"), and a
+                      // live-looking pill would imply it's still playing.
                       pill={t.inPostseason && t.postseasonRound ? t.postseasonRound : undefined}
                     />
                   );

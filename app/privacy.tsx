@@ -58,7 +58,7 @@ export default function PrivacyPolicyScreen({ onClose }: { onClose?: () => void 
           <Bullet>I don't use any third-party analytics, advertising SDKs, or behavioral trackers.</Bullet>
           <Bullet>I don't sell, share, or rent data about you to anyone. Ever.</Bullet>
           <Bullet>I don't track you across other apps or websites.</Bullet>
-          <Bullet>No ad networks, no targeted ads, no ads that track you. A few spots are set aside for local businesses to sponsor; those are placed by hand and see nothing about you.</Bullet>
+          <Bullet>No ad networks, no targeted ads, nothing that tracks you. A few spots are set aside for local businesses to sponsor; those are placed by hand and see nothing about you.</Bullet>
         </Section>
 
         <Section title="What I do collect">

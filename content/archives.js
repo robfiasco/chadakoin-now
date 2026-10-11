@@ -10,6 +10,12 @@
 // used purely as an offline fallback. Keep the two in sync when a story goes
 // live, but never copy an unreleased story into the bundle file.
 
+// headerImage: filename under public/old-jamestown/headers/. UNRELEASED
+// stories carry a random suffix so the image can be deployed ahead of time
+// without the URL being guessable from the slug — /api/archives only hands
+// out the real filename once the story releases. A released story may use
+// its plain name (its headline is public by then).
+
 export const ARCHIVE_STORIES = [
   {
     id: 'halloween-1902',
@@ -52,7 +58,7 @@ export const ARCHIVE_STORIES = [
       'Meanwhile, the well-behaved crowd was partying. Genevieve Aldrich and 20 friends gathered at her parents’ Allen Street home in sheets and pillowcases, and nobody knew who was who until a supper of pumpkin pie, doughnuts and cider around 10:30. The Luther League of the English Lutheran church held its annual social at 38 Harrison Street, with jack-o’-lanterns everywhere and a witch telling fortunes from a dark corner under the stairs. And in Falconer, the young women of the American Aristotype office surprised their hostess, Miss Fenton, by showing up in costume, fortune teller included.',
       'So enjoy the parties, Jamestown. Then check your fence in the morning.',
     ],
-    headerImage: '1900-halloween-pranks.jpg',
+    headerImage: '1900-halloween-pranks-ce099963c34d657a.jpg',
     headerImageAlt: '"Halloween Pranks — The Usual Number of Annoying Mischief-Making Escapades Are Reported Today" headline, The Evening Journal, Nov. 1, 1900',
     image: '1900-halloween-pranks.jpg',
     imageWidth: 700,
@@ -79,7 +85,7 @@ export const ARCHIVE_STORIES = [
       'And that’s where the story ends. The paper doesn’t say who did it, whether the trouble it predicted ever showed up, or what the motorman said when the car jerked to a stop. We can guess that last part wasn’t printable. The whole report is barely a paragraph, but it packs in a bonfire, a missing outhouse, a village full of misplaced belongings and one very confused streetcar.',
       'So this Halloween, Falconer, keep the shed locked and the barber pole bolted down. And before you pull out of the driveway on November 1, take a quick look and make sure nobody tied your bumper to the mailbox.',
     ],
-    headerImage: '1896-falconer-mischief.jpg',
+    headerImage: '1896-falconer-mischief-14c65f9c74b83771.jpg',
     headerImageAlt: '"Halloween Mischief at Falconer" dispatch, The Evening Journal, Nov. 2, 1896',
     image: '1896-falconer-mischief.jpg',
     imageWidth: 648,
@@ -105,7 +111,7 @@ export const ARCHIVE_STORIES = [
       'We don’t know who A. S. D. was, or whether the gate-lifters of 1891 were reading the letters page. (Probably not.) But the argument sounds pretty familiar: tradition versus rowdiness, police versus parenting.',
       'Two years later, on Halloween 1893, the Journal skipped the lecture and offered a better way to spend the evening: "Russet cider and doughnuts are very suitable refreshments for the occasion." Jamestown, that one still holds up.',
     ],
-    headerImage: '1891-disgraceful-observance.jpg',
+    headerImage: '1891-disgraceful-observance-1d6e9451e1eec8fb.jpg',
     headerImageAlt: '"A Disgraceful Observance" letter to the editor, The Evening Journal, Oct. 28, 1891',
     image: '1891-disgraceful-observance.jpg',
     imageWidth: 580,
