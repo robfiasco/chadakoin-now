@@ -45,7 +45,11 @@ export default function OldJamestownScreen({ story, onClose }: { story: OldJames
           <View style={{ flex: 1 }}>
             <Text style={ojs.eyebrow}>From Jamestown’s Archives</Text>
             <Text style={ojs.tagline}>Stories from the city’s 1800s and early-1900s newspapers</Text>
-            <Text style={ojs.subtitle}>{story.year} · Jamestown, NY</Text>
+            {/* Year omitted when the title already carries it (every story
+                so far) — it's repeated right below in the headline. */}
+            <Text style={ojs.subtitle}>
+              {story.title.includes(String(story.year)) ? 'Jamestown, NY' : `${story.year} · Jamestown, NY`}
+            </Text>
           </View>
           <TouchableOpacity onPress={() => shareStory(story)} activeOpacity={0.7} style={ojs.shareBtn}>
             <Ionicons name="share-outline" size={18} color={SEPIA} />

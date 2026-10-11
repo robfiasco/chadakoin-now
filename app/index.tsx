@@ -20,7 +20,7 @@ import { openLink } from '../lib/openLink';
 import { useRadio } from '../lib/RadioContext';
 import { useOldJamestown } from '../lib/OldJamestownContext';
 import { oldJamestownHeaderSource } from '../lib/oldJamestownImages';
-import { OLD_JAMESTOWN_HEADER_ASPECT } from '../data/oldJamestown';
+import { OLD_JAMESTOWN_HEADER_ASPECT, oldJamestownLabel } from '../data/oldJamestown';
 import { apiUrl } from '../lib/api';
 import SettingsScreen from './settings';
 import CityServicesScreen from './city-services';
@@ -727,7 +727,7 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               />
             </View>
             <View style={styles.ojContent}>
-              <Text style={styles.ojLabel}>FROM JAMESTOWN’S ARCHIVES · {latestStory.year}</Text>
+              <Text style={styles.ojLabel}>{oldJamestownLabel(latestStory)}</Text>
               <Text style={styles.ojTitle} numberOfLines={2}>{latestStory.title}</Text>
               <Text style={styles.ojTeaser} numberOfLines={2}>{latestStory.teaser}</Text>
               <Text style={styles.ojNewEvery}>New every week</Text>

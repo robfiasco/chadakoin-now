@@ -11,8 +11,12 @@ export interface OldJamestownStory {
   title: string;
   publishDate: string; // 'YYYY-MM-DD', local/ET — story hidden until this date
   year: number;
+  // Home-card blurb only — written by hand per story, NOT auto-derived from
+  // body[0]. Skip any leading full date ("On Friday, October 31, 1902,"):
+  // the year is already in the title right above it, and the card has only
+  // two lines before it truncates.
   teaser: string;
-  body: string[]; // paragraphs, in order
+  body: string[]; // paragraphs, in order — the story itself, left verbatim
   // Sepia 1200×630 headline-only hero — used on the Home card and atop the
   // detail screen. Same fixed aspect ratio for all stories (OLD_JAMESTOWN_HEADER_ASPECT
   // below), so no per-story width/height needed the way the clipping has.
@@ -35,6 +39,15 @@ export interface OldJamestownStory {
 
 export const OLD_JAMESTOWN_HEADER_ASPECT = 1200 / 630;
 
+// The year should appear exactly once per card. Most titles already carry
+// it ("...: Halloween 1902"), so the label stays plain; a future story
+// whose title has no year gets it appended instead
+// ("FROM JAMESTOWN'S ARCHIVES · 1884").
+export function oldJamestownLabel(story: OldJamestownStory): string {
+  const base = 'FROM JAMESTOWN’S ARCHIVES';
+  return story.title.includes(String(story.year)) ? base : `${base} · ${story.year}`;
+}
+
 export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
   {
     id: 'halloween-1902',
@@ -42,7 +55,7 @@ export const OLD_JAMESTOWN_STORIES: OldJamestownStory[] = [
     title: 'Cabbages, Doorbells and Rolling Outhouses: Halloween 1902',
     publishDate: '2026-10-10',
     year: 1902,
-    teaser: 'On Friday, October 31, 1902, Jamestown got a warm, clear Halloween night. It was so clear the Evening Journal complained it was "almost too light to keep out of sight."',
+    teaser: 'Jamestown got a warm, clear Halloween night, so clear the paper complained it was "almost too light to keep out of sight."',
     body: [
       'On Friday, October 31, 1902, Jamestown got a warm, clear Halloween night. It was so clear the Evening Journal complained it was "almost too light to keep out of sight."',
       'Kids hit the streets right after supper. Horns tooted and catcalls woke the "after supper sleepers." The paper said the only people spared were those "high up in flats." Everyone else got tick-tacks rattling on their windows, doorbells ringing nonstop, "salutes of cabbages," or found their sidewalks, signs and porch furniture had disappeared. By morning, chairs hung in the trees and some homeowners could barely get out the door past the loose boards and cabbage heads piled on the steps.',
