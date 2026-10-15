@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, RefreshControl, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
@@ -7,6 +7,8 @@ import { SkeletonPulse } from '../components/SkeletonPulse';
 import { dark } from '../lib/colors';
 import { RecyclingWeek } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
+import { getHolidayNotice, CALENDAR_URL, BPU_HOTLINE } from '../data/bpuHolidays';
+import { openLink } from '../lib/openLink';
 
 const ACC     = '#34d399';
 const ACC_RGB = '52,211,153';
@@ -50,6 +52,8 @@ export default function RecyclingScreen() {
   const civic = useCivic();
   const { recycling, loading } = civic;
   const [refreshing, setRefreshing] = useState(false);
+  // Null outside a BPU holiday week, so the banner hides itself.
+  const holidayNotice = getHolidayNotice();
 
   async function onRefresh() {
     setRefreshing(true);
@@ -168,10 +172,25 @@ export default function RecyclingScreen() {
           <Text style={styles.infoText}>If a holiday falls on your pickup day, your pickup shifts to the next day — and every pickup after it that week shifts one day too. A Monday holiday means Monday pickup moves to Tuesday, Tuesday moves to Wednesday, and so on.</Text>
         </View>
 
-        {recycling.holidayDelay && (
+        {holidayNotice && (
           <View style={styles.delayBanner}>
-            <Ionicons name="warning-outline" size={14} color="#f59e0b" />
-            <Text style={styles.delayText}>Holiday this week — pickup may shift by one day.</Text>
+            <View style={styles.delayHeaderRow}>
+              <Ionicons name="warning-outline" size={14} color="#f59e0b" />
+              <View style={styles.delayBadge}>
+                <Text style={styles.delayBadgeText}>{holidayNotice.badgeLabel}</Text>
+              </View>
+            </View>
+            <Text style={styles.delayText}>{holidayNotice.text}</Text>
+            <View style={styles.delayActions}>
+              <TouchableOpacity onPress={() => openLink(CALENDAR_URL)} activeOpacity={0.75} style={styles.delayAction}>
+                <Ionicons name="calendar-outline" size={12} color="#f59e0b" />
+                <Text style={styles.delayActionText}>BPU collection calendar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL(`tel:${BPU_HOTLINE.replace(/-/g, '')}`)} activeOpacity={0.75} style={styles.delayAction}>
+                <Ionicons name="call-outline" size={12} color="#f59e0b" />
+                <Text style={styles.delayActionText}>{BPU_HOTLINE}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -272,11 +291,21 @@ const styles = StyleSheet.create({
   infoText: { fontFamily: 'Outfit', flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 },
 
   delayBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 10,
+    gap: 8, borderWidth: 1, borderRadius: 10,
     padding: 12, marginTop: 8,
     backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.25)',
   },
-  delayText: { fontFamily: 'Outfit', fontSize: 12, color: '#f59e0b', flex: 1, lineHeight: 17 },
+  delayHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  delayBadge: { backgroundColor: 'rgba(245,158,11,0.85)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  delayBadgeText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.9, color: '#1a1206' },
+  delayText: { fontFamily: 'Outfit', fontSize: 12, color: '#f59e0b', lineHeight: 17 },
+  delayActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
+  delayAction: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', borderRadius: 7,
+    paddingHorizontal: 9, paddingVertical: 6,
+  },
+  delayActionText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: '#f59e0b' },
 
   updatedLine: {
     fontFamily: 'Outfit', fontSize: 11, textAlign: 'center', marginTop: 28,

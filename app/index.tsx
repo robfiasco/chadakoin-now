@@ -30,6 +30,7 @@ import { WaterTitle } from '../components/WaterTitle';
 import { dark } from '../lib/colors';
 import { pickTopStory } from './news';
 import { HOME_SPONSOR } from '../data/homeSponsor';
+import { getHolidayNotice } from '../data/bpuHolidays';
 import FeedbackScreen from './feedback';
 const HERO_PHOTOS = Platform.OS === 'web'
   ? [
@@ -258,6 +259,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
 
   const { parking, recycling, alerts, dpw } = civic;
   const { latestStory, openStory } = useOldJamestown();
+  // Null outside a BPU holiday week, so the strip hides itself.
+  const holidayNotice = getHolidayNotice();
 
   const dpwStreetItems = dpw?.items.filter(i => !i.isCitywideSupport) ?? [];
 
@@ -626,21 +629,16 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               )}
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
             </LinearGradient>
-            {(recycling.holidayDelay || recycling.upcomingHoliday) && (
+            {holidayNotice && (
               <LinearGradient
                 colors={['rgba(178,34,52,0.35)', 'rgba(30,30,60,0.6)', 'rgba(60,59,110,0.35)']}
                 start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
                 style={styles.holidayStrip}
               >
-                <Text style={{ fontSize: 14 }}>🇺🇸</Text>
-                <Text style={styles.holidayStripText}>
-                  {recycling.holidayDelay
-                    ? 'BPU holiday this week — no Mon pickup, schedule shifts one day'
-                    : (() => {
-                        const [, m, d] = recycling.upcomingHoliday!.date.split('-');
-                        return `${recycling.upcomingHoliday!.name} ${parseInt(m)}/${parseInt(d)} · BPU holiday — no Mon pickup, week shifts one day`;
-                      })()}
-                </Text>
+                <View style={styles.holidayStripBadge}>
+                  <Text style={styles.holidayStripBadgeText}>{holidayNotice.badgeLabel}</Text>
+                </View>
+                <Text style={styles.holidayStripText} numberOfLines={3}>{holidayNotice.text}</Text>
               </LinearGradient>
             )}
           </TouchableOpacity>
@@ -1130,7 +1128,10 @@ const styles = StyleSheet.create({
   todayCardExclusion: { fontFamily: 'Outfit', fontSize: 12, lineHeight: 16, marginTop: 5 },
   todayCardMeta: { fontFamily: 'Outfit', fontSize: 10, color: '#475569', textAlign: 'right' },
 
-  holidayStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  holidayStrip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  holidayStripBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, flexShrink: 0 },
+  holidayStripBadgeText: { fontFamily: 'Outfit', fontSize: 8, fontWeight: '700', letterSpacing: 0.9, color: '#fff' },
+  // flex:1 so the notice wraps inside the strip instead of pushing the badge
   holidayStripText: { fontFamily: 'Outfit', fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.8)', flex: 1, lineHeight: 16 },
 
   moreServicesLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10, paddingVertical: 4 },
