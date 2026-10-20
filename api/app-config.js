@@ -1,3 +1,5 @@
+import { noticesHandler } from './_notices.js';
+
 // Minimum native app version — bump MIN_VERSION and deploy to force anyone
 // on an older build to update before they can keep using the app. Web is
 // never gated by this (every visit already serves the latest deployment).
@@ -9,6 +11,8 @@ const STORE_URLS = {
 };
 
 export default function handler(req, res) {
+  // /api/notices is rewritten here (see _notices.js for why).
+  if (req.query?.view === 'notices') return noticesHandler(req, res);
   res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
   res.status(200).json({ minVersion: MIN_VERSION, storeUrls: STORE_URLS });
 }

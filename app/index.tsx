@@ -32,6 +32,7 @@ import { pickTopStory } from './news';
 import { HOME_SPONSOR } from '../data/homeSponsor';
 import { getHolidayNotice } from '../data/bpuHolidays';
 import FeedbackScreen from './feedback';
+import { CityNotice, CityNoticeDetail, NOTICE_COLOR } from '../components/CityNoticeDetail';
 const HERO_PHOTOS = Platform.OS === 'web'
   ? [
     { source: { uri: '/JTNY1.jpg' }, scale: 1.0, translateY: -65 },
@@ -199,6 +200,21 @@ function eventCategoryColor(category: string): string {
   return dark.category.community;
 }
 
+// Seasonal city notices (e.g. leaf collection) come from /api/notices so
+// they can change without an App Store build. On web, a ?now= in the page
+// URL is passed through — the endpoint ignores it in production.
+async function fetchNotices(): Promise<CityNotice[]> {
+  try {
+    const nowParam = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('now')
+      : null;
+    const res = await fetch(apiUrl(`/api/notices${nowParam ? `?now=${encodeURIComponent(nowParam)}` : ''}`));
+    if (!res.ok) return [];
+    const json = await res.json();
+    return Array.isArray(json.notices) ? json.notices : [];
+  } catch { return []; }
+}
+
 export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (index: number) => void }) {
   const { theme } = useTheme();
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -208,6 +224,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   const [sponsorFeedbackOpen, setSponsorFeedbackOpen] = useState(false);
   const [recyclingOpen, setRecyclingOpen] = useState(false);
   const [parkingOpen, setParkingOpen] = useState(false);
+  const [notices, setNotices] = useState<CityNotice[]>([]);
+  const [openNotice, setOpenNotice] = useState<CityNotice | null>(null);
   const { radioPlaying, radioLoading, nowPlaying, toggleRadio } = useRadio();
   const [cdirExpanded, setCdirExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -242,12 +260,14 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
   useEffect(() => {
     fetchWeather().then(setWeather).catch(() => {});
     fetch(apiUrl('/api/gas')).then(r => r.json()).then(setGasPrice).catch(() => {});
+    fetchNotices().then(setNotices);
   }, []);
 
   async function onRefresh() {
     setRefreshing(true);
     await Promise.all([
       fetchWeather().then(setWeather).catch(() => {}),
+      fetchNotices().then(setNotices),
       civic.refresh(),
     ]);
     setRefreshing(false);
@@ -686,6 +706,28 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               </LinearGradient>
             </TouchableOpacity>
           )}
+
+          {/* Appended after the fixed rows so a seasonal notice never
+              pushes Recycling (and its holiday strip) or Parking down. */}
+          {notices.map(n => (
+            <TouchableOpacity key={n.id} onPress={() => setOpenNotice(n)} activeOpacity={0.75}>
+              <LinearGradient
+                colors={[`rgba(${theme.accRGB},0.13)`, 'transparent']}
+                start={{ x: 0, y: 0.5 }} end={{ x: 0.75, y: 0.5 }}
+                style={styles.todayCard}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.todayCategoryLabel, { color: NOTICE_COLOR }]}>{n.category}</Text>
+                  <Text style={styles.todayCardTitle}>{n.title}</Text>
+                  {n.summary ? <Text style={styles.todayCardSub}>{n.summary}</Text> : null}
+                </View>
+                {n.badge ? (
+                  <Text style={[styles.todayCardMeta, { textAlign: 'right', color: NOTICE_COLOR }]}>{n.badge}</Text>
+                ) : null}
+                <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />
+              </LinearGradient>
+            </TouchableOpacity>
+          ))}
         </View>
 
 
@@ -979,6 +1021,12 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             initialType="business"
             initialMessage={'I\'m interested in the Home "Presented by" sponsor slot. '}
           />
+        </View>
+      )}
+
+      {openNotice && (
+        <View style={styles.overlay}>
+          <CityNoticeDetail notice={openNotice} onClose={() => setOpenNotice(null)} />
         </View>
       )}
 
