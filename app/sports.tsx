@@ -80,16 +80,6 @@ const MLB_ID_ESPN: Record<number, string> = {
   139:'tb',  140:'tex', 141:'tor', 142:'min', 143:'phi',
   144:'atl', 145:'cws', 146:'mia', 147:'nyy', 158:'mil',
 };
-// MLB's own seriesDescription strings, shortened to fit a status-pill label.
-const MLB_ROUND_LABELS: Record<string, string> = {
-  'AL Wild Card Series':     'AL WILD CARD',
-  'NL Wild Card Series':     'NL WILD CARD',
-  'AL Division Series':      'ALDS',
-  'NL Division Series':      'NLDS',
-  'AL Championship Series':  'ALCS',
-  'NL Championship Series':  'NLCS',
-  'World Series':            'WORLD SERIES',
-};
 interface PlayoffSeries {
   round: number; roundLabel: string;
   opponent: string; bufWins: number; oppWins: number; neededToWin: number;
@@ -98,7 +88,7 @@ interface SabresData {
   record: string; standing: string; points?: number;
   wins?: number; losses?: number; otLosses?: number;
   recentGame?: GameResult; nextGame?: GameResult; liveGame?: GameResult | null;
-  topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[]; nfl?: NFLTeam[];
+  topScorers?: Scorer[]; jcc?: JCCData | null; mlb?: MLBTeam[] | null; nfl?: NFLTeam[];
   playoffSeries?: PlayoffSeries | null;
 }
 
@@ -254,180 +244,17 @@ function parseNHLGame(g: any): GameResult | null {
   } catch { return null; }
 }
 
-async function fetchMLB(): Promise<MLBTeam[]> {
+// Both platforms go through /api/mlb (native used to parse statsapi.mlb.com
+// itself — a second copy of the postseason logic that drifted, same story as
+// fetchSabres below). null means the server says hide the card entirely:
+// offseason, spring training, or every tracked team eliminated.
+async function fetchMLB(): Promise<MLBTeam[] | null> {
   try {
-    if (Platform.OS === 'web') {
-      const res = await fetch(apiUrl('/api/mlb'));
-      if (!res.ok) return [];
-      const json = await res.json();
-      return (json.teams ?? []) as MLBTeam[];
-    }
-    const MLB_TEAMS = [
-      { id: 121, name: 'Mets',      abbr: 'NYM' },
-      { id: 114, name: 'Guardians', abbr: 'CLE' },
-      { id: 141, name: 'Blue Jays', abbr: 'TOR' },
-      { id: 134, name: 'Pirates',   abbr: 'PIT' },
-      { id: 147, name: 'Yankees',   abbr: 'NYY' },
-    ];
-    const now   = new Date();
-    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
-    const fmt   = (d: Date) => d.toISOString().split('T')[0];
-    const year  = now.getFullYear();
-
-    let standingsMap: Record<number, { record: string; divisionRank: number; gamesBack: string; streak: string; last10: string }> = {};
-    try {
-      const sRes  = await fetch(`https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${year}&standingsTypes=regularSeason`);
-      const sJson = sRes.ok ? await sRes.json() : null;
-      for (const div of (sJson?.records ?? [])) {
-        for (const tr of (div.teamRecords ?? [])) {
-          const id = tr.team?.id;
-          if (!id) continue;
-          const last10rec = (tr.records?.splitRecords ?? []).find((r: any) => r.type === 'lastTen');
-          standingsMap[id] = {
-            record: `${tr.wins ?? 0}-${tr.losses ?? 0}`,
-            divisionRank: parseInt(tr.divisionRank ?? '0'),
-            gamesBack: tr.gamesBack === '-' ? '—' : `${tr.gamesBack} GB`,
-            streak: tr.streak?.streakCode ?? '',
-            last10: last10rec ? `${last10rec.wins}-${last10rec.losses}` : '',
-          };
-        }
-      }
-    } catch {}
-
-    const results = await Promise.all(MLB_TEAMS.map(async t => {
-      try {
-        // gameType R = regular season only — include postseason rounds (Wild
-        // Card/Division/League Championship/World Series) too, or this stays
-        // frozen on a team's last regular-season result through October.
-        const scheduleUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${t.id}&gameType=R,F,D,L,W&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team(record),probablePitcher,linescore,venue,seriesStatus`;
-        const [res, statsRes] = await Promise.all([
-          fetch(scheduleUrl),
-          fetch(`https://statsapi.mlb.com/api/v1/teams/${t.id}/stats?stats=season&group=hitting,pitching&season=${year}`),
-        ]);
-        let teamBA: string | undefined, teamERA: string | undefined;
-        if (statsRes.ok) {
-          const statsJson = await statsRes.json();
-          const hitting  = (statsJson.stats ?? []).find((s: any) => s.group?.displayName === 'hitting');
-          const pitching = (statsJson.stats ?? []).find((s: any) => s.group?.displayName === 'pitching');
-          teamBA  = hitting?.splits?.[0]?.stat?.avg   ?? undefined;
-          teamERA = pitching?.splits?.[0]?.stat?.era  ?? undefined;
-        }
-        if (!res.ok) {
-          const standing = standingsMap[t.id];
-          return { ...t, games: [], nextGame: null, liveGame: null, teamBA, teamERA, record: standing?.record ?? '', divisionRank: standing?.divisionRank, gamesBack: standing?.gamesBack, streak: standing?.streak, last10: standing?.last10 };
-        }
-        const json = await res.json();
-        const games: MLBGame[] = [];
-        let nextGame: MLBNextGame | null = null;
-        let liveGame: MLBLiveGame | null = null;
-        let inPostseason = false;
-        let postseasonRound: string | null = null;
-        let seriesRecord: string | null = null;
-        // Set true only by a *decided* series we didn't win — a team swept
-        // out still has "Scheduled" games sitting in this same window, so
-        // without this, inPostseason stayed true forever post-elimination.
-        let eliminated = false;
-        // Mirrors api/mlb.js — see the long comment there for why the round
-        // of the last PLAYED game is tracked separately from the round of
-        // the next scheduled one, and why winningTeam can't be trusted.
-        let playedRound: string | null = null;
-        let upcomingRound: string | null = null;
-        let lastRoundResult: string | null = null;
-        for (const dateObj of (json.dates ?? [])) {
-          for (const g of (dateObj.games ?? [])) {
-            const state = g.status?.detailedState ?? '';
-            const isFinal = state === 'Final' || state === 'Completed Early';
-            if (g.gameType && g.gameType !== 'R') {
-              inPostseason = true;
-              const round = MLB_ROUND_LABELS[g.seriesDescription] ?? g.seriesDescription ?? null;
-              const ss = g.seriesStatus;
-              if (isFinal) {
-                playedRound = round ?? playedRound;
-                if (ss) {
-                  const wins = ss.wins ?? 0, losses = ss.losses ?? 0;
-                  const weAreHome = g.teams?.home?.team?.id === t.id;
-                  const weWonThisGame = (weAreHome ? g.teams?.home : g.teams?.away)?.isWinner === true;
-                  const ourAbbr = (weAreHome ? g.teams?.home : g.teams?.away)?.team?.abbreviation ?? '';
-                  const weLead = ss.isOver
-                    ? weWonThisGame
-                    : (ourAbbr && typeof ss.result === 'string' ? ss.result.startsWith(ourAbbr) : false);
-                  seriesRecord = weLead ? `${wins}-${losses}` : `${losses}-${wins}`;
-                  eliminated = !!ss.isOver && !weWonThisGame;
-                  lastRoundResult = ss.isOver && round
-                    ? (weWonThisGame
-                        ? `Won ${round} ${Math.max(wins, losses)}–${Math.min(wins, losses)}`
-                        : `Lost ${round} ${Math.min(wins, losses)}–${Math.max(wins, losses)}`)
-                    : null;
-                }
-              } else if (!upcomingRound) {
-                upcomingRound = round ?? null;
-              }
-            }
-            if (state === 'Final' || state === 'Completed Early') {
-              const weAreHome = g.teams?.home?.team?.id === t.id;
-              const us   = weAreHome ? g.teams.home : g.teams.away;
-              const them = weAreHome ? g.teams.away : g.teams.home;
-              games.push({ date: dateObj.date, opponent: them?.team?.name ?? '???', ourScore: us?.score ?? 0, theirScore: them?.score ?? 0, isHome: weAreHome, won: us?.isWinner === true });
-            } else if (!liveGame && (state === 'In Progress' || state === 'Live Preview')) {
-              const weAreHome = g.teams?.home?.team?.id === t.id;
-              const us   = weAreHome ? g.teams.home : g.teams.away;
-              const them = weAreHome ? g.teams.away : g.teams.home;
-              const ls   = g.linescore ?? {};
-              liveGame = {
-                inning: ls.currentInning ?? 0,
-                inningOrdinal: ls.currentInningOrdinal ?? '',
-                topBottom: ls.isTopInning ? 'Top' : 'Bot',
-                ourScore:   us?.score   ?? 0,
-                theirScore: them?.score ?? 0,
-                outs: ls.outs ?? 0,
-                isHome: weAreHome,
-                opponent: them?.team?.name ?? '???',
-                opponentAbbr: them?.team?.abbreviation ?? '',
-                opponentId: them?.team?.id,
-              };
-            } else if (!nextGame && (state === 'Scheduled' || state === 'Pre-Game' || state === 'Warmup')) {
-              const weAreHome = g.teams?.home?.team?.id === t.id;
-              const them = weAreHome ? g.teams?.away : g.teams?.home;
-              const probUs   = (weAreHome ? g.teams?.home : g.teams?.away)?.probablePitcher;
-              const probThem = (weAreHome ? g.teams?.away : g.teams?.home)?.probablePitcher;
-              const oppRec = them?.leagueRecord;
-              nextGame = {
-                date: dateObj.date, gameTime: g.gameDate ?? null,
-                opponent: them?.team?.name ?? '???',
-                opponentAbbr: them?.team?.abbreviation ?? '',
-                opponentId: them?.team?.id,
-                isHome: weAreHome,
-                probablePitcher: probUs?.fullName ?? probUs?.lastName ?? null,
-                oppProbablePitcher: probThem?.fullName ?? probThem?.lastName ?? null,
-                venue: g.venue?.name ?? null,
-                oppRecord: oppRec ? `${oppRec.wins}-${oppRec.losses}` : null,
-              };
-            }
-          }
-        }
-        const standing = standingsMap[t.id];
-        return {
-          ...t,
-          games: games.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
-          nextGame, liveGame,
-          inPostseason: inPostseason && !eliminated,
-          eliminated, eliminatedRound: eliminated ? playedRound : null,
-          postseasonRound: (lastRoundResult && upcomingRound) ? upcomingRound : (playedRound ?? upcomingRound),
-          seriesRecord: (lastRoundResult && upcomingRound) ? null : seriesRecord,
-          lastRoundResult: (upcomingRound || eliminated) ? lastRoundResult : null,
-          record: standing?.record ?? '',
-          divisionRank: standing?.divisionRank,
-          // Regular-season standings values — meaningless once the
-          // postseason starts (see api/mlb.js for the full reasoning).
-          gamesBack: (inPostseason || eliminated) ? undefined : standing?.gamesBack,
-          streak:    (inPostseason || eliminated) ? undefined : standing?.streak,
-          last10:    (inPostseason || eliminated) ? undefined : standing?.last10,
-          teamBA, teamERA,
-        };
-      } catch { return { ...t, games: [], nextGame: null, liveGame: null, record: '' }; }
-    }));
-    return results;
+    const res = await fetch(apiUrl('/api/mlb'));
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (json.hidden) return null;
+    return (json.teams ?? []) as MLBTeam[];
   } catch { return []; }
 }
 
@@ -1713,8 +1540,9 @@ export default function SportsScreen() {
 
         {/* MLB — all 5 tracked clubs shown as one flat list. Nothing behind
             a tap: with only 5 rows, splitting the face from an accordion
-            body just made the card feel like it was hiding content. */}
-        <TeamCard
+            body just made the card feel like it was hiding content.
+            Not rendered at all when /api/mlb says hidden (offseason). */}
+        {data?.mlb !== null && <TeamCard
           gradStart="rgba(167,139,250,0.22)"
           gradEnd="rgba(15,23,42,0.9)"
           iconContent={
@@ -1762,7 +1590,7 @@ export default function SportsScreen() {
               <Text style={{ fontFamily: 'Outfit', color: dark.text.subtle, fontSize: 13 }}>No recent results found.</Text>
             )
           }
-        />
+        />}
 
         {/* NFL — same treatment: all 3 teams as one flat list, Bills first
             but no heavier than Steelers/Browns. */}

@@ -20,9 +20,41 @@ const ROUND_LABELS = {
   'World Series':            'WORLD SERIES',
 };
 
-async function fetchStandings() {
-  const year = new Date().getFullYear();
-  const url  = `https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${year}&standingsTypes=regularSeason`;
+const TRACKED_IDS = TEAMS.map(t => t.id).join(',');
+
+// YYYY-MM-DD in Jamestown time — schedule cutoffs are calendar days here,
+// not in UTC (which rolls over at 8pm ET).
+function etDate(d) {
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+}
+
+// ?now= lets season transitions (Opening Day, mid-November) be tested
+// without waiting for them. Ignored on production so nobody can feed the
+// live endpoint a fake date.
+function resolveNow(req) {
+  const raw = req.query?.now;
+  if (raw && process.env.VERCEL_ENV !== 'production') {
+    const d = new Date(String(raw));
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
+}
+
+// First and last regular-season (gameType R) dates for the tracked teams
+// only — a league-wide Opening Day would include Tokyo/Seoul openers none
+// of them play in. null = schedule not published yet; throws on fetch
+// failure so that isn't mistaken for "no season".
+async function fetchSeasonRange(season) {
+  const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${TRACKED_IDS}&gameType=R&season=${season}&fields=dates,date`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error(`schedule ${res.status}`);
+  const dates = (await res.json()).dates ?? [];
+  if (!dates.length) return null;
+  return { first: dates[0].date, last: dates[dates.length - 1].date };
+}
+
+async function fetchStandings(season) {
+  const url  = `https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${season}&standingsTypes=regularSeason`;
   try {
     const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return {};
@@ -61,10 +93,9 @@ async function fetchTeamStats(teamId, year) {
   } catch { return {}; }
 }
 
-async function fetchTeamGames(teamId) {
+async function fetchTeamGames(teamId, now) {
   const empty = { games: [], nextGame: null, liveGame: null, inPostseason: false, eliminated: false };
   try {
-    const now   = new Date();
     const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const end   = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
     const fmt   = d => d.toISOString().split('T')[0];
@@ -232,14 +263,32 @@ async function fetchTeamGames(teamId) {
   } catch { return empty; }
 }
 
+function sendHidden(res, reason, maxAge) {
+  res.setHeader('Cache-Control', `public, s-maxage=${maxAge}, stale-while-revalidate=60`);
+  // teams: [] keeps older web bundles (which don't know `hidden`) working.
+  res.status(200).json({ hidden: true, reason, teams: [] });
+}
+
 export default async function handler(req, res) {
   try {
-    const year = new Date().getFullYear();
+    const now   = resolveNow(req);
+    const today = etDate(now);
+    const year  = Number(today.slice(0, 4));
+
+    // Before the tracked teams' first regular-season game the card stays
+    // hidden — winter and spring training alike. Since nothing is shown
+    // until then, the January rollover never fetches the new season's
+    // empty standings.
+    let range;
+    try { range = await fetchSeasonRange(year); }
+    catch { return sendHidden(res, 'unavailable', 60); }
+    if (!range || today < range.first) return sendHidden(res, 'offseason', 3600);
+
     const [standings, ...teamResults] = await Promise.all([
-      fetchStandings(),
+      fetchStandings(year),
       ...TEAMS.map(t =>
         Promise.all([
-          fetchTeamGames(t.id),
+          fetchTeamGames(t.id, now),
           fetchTeamStats(t.id, year),
         ]).then(([gameData, statsData]) => ({ ...t, ...gameData, ...statsData }))
       ),
@@ -263,6 +312,15 @@ export default async function handler(req, res) {
         last10:      postseason ? undefined : standing?.last10,
       };
     });
+
+    // After the regular season, show the card only while a tracked team is
+    // still alive. Checking aliveness (not "any postseason flag") also covers
+    // mid-November, when eliminated teams' games age out of the 30-day
+    // window and the client would otherwise fall back to all five frozen
+    // final records.
+    if (today > range.last && !teams.some(t => t.inPostseason)) {
+      return sendHidden(res, 'offseason', 3600);
+    }
 
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     res.status(200).json({ teams });

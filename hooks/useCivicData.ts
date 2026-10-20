@@ -1671,6 +1671,8 @@ const CURATED_EVENTS: EventItem[] = [
 
   { title: 'Jamestown Energy Workshop: Save Energy, Save Dollars', startDate: '2026-11-04T10:30:00', location: 'The Chautauqua Center, 107 Institute St, Jamestown', category: 'Health & Care', tags: ['Chautauqua County', 'Office for the Aging', 'Energy'], note: 'Free · WNY Clean Energy Hub workshop on reading your utility bill and cutting energy use. Registered participants get a free energy-saving kit. Call 716-753-4582 to register.', link: 'https://chautauquacountyny.gov/office-aging/event/jamestown-energy-workshop-save-energy-save-dollars' },
 
+  { title: 'Free Rabies Vaccination Clinic — Jamestown', startDate: '2026-11-07T10:00:00', endDate: '2026-11-07T12:00:00', location: 'Taylor Fire Training Center, 240 Harrison St, Jamestown, NY 14701', category: 'Health & Care', tags: ['Chautauqua County', 'Rabies', 'Pets'], note: 'Free · For dogs, cats & ferrets 3 months+. Pre-registration required, limited spots. Bring prior vaccination records. Dogs on leash, cats/ferrets in carriers. Questions: CCHD 716-753-4481.', link: 'https://chautauquacountyny.gov/public-health/news/free-rabies-vaccine-clinics-offered-across-chautauqua-county-fall' },
+
   { title: 'Tony Dolce Riverwalk Bike Path Unveiling', startDate: '2026-10-15T15:30:00', location: 'Greater Jamestown Riverwalk bike path, 8th St entrance, Jamestown', category: 'Community', tags: ['City of Jamestown', 'Riverwalk', 'Dedication'], note: 'Free · The City renames the Riverwalk bike path for the late Councilman Tony Dolce, its longest-serving council member. Hosted by Mayor Kim Ecklund.', link: 'https://www.jamestownny.gov/city-of-jamestown-to-honor-the-life-legacy-of-tony-dolce-with-riverwalk-bike-path-renaming/' },
 ];
 
