@@ -12,7 +12,29 @@
 
 const LEAF_SOURCE = 'https://www.jamestownny.gov/city-of-jamestown-announces-2026-leaf-collection-schedule/';
 
+const HALLOWEEN_SOURCE = 'https://www.jamestownny.gov/city-of-jamestown-announces-5th-annual-riverwalk-trick-or-treat-trail-halloween-trick-or-treating-hours/';
+
 const NOTICES = [
+  // Listed first: it's the sooner, shorter-lived of the two.
+  {
+    id: 'halloween-hours-2026',
+    category: 'Halloween',
+    title: 'Trick-or-treat hours',
+    summary: 'Citywide trick-or-treating is Sat Oct 31, 5–7 p.m.',
+    startsOn: '2026-10-26',
+    expiresAfter: '2026-10-31',
+    badges: [
+      { from: '2026-10-26', label: 'Sat 5–7pm' },
+      { from: '2026-10-31', label: 'Tonight 5–7pm' },
+    ],
+    sections: [
+      { heading: 'Hours', body: 'Sat Oct 31, 5–7 p.m., citywide.' },
+      { heading: 'Drivers', body: 'Watch for children and pedestrians.' },
+      { heading: 'Weather', body: 'Any weather change is announced by the City of Jamestown.' },
+    ],
+    links: [{ label: 'City announcement', url: HALLOWEEN_SOURCE }],
+    source: 'City of Jamestown · Oct 6, 2026',
+  },
   {
     id: 'leaf-collection-2026',
     category: 'Leaf Collection',
