@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform,
 } from 'react-native';
@@ -10,6 +10,7 @@ import { PulsingDot } from '../components/PulsingDot';
 import { CITY_SERVICES, CityService, ServiceStatus } from '../data/cityServices';
 import { dark } from '../lib/colors';
 import { openLink } from '../lib/openLink';
+import { apiUrl } from '../lib/api';
 import { useCivic } from '../lib/CivicDataContext';
 import { DpwWeekUpdate } from '../hooks/useCivicData';
 
@@ -334,9 +335,22 @@ const FILTERS: { id: FilterOption; label: string }[] = [
   { id: 'year-round', label: 'Year Round' },
 ];
 
+// Bundled cards a server notice has superseded (e.g. leaf collection), so a
+// stale card can be retired with a deploy instead of an App Store build.
+async function fetchHiddenServices(): Promise<string[]> {
+  try {
+    const res = await fetch(apiUrl('/api/notices'));
+    if (!res.ok) return [];
+    const json = await res.json();
+    return Array.isArray(json.hiddenServices) ? json.hiddenServices : [];
+  } catch { return []; }
+}
+
 export default function CityServicesScreen({ onClose }: { onClose?: () => void }) {
   const { dpw } = useCivic();
   const [filter, setFilter] = useState<FilterOption>('all');
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  useEffect(() => { fetchHiddenServices().then(setHiddenIds); }, []);
   const glassWeb = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
@@ -355,6 +369,7 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
   // strings instead, which sidesteps the UTC conversion entirely.
   const todayKey = localDateKey(new Date());
   const filtered = allServices.filter(s => {
+    if (hiddenIds.includes(s.id)) return false;
     if (s.expiresAfter && todayKey > s.expiresAfter) return false;
     return filter === 'all' || s.status === filter || (filter === 'coming-up' && s.status === 'imminent');
   });

@@ -12,9 +12,42 @@
 
 const LEAF_SOURCE = 'https://www.jamestownny.gov/city-of-jamestown-announces-2026-leaf-collection-schedule/';
 
+const HEAP_OTDA = 'https://otda.ny.gov/programs/heap/';
+const HEAP_WRFA = 'https://www.wrfalp.com/heap-accepting-applications-starting-nov-2/';
+
+const COUNCIL_SOURCE = 'https://www.wrfalp.com/city-council-to-vote-on-creating-digital-services-division-at-bpu/';
+
+// Bundled City Services cards (data/cityServices.ts ids) that a server notice
+// now supersedes. Not date-gated: the bundled copy stays stale after the
+// notice expires, so it should stay hidden too.
+const HIDDEN_SERVICES = ['leafcollection'];
+
 const HALLOWEEN_SOURCE = 'https://www.jamestownny.gov/city-of-jamestown-announces-5th-annual-riverwalk-trick-or-treat-trail-halloween-trick-or-treating-hours/';
 
 const NOTICES = [
+  {
+    id: 'council-2026-10-26',
+    category: 'City Council',
+    title: 'Public hearing: BPU Digital Services Division',
+    summary: 'Mon Oct 26 · 5:45pm public hearing, 7:30pm voting session',
+    startsOn: '2026-10-26',
+    expiresAfter: '2026-10-26',
+    badges: [{ from: '2026-10-26', label: 'Tonight 5:45pm' }],
+    sections: [
+      {
+        heading: '5:45pm · Public hearing',
+        body: 'On the local law creating a BPU division to own and operate the open-access fiber network. Council Chambers, 2nd floor of City Hall.',
+      },
+      {
+        heading: '6pm · Budget presentations',
+        body: 'DPW, Parks and Development. Police Training Room, 4th floor.',
+      },
+      { heading: '7:30pm · Voting session', body: 'Council Chambers, 2nd floor.' },
+      { heading: 'Watch', body: 'All meetings are livestreamed on jamestownny.gov.' },
+    ],
+    links: [{ label: 'WRFA story', url: COUNCIL_SOURCE }],
+    source: 'WRFA · Oct 2026',
+  },
   // Listed first: it's the sooner, shorter-lived of the two.
   {
     id: 'halloween-hours-2026',
@@ -44,9 +77,10 @@ const NOTICES = [
     expiresAfter: '2026-11-20',
     // Each entry applies from its `from` date until the next one's.
     badges: [
-      { from: '2026-10-26', label: 'Starts Mon' },
-      { from: '2026-11-02', label: 'Phase 1 underway' },
-      { from: '2026-11-09', label: 'Phase 2 underway' },
+      // A date, not "Mon": "Starts Mon" read as today on a Monday.
+      { from: '2026-10-26', label: 'Starts Nov 2' },
+      { from: '2026-11-02', label: 'Phase 1 now' },
+      { from: '2026-11-09', label: 'Phase 2 now' },
     ],
     sections: [
       {
@@ -77,6 +111,40 @@ const NOTICES = [
     links: [{ label: 'City schedule', url: LEAF_SOURCE }],
     source: 'City of Jamestown DPW · Oct 20, 2026',
   },
+  {
+    id: 'heap-2026',
+    category: 'Assistance',
+    title: 'Heating help (HEAP) opens Nov 2',
+    summary: 'NY Home Energy Assistance Program applications open Mon Nov 2.',
+    startsOn: '2026-10-26',
+    expiresAfter: '2026-11-30',
+    badges: [
+      { from: '2026-10-26', label: 'Opens Nov 2' },
+      { from: '2026-11-02', label: 'Apply now' },
+    ],
+    sections: [
+      {
+        heading: 'Automatic for many',
+        body: 'Most SNAP and Public Assistance households get HEAP automatically, with no application needed.',
+      },
+      {
+        heading: 'Who can apply',
+        body: 'Other households can apply starting Nov 2. A family of four qualifies with gross income up to $6,852/month ($82,230/yr).',
+      },
+      {
+        heading: 'Higher benefits this year',
+        items: [
+          'Heating with oil, kerosene or propane: up $90 to $990.',
+          'Heating with wood, pellets or coal: up $65 to $700.',
+        ],
+      },
+    ],
+    links: [
+      { label: 'NYS OTDA HEAP page', url: HEAP_OTDA },
+      { label: 'WRFA story', url: HEAP_WRFA },
+    ],
+    source: 'NYS OTDA · WRFA',
+  },
 ];
 
 function easternDateKey(d) {
@@ -88,7 +156,10 @@ function easternDateKey(d) {
 function resolveNow(req) {
   const raw = req.query?.now;
   if (raw && process.env.VERCEL_ENV !== 'production') {
-    const d = new Date(String(raw));
+    // A bare YYYY-MM-DD parses as UTC midnight, which is the previous day in
+    // Eastern time; pin it to Eastern noon so ?now=2026-12-01 means Dec 1.
+    const str = String(raw);
+    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(str) ? `${str}T12:00:00-05:00` : str);
     if (!isNaN(d.getTime())) return d;
   }
   return new Date();
@@ -109,9 +180,9 @@ export function noticesHandler(req, res) {
 
     // Short TTL: windows and badges flip at Eastern midnight.
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-    res.status(200).json({ notices });
+    res.status(200).json({ notices, hiddenServices: HIDDEN_SERVICES });
   } catch {
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ notices: [] });
+    res.status(200).json({ notices: [], hiddenServices: HIDDEN_SERVICES });
   }
 }
