@@ -127,6 +127,12 @@ function easternHour(dt) {
   return hourPart ? parseInt(hourPart.value, 10) % 24 : dt.getUTCHours();
 }
 
+// Same UTC trap for dates: an ISO date slice is the UTC day, which rolls over
+// at 8pm Eastern (7pm in winter) and labeled tonight's hours "Tmrw".
+function easternDateKey(dt) {
+  return dt.toLocaleDateString('en-CA', { timeZone: TIMEZONE });
+}
+
 // Build a human-readable "Rain in ~X min" / "Rain ending ~X min" string
 // from the forecastNextHour summary segments.
 function nextHourSummary(nextHourData, isWetNow) {
@@ -209,7 +215,7 @@ export default async function handler(req, res) {
     const sunset  = todayForecast ? formatLocalTime(todayForecast.sunset)  : null;
 
     // ── 5-day forecast ────────────────────────────────────────────
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = easternDateKey(new Date());
     const forecast = daily.slice(0, 5).map(d => ({
       date:   d.forecastStart.split('T')[0],
       high:   toF(d.temperatureMax),
@@ -245,7 +251,7 @@ export default async function handler(req, res) {
       if (nextWet) {
         const dt    = new Date(nextWet.forecastStart);
         const hr    = easternHour(dt);
-        const dayStr = nextWet.forecastStart.split('T')[0];
+        const dayStr = easternDateKey(dt);
         precipAt = `${dayStr > todayStr ? 'Tmrw ' : ''}${hr % 12 || 12} ${hr >= 12 ? 'PM' : 'AM'}`;
       }
     }
