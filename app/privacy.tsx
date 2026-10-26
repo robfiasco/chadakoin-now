@@ -74,7 +74,7 @@ export default function PrivacyPolicyScreen({ onClose }: { onClose?: () => void 
         <Section title="Permissions Android shows you">
           <Text style={[s.body, { marginTop: 12 }]}>
             <Text style={s.bold}>Internet. </Text>
-            To fetch news, events, weather, recycling schedules, and to stream CDIR audio when you press play.
+            To fetch news, events and weather, and to stream CDIR audio when you press play.
           </Text>
           <Text style={[s.body, { marginTop: 12 }]}>
             <Text style={s.bold}>RECORD_AUDIO. </Text>
