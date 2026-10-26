@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { XMLParser } from 'fast-xml-parser';
 import { fetchSourceHealth } from './useSourceHealth';
 import { apiUrl } from '../lib/api';
+import { RECYCLING_MATERIALS, RECYCLING_WEEKS } from '../data/recyclingSchedule2026';
 
 export interface RecyclingWeek {
   material: string;
@@ -23,11 +24,9 @@ export interface RecyclingData {
   holidayDelay: boolean;
   affectedDays: string[];
   upcomingHoliday: { name: string; date: string } | null;
-  // Set when the live BPU fetch failed and this is the last successful
-  // fetch instead — lets the UI show "as of Xh ago" rather than pretending
-  // this is current.
-  stale?: boolean;
-  staleAsOf?: number | null;
+  // True when today falls outside the bundled calendar (e.g. 2027 before
+  // its map is added) — the UI shows "calendar not posted yet" instead.
+  calendarMissing?: boolean;
 }
 
 export interface ParkingData {
@@ -151,7 +150,6 @@ export interface CivicData {
 }
 
 const FEEDS = {
-  recyclingICS: 'https://www.jamestownnybpu.gov/common/modules/iCalendar/iCalendar.aspx?feed=calendar&catID=24',
   // jamestownbpu.com (the old domain) now 301s to jamestownnybpu.gov over a
   // 3-hop chain that briefly downgrades to plain http:// mid-redirect —
   // fragile enough to intermittently fail. Fetch the final host directly.
@@ -189,7 +187,6 @@ const LOCAL_TOWNS = new Set([
 ]);
 
 const TTL = {
-  recycling: 24 * 60 * 60 * 1000,   // 24h
   events:     1 * 60 * 60 * 1000,   // 1h
   alerts:     3 * 60 * 60 * 1000,   // 3h — same slow BPU feed as dpw; 5min was hammering it
   news:       2 * 60 * 60 * 1000,   // 2h
@@ -512,194 +509,75 @@ function extractPinLocationFromBody(html: string): string | null {
   return loc || null;
 }
 
-function recyclingEmoji(lower: string): string {
-  if (lower.includes('cardboard') || lower.includes('corrugated') || lower.includes('box board')) return '📦';
-  if (lower.includes('plastic')) return '🧴';
-  if (lower.includes('paper')) return '📰';
-  if (lower.includes('metal') || lower.includes('tin') || lower.includes('alumin')) return '🥫';
-  return '♻️';
-}
-
-function parseRecyclingTitle(summary: string, description: string, start: Date | null = null, end: Date | null = null): RecyclingWeek {
-  const lowerSummary = summary.toLowerCase();
-
-  // Extract exclusions from either summary or description (look for "no " or "No ")
-  let exclusions = '';
-  const searchStr = summary + ' ' + description;
-  const exclusionMatch = searchStr.match(/(:|-|\.)?\s*[Nn]o\s+(.+?)(?:,?\s*$|\.\s*$)/);
-  if (exclusionMatch) {
-    exclusions = exclusionMatch[2].replace(/[.,]\s*$/, '').trim();
-    // Strip trailing URLs if they got caught in the text
-    exclusions = exclusions.replace(/\s*https?:\/\/[^\s]+$/, '').trim();
-  }
-
-  let note = '';
-  const noteMatch = description.match(/\*\s*([Ff]latten[^\*]+)/);
-  if (noteMatch) {
-    note = noteMatch[1].trim();
-  }
-
-  let material: string;
-  if (lowerSummary.includes('cardboard') || lowerSummary.includes('corrugated') || lowerSummary.includes('box board') || lowerSummary.includes('boxboard')) {
-    material = 'Corrugated Cardboard & Boxboard';
-  } else if (lowerSummary.includes('plastic')) {
-    material = 'Plastics (bottles, jugs, containers — no lids)';
-  } else if (lowerSummary.includes('paper')) {
-    material = 'Paper (newspaper, magazines, junk mail, envelopes, paper bags)';
-  } else if (lowerSummary.includes('metal') || lowerSummary.includes('tin') || lowerSummary.includes('alumin')) {
-    material = 'Metals & Cans (aluminum, tin)';
-  } else if (lowerSummary.includes('glass')) {
-    material = 'Glass';
-  } else {
-    const cut = summary.match(/^(.+?)(?:\s+(?:week|only|recycling)\b|\s*[-:—–])/i);
-    material = cut ? cut[1].trim() : summary.replace(/,\s*$/, '').trim();
-  }
-
-  let dateRange = '';
-  if (start && end) {
-    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    // DTEND in ICS is the exclusive end — same-day means it's the last day of the pickup window
-    dateRange = `${fmt(start)} – ${fmt(end)}`;
-  }
-
-  const startDate = start ? start.toISOString().split('T')[0] : '';
-  const emoji = recyclingEmoji(lowerSummary);
-
-  return { material, dateRange, exclusions, note, startDate, emoji };
-}
-
-async function fetchRecyclingICS(): Promise<RecyclingData> {
-  const cached = await getCached<RecyclingData>('recycling', TTL.recycling);
-  if (cached) return cached;
-
+// Today's wall-clock date/time in Jamestown, as a local Date, so a phone set
+// to another timezone still lands on the right BPU week.
+function easternNow(now: Date = new Date()): Date {
   try {
-    return await fetchRecyclingICSLive();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hour12: false,
+    }).formatToParts(now);
+    const get = (t: string) => Number(parts.find(p => p.type === t)?.value);
+    return new Date(get('year'), get('month') - 1, get('day'), get('hour') % 24);
   } catch {
-    // BPU's redirect chain (or the feed itself) occasionally fails — fall
-    // back to the last successful fetch with its age instead of the bare
-    // "—" empty state, which looks identical to "genuinely no pickup data"
-    // and previously masked which week's schedule (and holiday delay) was
-    // actually showing.
-    const stale = await getStaleCached<RecyclingData>('recycling');
-    if (stale) return { ...stale.data, stale: true, staleAsOf: stale.timestamp };
-    const { hasDelay, affectedDays, upcomingHoliday } = computeHolidayDelay();
-    return {
-      thisWeek: EMPTY_WEEK, nextWeek: EMPTY_WEEK, upcomingWeeks: [],
-      holidayDelay: hasDelay, affectedDays, upcomingHoliday,
-      stale: true, staleAsOf: null,
-    };
+    return now;
   }
 }
 
-async function fetchRecyclingICSLive(): Promise<RecyclingData> {
-  const res = await feedFetch(proxyUrl(FEEDS.recyclingICS));
-  if (!res.ok) throw new Error(`Recycling ICS fetch failed: ${res.status}`);
-  const text = await res.text();
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
-  const eventRx = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
-  const fieldRx = /^([A-Z\-]+(?:;[^:]+)?):(.*)/;
+function recyclingWeekFor(monday: Date): RecyclingWeek | null {
+  const startDate = dateKey(monday);
+  const id = RECYCLING_WEEKS[startDate];
+  if (!id) return null;
+  const m = RECYCLING_MATERIALS[id];
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return {
+    material: `${m.label} (${m.accepts})`,
+    dateRange: `${fmt(monday)} – ${fmt(friday)}`,
+    exclusions: '',
+    note: m.note,
+    startDate,
+    emoji: m.emoji,
+  };
+}
 
-  const recyclingWeeks: RecyclingWeek[] = [];
-  const holidayDates: string[] = [];
-  let m;
+// Pure lookup from the bundled BPU calendar — no network, so it renders
+// instantly and offline.
+export function computeRecycling(now: Date = new Date()): RecyclingData {
+  const today = easternNow(now);
+  const dow = today.getDay();
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (dow === 0 ? 6 : dow - 1));
 
-  while ((m = eventRx.exec(text)) !== null) {
-    const block = m[1];
+  // Saturday evening (6pm+) through Sunday: show next week so pickup day is
+  // always ahead — unless next week isn't in the calendar yet.
+  const isWeekendPreview = (dow === 6 && today.getHours() >= 18) || dow === 0;
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(monday.getDate() + 7);
+  if (isWeekendPreview && recyclingWeekFor(nextMonday)) monday.setDate(monday.getDate() + 7);
 
-    // Unfold ICS line continuations (lines starting with space/tab continue previous line)
-    const unfolded = block.replace(/\r?\n[ \t]/g, '');
-    const lines = unfolded.split(/\r?\n/);
-
-    let summary = '', dtstart = '', dtend = '', description = '';
-    for (const line of lines) {
-      const fm = fieldRx.exec(line);
-      if (!fm) continue;
-      const [, key, val] = fm;
-      const k = key.split(';')[0].toUpperCase();
-      if (k === 'SUMMARY')     summary     = val.replace(/\\,/g, ',').replace(/\\n/g, ' ').trim();
-      if (k === 'DTSTART')     dtstart     = val.trim();
-      if (k === 'DTEND')       dtend       = val.trim();
-      if (k === 'DESCRIPTION') description = val.replace(/\\,/g, ',').replace(/\\n/g, ' ').trim();
-    }
-
-    if (!summary || !dtstart) continue;
-
-    const lower = summary.toLowerCase();
-    const start = parseIcsDate(dtstart);
-    const end   = parseIcsDate(dtend);
-
-    if (lower.includes('no garbage') || lower.includes('no recycling')) {
-      if (start) holidayDates.push(start.toISOString().split('T')[0]);
-      continue;
-    }
-
-    // Skip non-recycling BPU events (yard waste site open/close, etc.)
-    const isRecycling = [
-      'cardboard', 'plastic', 'paper', 'metal', 'glass', 'recycling'
-    ].some(kw => lower.includes(kw));
-    if (!isRecycling) continue;
-
-    recyclingWeeks.push(parseRecyclingTitle(summary, description, start, end));
+  const weeks: RecyclingWeek[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i * 7);
+    const week = recyclingWeekFor(d);
+    if (!week) break;
+    weeks.push(week);
   }
 
-  // ICS feed is in reverse chronological order
-  recyclingWeeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
-
-  const now = new Date();
-  // Local date, not UTC — toISOString() rolls over to tomorrow's date hours
-  // before local midnight in US timezones, which broke the weekend-preview
-  // logic below (both must agree on what "today" is).
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  let thisIdx = -1;
-  for (let i = recyclingWeeks.length - 1; i >= 0; i--) {
-    if (recyclingWeeks[i].startDate <= today) {
-      thisIdx = i;
-      break;
-    }
-  }
-  // The BPU feed only publishes upcoming events — it drops each week once it's
-  // passed. So "no match" doesn't mean thisIdx is a stale/completed week, it
-  // means today is *before* the feed's earliest (soonest upcoming) entry —
-  // that entry already IS this week, so the weekend flip below must not
-  // apply to it (it would skip a real week).
-  const noPastMatch = thisIdx === -1;
-  if (noPastMatch && recyclingWeeks.length > 0) thisIdx = 0;
-
-  // Saturday evening (6pm+) through end of Sunday: show next week so pickup day
-  // is always in the future, not last week's already-passed collection.
-  const isWeekendPreview = (now.getDay() === 6 && now.getHours() >= 18) || now.getDay() === 0;
-  if (isWeekendPreview && !noPastMatch && thisIdx + 1 < recyclingWeeks.length) {
-    thisIdx += 1;
-  }
-
-  const thisWeek     = recyclingWeeks[thisIdx]     ?? EMPTY_WEEK;
-  const nextWeek     = recyclingWeeks[thisIdx + 1] ?? EMPTY_WEEK;
-  const upcomingWeeks = recyclingWeeks.slice(thisIdx + 2, thisIdx + 6);
-
-  const thisStart = thisWeek.startDate;
-  let thisEnd = '';
-  if (thisStart) {
-    const endD = new Date(thisStart + 'T12:00:00Z');
-    endD.setDate(endD.getDate() + 6);
-    thisEnd = endD.toISOString().split('T')[0];
-  }
-  
-  const holidayDelay = thisStart ? holidayDates.some(d => d >= thisStart && d <= thisEnd) : false;
-  const affectedDays = thisStart ? holidayDates.filter(d => d >= thisStart && d <= thisEnd) : [];
-
-  const { upcomingHoliday } = computeHolidayDelay();
-
-  const result: RecyclingData = {
-    thisWeek,
-    nextWeek,
-    upcomingWeeks,
-    holidayDelay,
+  const { hasDelay, affectedDays, upcomingHoliday } = computeHolidayDelay();
+  return {
+    thisWeek: weeks[0] ?? EMPTY_WEEK,
+    nextWeek: weeks[1] ?? EMPTY_WEEK,
+    upcomingWeeks: weeks.slice(2),
+    holidayDelay: hasDelay,
     affectedDays,
     upcomingHoliday,
+    calendarMissing: weeks.length === 0,
   };
-
-  await setCache('recycling', result);
-  return result;
 }
 
 // DPW weekly construction update — served by our own scraper at /api/dpw
@@ -2610,21 +2488,42 @@ async function fetchNews(): Promise<NewsItem[]> {
   return news;
 }
 
+// Push recycling data to the iOS widget via App Group shared storage.
+async function pushRecyclingToWidget(recycling: RecyclingData) {
+  if (Platform.OS !== 'ios' || recycling.thisWeek.material === '—') return;
+  try {
+    const appGroup = 'group.com.chadakoindigital.chadakoinnow';
+    await SharedGroupPreferences.setItem('recycling_material',       recycling.thisWeek.material,  appGroup);
+    await SharedGroupPreferences.setItem('recycling_dateRange',      recycling.thisWeek.dateRange, appGroup);
+    await SharedGroupPreferences.setItem('recycling_emoji',          recycling.thisWeek.emoji,     appGroup);
+    await SharedGroupPreferences.setItem('recycling_next_material',  recycling.nextWeek.material,  appGroup);
+    await SharedGroupPreferences.setItem('recycling_next_dateRange', recycling.nextWeek.dateRange, appGroup);
+    await SharedGroupPreferences.setItem('recycling_next_emoji',     recycling.nextWeek.emoji,     appGroup);
+    // Writing to SharedGroupPreferences alone doesn't wake WidgetKit —
+    // without this, the home screen widget can show stale data for up
+    // to a day until iOS gets around to its next scheduled refresh.
+    reloadWidgetTimelines();
+  } catch {}
+}
+
 export function useCivicData(): CivicData {
   // Parking is pure date math — compute it immediately so it's never skeleton-gated
   const [state, setState] = useState<Omit<CivicData, 'refresh'>>(() => ({
     ...DEFAULTS,
     parking: computeParking(),
+    recycling: computeRecycling(),
   }));
 
   const load = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     const parking = computeParking();
-    const { hasDelay, affectedDays, upcomingHoliday } = computeHolidayDelay();
+    // Static lookup, so it also refreshes cleanly across a week boundary.
+    const recycling = computeRecycling();
+    setState(prev => ({ ...prev, recycling }));
+    pushRecyclingToWidget(recycling);
 
-    const [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult, dpwResult] = await Promise.allSettled([
-      fetchRecyclingICS(),
+    const [alertsResult, eventsResult, newsResult, lotdResult, libraryResult, countyAlertsResult, dpwResult] = await Promise.allSettled([
       fetchAlerts(),
       fetchEvents(),
       fetchNews(),
@@ -2633,10 +2532,6 @@ export function useCivicData(): CivicData {
       fetchChautauquaAlerts(),
       fetchDpwUpdate(),
     ]);
-
-    const recycling = recyclingResult.status === 'fulfilled'
-      ? recyclingResult.value
-      : { ...DEFAULTS.recycling, holidayDelay: hasDelay, affectedDays, upcomingHoliday };
 
     const bpuAlerts = alertsResult.status === 'fulfilled' ? alertsResult.value : DEFAULTS.alerts;
     const countyAlerts = countyAlertsResult.status === 'fulfilled' ? (countyAlertsResult.value as AlertItem[]) : [];
@@ -2669,7 +2564,7 @@ export function useCivicData(): CivicData {
     const dpw = dpwResult.status === 'fulfilled' ? dpwResult.value : null;
 
     // Library, county-alerts, and DPW failures are non-critical — intentionally excluded from error banner
-    const anyFailed = [recyclingResult, alertsResult, eventsResult, newsResult, lotdResult]
+    const anyFailed = [alertsResult, eventsResult, newsResult, lotdResult]
       .some(r => r.status === 'rejected');
 
     setState({
@@ -2683,30 +2578,6 @@ export function useCivicData(): CivicData {
       latestEpisode,
       dpw,
       lastUpdated: new Date().toISOString(),
-    });
-
-    // Push recycling data to the iOS widget via App Group shared storage
-    if (Platform.OS === 'ios' && recycling.thisWeek.material !== '—') {
-      try {
-        const appGroup = 'group.com.chadakoindigital.chadakoinnow';
-        await SharedGroupPreferences.setItem('recycling_material',       recycling.thisWeek.material,  appGroup);
-        await SharedGroupPreferences.setItem('recycling_dateRange',      recycling.thisWeek.dateRange, appGroup);
-        await SharedGroupPreferences.setItem('recycling_emoji',          recycling.thisWeek.emoji,     appGroup);
-        await SharedGroupPreferences.setItem('recycling_next_material',  recycling.nextWeek.material,  appGroup);
-        await SharedGroupPreferences.setItem('recycling_next_dateRange', recycling.nextWeek.dateRange, appGroup);
-        await SharedGroupPreferences.setItem('recycling_next_emoji',     recycling.nextWeek.emoji,     appGroup);
-        // Writing to SharedGroupPreferences alone doesn't wake WidgetKit —
-        // without this, the home screen widget can show stale data for up
-        // to a day until iOS gets around to its next scheduled refresh.
-        reloadWidgetTimelines();
-      } catch {}
-    }
-  }, []);
-
-  // Show last known recycling data immediately (even if stale) — fresh fetch updates it in background
-  useEffect(() => {
-    getStaleCached<RecyclingData>('recycling').then(entry => {
-      if (entry) setState(prev => ({ ...prev, recycling: { ...entry.data, stale: true, staleAsOf: entry.timestamp } }));
     });
   }, []);
 

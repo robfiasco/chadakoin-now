@@ -628,8 +628,8 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.todayCategoryLabel, { color: dark.category.recycling }]}>Recycling</Text>
-                {recycling.thisWeek.material === '—' ? (
-                  <SkeletonPulse width="70%" height={16} borderRadius={4} accRGB="52,211,153" />
+                {recycling.calendarMissing ? (
+                  <Text style={styles.todayCardTitle}>{new Date().getFullYear()} calendar not posted yet</Text>
                 ) : (
                   <>
                     <Text style={styles.todayCardTitle}>
@@ -644,7 +644,6 @@ export default function HomeScreen({ onNavigateToTab }: { onNavigateToTab?: (ind
               {recycling.thisWeek.material !== '—' && (
                 <Text style={[styles.todayCardMeta, { textAlign: 'right' }]}>
                   {recycling.thisWeek.dateRange || '—'}
-                  {recycling.stale && recycling.staleAsOf ? `\nAs of ${relativeTime(recycling.staleAsOf)}` : ''}
                 </Text>
               )}
               <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.15)" />

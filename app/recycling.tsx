@@ -3,7 +3,6 @@ import { View, Text, ScrollView, StyleSheet, Platform, RefreshControl, Touchable
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedBackground } from '../components/ThemedBackground';
-import { SkeletonPulse } from '../components/SkeletonPulse';
 import { dark } from '../lib/colors';
 import { RecyclingWeek } from '../hooks/useCivicData';
 import { useCivic } from '../lib/CivicDataContext';
@@ -50,7 +49,7 @@ const NOT_ACCEPTED: { icon: keyof typeof Ionicons.glyphMap; label: string; detai
 
 export default function RecyclingScreen() {
   const civic = useCivic();
-  const { recycling, loading } = civic;
+  const { recycling } = civic;
   const [refreshing, setRefreshing] = useState(false);
   // Null outside a BPU holiday week, so the banner hides itself.
   const holidayNotice = getHolidayNotice();
@@ -65,7 +64,7 @@ export default function RecyclingScreen() {
     ? { backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }
     : {};
 
-  const allWeeks: Array<RecyclingWeek & { label: string; isThis: boolean }> = loading ? [] : [
+  const allWeeks: Array<RecyclingWeek & { label: string; isThis: boolean }> = [
     recycling.thisWeek.startDate ? { ...recycling.thisWeek, label: 'THIS WEEK', isThis: true }  : null,
     recycling.nextWeek.startDate ? { ...recycling.nextWeek, label: 'NEXT WEEK', isThis: false } : null,
     ...recycling.upcomingWeeks.map(w => ({ ...w, label: '', isThis: false })),
@@ -87,14 +86,21 @@ export default function RecyclingScreen() {
       >
         <Text style={styles.sectionLabel}>SCHEDULE</Text>
 
-        {loading ? (
+        {recycling.calendarMissing ? (
+          // Bundled schedule only covers its own year (data/recyclingSchedule2026.ts).
           // @ts-ignore
-          <View style={[styles.scheduleCard, glassWeb]}>
-            <View style={{ gap: 10, padding: 20 }}>
-              <SkeletonPulse width={80}  height={11} borderRadius={4} accRGB={ACC_RGB} />
-              <SkeletonPulse width={160} height={28} borderRadius={6} accRGB={ACC_RGB} />
-              <SkeletonPulse width={140} height={11} borderRadius={4} accRGB={ACC_RGB} />
-              <SkeletonPulse width={100} height={20} borderRadius={6} accRGB={ACC_RGB} />
+          <View style={[styles.scheduleCard, glassWeb, { padding: 20, gap: 10 }]}>
+            <Text style={styles.missingTitle}>{new Date().getFullYear()} calendar not posted yet</Text>
+            <Text style={styles.missingBody}>Check the BPU recycling calendar or call the garbage hotline for this week's material.</Text>
+            <View style={styles.delayActions}>
+              <TouchableOpacity onPress={() => openLink(CALENDAR_URL)} activeOpacity={0.75} style={[styles.delayAction, { borderColor: `rgba(${ACC_RGB},0.35)` }]}>
+                <Ionicons name="calendar-outline" size={12} color={ACC} />
+                <Text style={[styles.delayActionText, { color: ACC }]}>BPU recycling calendar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL(`tel:${BPU_HOTLINE.replace(/-/g, '')}`)} activeOpacity={0.75} style={[styles.delayAction, { borderColor: `rgba(${ACC_RGB},0.35)` }]}>
+                <Ionicons name="call-outline" size={12} color={ACC} />
+                <Text style={[styles.delayActionText, { color: ACC }]}>{BPU_HOTLINE}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -249,6 +255,8 @@ export default function RecyclingScreen() {
 }
 
 const styles = StyleSheet.create({
+  missingTitle: { fontFamily: 'Syne', fontSize: 17, fontWeight: '700', color: '#fff' },
+  missingBody: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 19 },
   header:  { paddingHorizontal: 20, paddingBottom: 14, paddingTop: 40, zIndex: 10 },
   title:   { fontFamily: 'Syne', fontSize: 22, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   subhead: { fontFamily: 'Outfit', fontSize: 11, marginTop: 4, letterSpacing: 1.5, textTransform: 'uppercase', color: ACC },
