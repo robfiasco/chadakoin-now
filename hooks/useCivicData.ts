@@ -486,6 +486,19 @@ function icsLocalDateTimeString(raw: string): string | null {
   return `${y}-${mo}-${d}T${h}:${mi}:00`;
 }
 
+// Same wall-clock format for sources that hand back a real instant (Reg
+// Lenna JSON, JCC RSS pubDate). toISOString() would store UTC, so a 10pm
+// show became "…-31T02:00Z": grouped under the next day on Events and
+// missed by same-day dedupe against other sources' listing of it.
+function easternLocalString(d: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}T${String(Number(get('hour')) % 24).padStart(2, '0')}:${get('minute')}:00`;
+}
+
 // myCHQ's Facebook-cross-posted event bodies commonly use a "📅 date/time"
 // line immediately followed by a "📍 location" line. Used as a fallback
 // when myCHQ's structured venue schema is a known-bad generic placeholder
@@ -1774,6 +1787,8 @@ async function fetchCityEvents(): Promise<EventItem[]> {
   }
 }
 
+const JAYHAWKS_RX = /\bjayhawks?\b/i;
+
 async function fetchMychqEvents(): Promise<EventItem[]> {
   const cached = await getCached<EventItem[]>('mychq', TTL.events);
   if (cached) return cached;
@@ -1793,6 +1808,10 @@ async function fetchMychqEvents(): Promise<EventItem[]> {
 
     const events: EventItem[] = (json.events ?? [])
       .filter((e: any) => LOCAL_TOWNS.has((e.venue?.city ?? '').toLowerCase().trim()))
+      // Jayhawks athletics come from the JCC feed (fetchJCCEvents) with the
+      // opponent in the title; myCHQ's generic "JCC Jayhawks Home Games"
+      // posts just duplicate them.
+      .filter((e: any) => !JAYHAWKS_RX.test([e.title, ...(e.categories ?? []).map((c: any) => c.name)].join(' ')))
       .map((e: any) => {
         const category = e.categories?.[0]?.name ? stripHtml(e.categories[0].name) : 'Community';
         const venueName = e.venue?.venue ? stripHtml(e.venue.venue) : '';
@@ -1898,9 +1917,10 @@ async function fetchJCCEvents(): Promise<EventItem[]> {
 
       events.push({
         title: `JCC ${sport} vs. ${opponent}`,
-        startDate: date.toISOString(),
-        endDate: date.toISOString(),
-        location: 'Jamestown Community College, Jamestown',
+        startDate: easternLocalString(date),
+        endDate: easternLocalString(date),
+        // Hockey home games are at Northwest Arena, not on campus.
+        location: /hockey/i.test(sport) ? 'Northwest Arena, Jamestown' : 'Jamestown Community College, Jamestown',
         category: 'Sports',
         tags: ['JCC', sport],
         link: link || 'https://www.jccjayhawks.com',
@@ -2008,8 +2028,8 @@ async function fetchRegLennaEvents(): Promise<EventItem[]> {
 
         return {
           title: stripHtml(item.title ?? ''),
-          startDate: new Date(item.startDate).toISOString(),
-          endDate: item.endDate ? new Date(item.endDate).toISOString() : new Date(item.startDate).toISOString(),
+          startDate: easternLocalString(new Date(item.startDate)),
+          endDate: easternLocalString(new Date(item.endDate ?? item.startDate)),
           location: item.location?.addressTitle ?? item.location?.addressLine1 ?? 'Reg Lenna Center, Jamestown',
           category: 'Arts & Entertainment',
           tags: ['Reg Lenna'],
