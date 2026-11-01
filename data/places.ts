@@ -356,10 +356,11 @@ export const PLACES: Place[] = [
     name: 'BioDome Project',
     categories: ['arts'],
     icon: 'flower-outline',
-    description: "Locally owned art gallery, artisans' market, farmers market, and garden shop — growing plants and building community downtown.",
+    description: "Locally owned art gallery, artisans' market, farmers market, and garden shop — growing plants and building community downtown. Good spot for local merch — Chautauqua Lake mugs, beanies, and tees.",
     address: '207 Pine St, Jamestown',
     hours: 'Tue–Fri 11am–6pm · Sat 11am–5pm',
     featured: false,
+    visited: true,
     lat: 42.09596, lng: -79.24019,
   },
   {
