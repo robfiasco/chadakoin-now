@@ -352,6 +352,17 @@ export const PLACES: Place[] = [
     lat: 42.09631, lng: -79.23921,
   },
   {
+    id: 'biodome-project',
+    name: 'BioDome Project',
+    categories: ['arts'],
+    icon: 'flower-outline',
+    description: "Locally owned art gallery, artisans' market, farmers market, and garden shop — growing plants and building community downtown.",
+    address: '207 Pine St, Jamestown',
+    hours: 'Tue–Fri 11am–6pm · Sat 11am–5pm',
+    featured: false,
+    lat: 42.09596, lng: -79.24019,
+  },
+  {
     id: 'rtpi',
     name: 'Roger Tory Peterson Institute',
     categories: ['activity'],
