@@ -114,8 +114,8 @@ const NOTICES = [
   {
     id: 'heap-2026',
     category: 'Assistance',
-    title: 'Heating help (HEAP) opens Nov 2',
-    summary: 'NY Home Energy Assistance Program applications open Mon Nov 2.',
+    title: 'Heating help (HEAP) is open',
+    summary: 'NY Home Energy Assistance Program applications are open now.',
     startsOn: '2026-10-26',
     expiresAfter: '2026-11-30',
     badges: [
@@ -129,7 +129,7 @@ const NOTICES = [
       },
       {
         heading: 'Who can apply',
-        body: 'Other households can apply starting Nov 2. A family of four qualifies with gross income up to $6,852/month ($82,230/yr).',
+        body: 'Other households can apply now. A family of four qualifies with gross income up to $6,852/month ($82,230/yr).',
       },
       {
         heading: 'Higher benefits this year',
