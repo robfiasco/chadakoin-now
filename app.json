@@ -16,7 +16,8 @@
       "appleTeamId": "3UM77ULJKQ",
       "buildNumber": "46",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"]
       },
       "entitlements": {
         "com.apple.security.application-groups": [
