@@ -1,3 +1,14 @@
+// JCC's feed mostly uses "W, 6-5" but some sports post "6-5 Win" or
+// "4-7 Loss" (and ties as "T, 2-2"). Anything that isn't a W/L/T game
+// result — meet placings like "100th", bare "WIN" — returns wl: null.
+function parseJCCScore(score) {
+  const comma = /^([WLT])\s*,\s*(.*)$/i.exec(score);
+  if (comma) return { wl: comma[1].toUpperCase(), final: comma[2].trim() };
+  const word = /^(\d+-\d+)\s+(win|loss|tie)$/i.exec(score);
+  if (word) return { wl: word[2][0].toUpperCase(), final: word[1] };
+  return { wl: null, final: '' };
+}
+
 async function fetchJCC(signal) {
   try {
     const res = await fetch('https://jccjayhawks.com/composite?print=rss', { signal });
@@ -41,9 +52,8 @@ async function fetchJCC(signal) {
       const hasResult = score && score.trim() !== '';
 
       if (hasResult && date < now) {
-        const parts = score.split(',').map(s => s.trim());
-        const wl    = parts[0];
-        const final = parts[1] ?? '';
+        const { wl, final } = parseJCCScore(score);
+        if (!wl) continue;               // placings ("100th"), meet scores, etc.
         if (final === '0-0') continue; // postponed/cancelled/bad data
         results.push({
           date:     date.toISOString(),
@@ -69,13 +79,24 @@ async function fetchJCC(signal) {
     results.sort((a, b) => new Date(b.date) - new Date(a.date));
     upcoming.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Compute per-sport season records from all results (not just the slice)
+    // Per-sport CURRENT-season records. The feed reaches back ~14 months, so
+    // counting every result merged two soccer/basketball seasons (men's soccer
+    // showed 27-16). Walk each sport newest-first and stop at the first long
+    // gap between games — that's the offseason boundary.
+    const SEASON_GAP_MS = 60 * 24 * 60 * 60 * 1000;
     const records = {};
+    const lastSeen = {};
     for (const r of results) {
-      if (!records[r.sport]) records[r.sport] = { w: 0, l: 0 };
-      if (r.won) records[r.sport].w++;
-      else records[r.sport].l++;
+      const t = new Date(r.date).getTime();
+      const rec = records[r.sport] ??= { w: 0, l: 0, t: 0, done: false };
+      if (rec.done) continue;
+      if (lastSeen[r.sport] != null && lastSeen[r.sport] - t > SEASON_GAP_MS) { rec.done = true; continue; }
+      lastSeen[r.sport] = t;
+      if (r.result === 'W') rec.w++;
+      else if (r.result === 'L') rec.l++;
+      else rec.t++;
     }
+    for (const rec of Object.values(records)) delete rec.done;
 
     // Only show genuinely recent results — otherwise a quiet offseason keeps
     // last season's final score pinned as "recent" indefinitely.

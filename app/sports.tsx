@@ -43,7 +43,7 @@ interface GameResult {
 interface Scorer { name: string; position: string; goals: number; assists: number; points: number; headshot: string; }
 interface JCCResult   { date: string; sport: string; opponent: string; isHome: boolean; result: string; score: string; won: boolean; link: string; }
 interface JCCUpcoming { date: string; sport: string; opponent: string; isHome: boolean; link: string; }
-interface JCCData     { results: JCCResult[]; upcoming: JCCUpcoming[]; records: Record<string, { w: number; l: number }>; }
+interface JCCData     { results: JCCResult[]; upcoming: JCCUpcoming[]; records: Record<string, { w: number; l: number; t?: number }>; }
 interface MLBGame     { date: string; opponent: string; ourScore: number; theirScore: number; isHome: boolean; won: boolean; }
 interface MLBLiveGame {
   inning: number; inningOrdinal: string; topBottom: string;
@@ -1248,7 +1248,7 @@ export default function SportsScreen() {
               <View style={{ gap: 5 }}>
                 {jccGlance.map((r, i) => {
                   const rec = data?.jcc?.records?.[r.sport];
-                  const recLabel = rec ? `${rec.w}-${rec.l}` : '';
+                  const recLabel = rec ? `${rec.w}-${rec.l}${rec.t ? `-${rec.t}` : ''}` : '';
                   return (
                     <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontSize: 13 }}>{sportEmoji(r.sport)}</Text>
