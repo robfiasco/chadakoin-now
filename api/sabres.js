@@ -41,13 +41,15 @@ async function fetchJCC(signal) {
       const date = new Date(pubDate);
       const now  = new Date();
 
-      const opponentClean = opponent
-        .replace(/&amp;/g, '&')
+      const decode = (s) => s
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
-        .replace(/^(at|vs\.?)\s*/i, '');
+        .replace(/&amp;/g, '&');
+      const opponentClean = decode(opponent).replace(/^(at|vs\.?)\s*/i, '');
+      // Category is entity-encoded too ("Swimming &amp; Diving").
+      const sport = decode(category);
 
       const hasResult = score && score.trim() !== '';
 
@@ -57,7 +59,7 @@ async function fetchJCC(signal) {
         if (final === '0-0') continue; // postponed/cancelled/bad data
         results.push({
           date:     date.toISOString(),
-          sport:    category,
+          sport:    sport,
           opponent: opponentClean,
           isHome:   !opponent.toLowerCase().startsWith('at '),
           result:   wl,
@@ -68,7 +70,7 @@ async function fetchJCC(signal) {
       } else if (!hasResult && date >= now) {
         upcoming.push({
           date:     date.toISOString(),
-          sport:    category,
+          sport:    sport,
           opponent: opponentClean,
           isHome:   !opponent.toLowerCase().startsWith('at '),
           link,

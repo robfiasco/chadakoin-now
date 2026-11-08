@@ -1912,7 +1912,7 @@ async function fetchJCCEvents(): Promise<EventItem[]> {
 
       const link = get(block, 'link');
       const code = sportCode(link);
-      const sport = (code && codeToSport[code]) || get(block, 'category') || 'Athletics';
+      const sport = stripHtml((code && codeToSport[code]) || get(block, 'category') || 'Athletics');
       const opponent = stripHtml(opponentRaw.replace(/^vs\.?\s+/i, ''));
 
       events.push({
