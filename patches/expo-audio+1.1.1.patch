@@ -1,0 +1,25 @@
+diff --git a/node_modules/expo-audio/ios/MediaController.swift b/node_modules/expo-audio/ios/MediaController.swift
+index 2dd3fb2..940d1a5 100644
+--- a/node_modules/expo-audio/ios/MediaController.swift
++++ b/node_modules/expo-audio/ios/MediaController.swift
+@@ -37,8 +37,18 @@ class MediaController {
+     }
+     var nowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo ?? [String: Any]()
+ 
+-    nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = player.duration
+-    nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime
++    // Live streams report an indefinite (NaN) duration. Bluetooth head units
++    // (AVRCP) drop the whole now-playing payload on NaN, so flag the item as
++    // live and omit duration/elapsed instead.
++    if player.duration.isFinite && player.duration > 0 {
++      nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = player.duration
++      nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime
++      nowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = false
++    } else {
++      nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyPlaybackDuration)
++      nowPlayingInfo.removeValue(forKey: MPNowPlayingInfoPropertyElapsedPlaybackTime)
++      nowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = true
++    }
+     nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.isPlaying ? player.ref.rate : 1.0
+     nowPlayingInfo[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
+ 
