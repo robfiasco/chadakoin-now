@@ -114,8 +114,11 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
       try {
         // shouldPlayInBackground keeps the stream going when the app is
         // minimized or the phone locks (pairs with UIBackgroundModes: audio
-        // in app.json — iOS needs both).
-        await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
+        // in app.json — iOS needs both). doNotMix: expo-audio defaults to
+        // mixWithOthers, and iOS never makes a mixable session the "Now
+        // Playing" app — so Plexamp/Music kept playing alongside CDIR and
+        // kept owning the lock screen and Bluetooth car display.
+        await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true, interruptionMode: 'doNotMix' });
         radioPlayer.play();
         if (Platform.OS !== 'web') {
           radioPlayer.setActiveForLockScreen(true, lockScreenMetadata(nowPlaying));
