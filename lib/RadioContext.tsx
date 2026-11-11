@@ -61,7 +61,7 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Player lives here at the root level — survives tab navigation
-  const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3' });
+  const radioPlayer = useAudioPlayer({ uri: 'https://radio.chadakoindigital.com/radio.mp3?src=app' });
 
   // Fetch artwork on mount so it shows before the user hits play
   useEffect(() => {
