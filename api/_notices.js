@@ -22,9 +22,92 @@ const COUNCIL_SOURCE = 'https://www.wrfalp.com/city-council-to-vote-on-creating-
 // notice expires, so it should stay hidden too.
 const HIDDEN_SERVICES = ['leafcollection'];
 
-const HALLOWEEN_SOURCE = 'https://www.jamestownny.gov/city-of-jamestown-announces-5th-annual-riverwalk-trick-or-treat-trail-halloween-trick-or-treating-hours/';
+const HOLIDAY_LIGHTS_RULES = 'https://www.jamestownny.gov/holidaylights';
+
+const AMNESTY_SOURCE = 'https://www.jamestownny.gov/city-of-jamestown-announces-november-amnesty-days-for-bulk-trash-electronics-recycling/';
+
+const HALLOWEEN_SOURCE ='https://www.jamestownny.gov/city-of-jamestown-announces-5th-annual-riverwalk-trick-or-treat-trail-halloween-trick-or-treating-hours/';
 
 const NOTICES = [
+  // Listed first: soonest and shortest-lived.
+  {
+    id: 'amnesty-day-2026-11-21',
+    category: 'Bulk Trash',
+    title: 'Amnesty Day at Bergman Park',
+    summary: 'Free bulk trash & electronics drop-off · Sat Nov 21, 8am–noon',
+    startsOn: '2026-11-15',
+    expiresAfter: '2026-11-21',
+    badges: [
+      { from: '2026-11-15', label: 'This Saturday' },
+      { from: '2026-11-21', label: 'Today 8am–noon' },
+    ],
+    sections: [
+      { heading: 'When & where', body: 'Sat Nov 21, 8am–12pm, Bergman Park. Rain, snow or shine.' },
+      {
+        heading: 'Who',
+        body: 'City of Jamestown residents and property owners. Bring a NYS license or ID with a city address, a city yard waste sticker, or a current BPU bill.',
+      },
+      { heading: 'Accepted', body: 'Bulk trash and electronics for recycling. Free.' },
+      {
+        heading: 'Not accepted',
+        items: [
+          'Batteries, propane tanks',
+          'Yard waste',
+          'Paint, liquids or chemicals of any kind',
+          'Hazardous materials',
+          'Automotive fluids (motor oil, antifreeze)',
+        ],
+      },
+      { heading: 'Questions', body: 'Department of Development · 716-483-7542' },
+    ],
+    links: [{ label: 'City announcement', url: AMNESTY_SOURCE }],
+    source: 'City of Jamestown · Nov 5, 2026',
+  },
+  {
+    id: 'holiday-lights-2026',
+    category: 'Community',
+    title: 'Holiday Light & Décor Contest',
+    summary: 'Nominate a decorated Jamestown home by Dec 11',
+    startsOn: '2026-11-12',
+    expiresAfter: '2027-01-08',
+    badges: [
+      { from: '2026-11-12', label: 'Nominate by Dec 11' },
+      { from: '2026-12-12', label: 'Voting Dec 21–31' },
+      // Voting is over; the card stays up until winners are named Jan 8.
+      { from: '2027-01-01', label: 'Winners Jan 8' },
+    ],
+    sections: [
+      {
+        heading: 'Nominate · Nov 16 – Dec 11',
+        body: 'The city’s 3rd annual contest. Nominate your own home or someone else’s by email (lights@jamestownny.gov) or mail, with photos.',
+      },
+      {
+        heading: 'Who can enter',
+        body: 'Residential properties inside City of Jamestown limits. The display must be visible from a public street or sidewalk.',
+      },
+      {
+        heading: 'Categories (up to 2 per home)',
+        items: [
+          'Creativity Unwrapped',
+          'Timeless Holiday Charm',
+          'Light Up the Neighborhood',
+          'Theme Masterpiece',
+          'Ultimate Showstopper',
+          'Hall of Fame (2024 and 2025 winners)',
+        ],
+      },
+      {
+        heading: 'What’s next',
+        items: [
+          'Finalists picked Dec 14–18',
+          'Public online voting Dec 21–31',
+          'Winners announced Jan 8, 2027',
+        ],
+      },
+    ],
+    links: [{ label: 'Contest rules', url: HOLIDAY_LIGHTS_RULES }],
+    source: 'City of Jamestown · Nov 12, 2026',
+  },
   {
     id: 'council-2026-10-26',
     category: 'City Council',
@@ -105,7 +188,7 @@ const NOTICES = [
       },
       {
         heading: 'Drop-off',
-        body: 'BPU Yard Waste Site, 1001 Monroe St · Saturdays 7am–1pm through Nov 14.',
+        body: 'The BPU Yard Waste Site closed for the season Nov 14. Use curbside leaf collection instead: rake leaves to the terrace behind the curb.',
       },
     ],
     links: [{ label: 'City schedule', url: LEAF_SOURCE }],

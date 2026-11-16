@@ -63,6 +63,7 @@ const STATUS_LABELS: Record<ServiceStatus, string> = {
   imminent: 'SOON', // was a hardcoded "STARTS MAY 1" that went stale the instant May passed — see badgeLabel/badge fallback below, this text is now a last-resort only
   'coming-up': 'COMING UP',
   'year-round': 'YEAR ROUND',
+  inactive: 'CLOSED',
 };
 
 const STATUS_COLORS: Record<ServiceStatus, string> = {
@@ -70,6 +71,7 @@ const STATUS_COLORS: Record<ServiceStatus, string> = {
   imminent: '#f97316',                // orange — urgent but not red
   'coming-up': dark.category.film,    // amber
   'year-round': dark.category.city,   // cyan
+  inactive: dark.text.muted,          // slate — out of season
 };
 
 function StatusPill({ status, label }: { status: ServiceStatus; label?: string }) {
@@ -112,7 +114,28 @@ function computeYardWasteService(base: CityService): CityService {
   if (satSeason) {
     return { ...base, status: 'coming-up', badgeLabel: 'OPEN SAT 7AM–1PM', defaultExpanded: false };
   }
-  return { ...base, status: 'coming-up', badgeLabel: 'CLOSED FOR SEASON', defaultExpanded: false };
+  // Muted rather than 'coming-up' amber: the site is shut until spring, but
+  // the hours/sticker details stay useful for reference.
+  return { ...base, status: 'inactive', badgeColor: dark.text.muted, badgeLabel: 'CLOSED FOR SEASON', defaultExpanded: false };
+}
+
+// Fall 2026 Amnesty Days were Nov 14 (Jackson-Taylor Park) and Nov 21
+// (Bergman Park). The bundled card describes Nov 21; once that's passed,
+// fall back to a "next one TBD" card instead of a stale date.
+function computeBulkTrashService(base: CityService): CityService {
+  if (localDateKey(new Date()) <= '2026-11-21') return base;
+  return {
+    ...base,
+    badge: 'SPRING 2027 TBD',
+    badgeLabel: 'SPRING 2027 TBD',
+    status: 'coming-up',
+    summary: 'Amnesty Day · City residents only\nFree drop-off',
+    details: [
+      { label: 'Next date',    value: 'Spring 2027 · Not yet announced' },
+      { label: 'Last held',    value: 'Nov 21, 2026 · Bergman Park' },
+      ...base.details.filter(d => ['Bring ID', 'Accepted', 'Not accepted', 'Questions'].includes(d.label)),
+    ],
+  };
 }
 
 // Nov 3, 2026 General Election — badge text advances through the calendar
@@ -359,6 +382,7 @@ export default function CityServicesScreen({ onClose }: { onClose?: () => void }
     if (s.id === 'yardwaste') return computeYardWasteService(s);
     if (s.id === 'election2026') return computeElection2026Service(s);
     if (s.id === 'watermain') return computeWatermainService(s);
+    if (s.id === 'bulktrash') return computeBulkTrashService(s);
     return s;
   });
   const allServices = dpw && dpw.items.length > 0 ? [buildDpwService(dpw), ...servicesWithComputed] : servicesWithComputed;

@@ -10,7 +10,8 @@ export interface ScheduleEntry {
   warn?: string;  // optional warning note
 }
 
-export type ServiceStatus = 'active' | 'imminent' | 'coming-up' | 'year-round';
+// 'inactive': out of season, kept visible for reference (muted, no filter tab).
+export type ServiceStatus = 'active' | 'imminent' | 'coming-up' | 'year-round' | 'inactive';
 
 export interface CityService {
   id: string;
@@ -97,16 +98,19 @@ export const CITY_SERVICES: CityService[] = [
     id: 'bulktrash',
     icon: 'trash-outline',
     title: 'Bulk Trash & Electronics',
-    badge: 'DATE TBD',
+    // Nov 21 event; computeBulkTrashService (city-services.tsx) reverts the
+    // card to "Spring 2027 TBD" once it has passed.
+    badge: 'SAT NOV 21',
     badgeColor: '#a78bfa',
-    status: 'coming-up',
-    summary: 'Amnesty Day · City residents only\nFree drop-off',
+    status: 'imminent',
+    summary: 'Amnesty Day · Sat Nov 21 · Bergman Park\nFree drop-off · City residents only',
     details: [
-      { label: '2026 Date',    value: 'Not yet announced — check back' },
-      { label: 'Last held at', value: 'Jackson-Taylor Park, Lafayette St lot' },
-      { label: 'Hours',        value: 'Typically 9am – 1pm' },
-      { label: 'Bring ID',     value: 'NYS ID, Yard Waste sticker, or BPU bill' },
-      { label: 'Not accepted', value: 'Tires, batteries, paint, chemicals, liquids' },
+      { label: 'Date',         value: 'Sat Nov 21 · 8am – 12pm · Rain, snow or shine' },
+      { label: 'Location',     value: 'Bergman Park' },
+      { label: 'Bring ID',     value: 'NYS ID with city address, Yard Waste sticker, or BPU bill' },
+      { label: 'Accepted',     value: 'Bulk trash and electronics' },
+      { label: 'Not accepted', value: 'Batteries, yard waste, paint, liquids/chemicals, hazardous materials, propane tanks, automotive fluids' },
+      { label: 'Questions',    value: 'Dept. of Development · 716-483-7542' },
     ],
     tip: 'Old TVs, computers, and appliances are accepted. Good time to clear out the garage.',
   },
