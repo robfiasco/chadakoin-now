@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import Head from 'expo-router/head';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../lib/ThemeContext';
 import { CivicDataProvider, useCivic } from '../lib/CivicDataContext';
@@ -265,20 +266,36 @@ export default function RootLayout() {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  // Web: render the app only after mount. The static export renders in Node,
+  // where expo-audio's useAudioPlayer (RadioProvider) calls `new Audio()` and
+  // throws — React #419 — and anything that did render would be baked with
+  // build-day dates and no localStorage, so hydration would mismatch (#418).
+  // The browser was already client-rendering everything; this makes it clean.
+  const [mounted, setMounted] = useState(Platform.OS !== 'web');
+  useEffect(() => setMounted(true), []);
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <CivicDataProvider>
-          <RadioProvider>
-            <OldJamestownProvider>
-              <AppLayout />
-            </OldJamestownProvider>
-          </RadioProvider>
-        </CivicDataProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <>
+      {/* Above the mount gate so the static HTML carries the title for
+          crawlers. Expo's static renderer emits an empty helmet <title>
+          first in <head>, so a <title> in +html.tsx alone is ignored. */}
+      <Head>
+        <title>Chadakoin Now: Jamestown, NY news, events, recycling and things to do</title>
+      </Head>
+      {fontsLoaded && mounted ? (
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <CivicDataProvider>
+              <RadioProvider>
+                <OldJamestownProvider>
+                  <AppLayout />
+                </OldJamestownProvider>
+              </RadioProvider>
+            </CivicDataProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      ) : null}
+    </>
   );
 }
 

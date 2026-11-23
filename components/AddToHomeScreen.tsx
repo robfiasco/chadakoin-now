@@ -67,7 +67,7 @@ export function AddToHomeScreen() {
     if (!mode) return;
     Animated.spring(slideAnim, {
       toValue: 0,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       tension: 60,
       friction: 12,
     }).start();
@@ -86,7 +86,7 @@ export function AddToHomeScreen() {
     Animated.timing(slideAnim, {
       toValue: 120,
       duration: 250,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start(() => setMode(null));
     localStorage.setItem(DISMISSED_KEY, '1');
   }

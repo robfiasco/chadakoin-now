@@ -259,7 +259,9 @@ function proxyUrl(url: string): string {
 // Web goes through the Vercel proxy which has its own timeouts.
 // Native uses AbortController + setTimeout (portable across Hermes/RN — AbortSignal.timeout
 // is missing in some RN fetch polyfills and throws synchronously, killing parallel fetches).
-const FEED_TIMEOUT_MS = 15000;
+// Must exceed the proxy's worst case (2 × 8s upstream timeout + backoff) so
+// native still receives the proxy's stale fallback instead of aborting first.
+const FEED_TIMEOUT_MS = 18000;
 function feedFetch(url: string): Promise<Response> {
   if (Platform.OS === 'web') return fetch(url);
   const ctrl = new AbortController();
@@ -620,6 +622,10 @@ async function fetchAlerts(): Promise<AlertsData> {
     if (!res.ok) throw new Error(`Alerts fetch failed: ${res.status}`);
     const text = await res.text();
     const items = getRssItems(text);
+    // Proxy served its last good copy because BPU was unreachable — surface
+    // it through the existing stale banner and don't refresh our local TTL.
+    const proxyStale = res.headers.get('X-Proxy-Stale') === '1';
+    const proxyStaleAsOf = Number(res.headers.get('X-Proxy-Stale-As-Of')) || null;
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -640,6 +646,7 @@ async function fetchAlerts(): Promise<AlertsData> {
       activeAlerts,
     };
 
+    if (proxyStale) return { ...result, stale: true, staleAsOf: proxyStaleAsOf };
     await setCache('alerts', result);
     return result;
   } catch {

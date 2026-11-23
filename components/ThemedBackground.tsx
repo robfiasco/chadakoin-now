@@ -27,13 +27,13 @@ function Orb({ color, width, height, top, bottom, left, right, duration, delay =
           duration,
           delay,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(drift, {
           toValue: 0,
           duration,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }),
       ])
     );

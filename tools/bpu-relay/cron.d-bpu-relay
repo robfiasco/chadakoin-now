@@ -1,0 +1,4 @@
+# BPU feed relay for Chadakoin Now — see /usr/local/bin/bpu-relay.py
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/10 * * * * root /usr/bin/python3 /usr/local/bin/bpu-relay.py >> /var/log/bpu-relay.log 2>&1

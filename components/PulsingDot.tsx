@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, Platform } from 'react-native';
 
 export function PulsingDot({ color, size = 6 }: { color: string; size?: number }) {
   const pulse = useRef(new Animated.Value(1)).current;
@@ -7,8 +7,8 @@ export function PulsingDot({ color, size = 6 }: { color: string; size?: number }
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 0.2, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulse, { toValue: 0.2, duration: 900, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
       ])
     ).start();
   }, []);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, Animated, StyleSheet, Dimensions, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MapGridBackground } from './MapGridBackground';
 import { useTheme } from '../lib/ThemeContext';
@@ -70,8 +70,8 @@ export function AppLoadingScreen({
   // the overlay outright instead of just its fixed intro delay.
   useEffect(() => {
     const introDuration = skipIntro ? 60 : 1400;
-    Animated.timing(screenFade, { toValue: 1, duration: skipIntro ? 150 : 700, useNativeDriver: true }).start();
-    Animated.timing(textFade,   { toValue: 1, duration: skipIntro ? 150 : 900, delay: skipIntro ? 0 : 400, useNativeDriver: true }).start();
+    Animated.timing(screenFade, { toValue: 1, duration: skipIntro ? 150 : 700, useNativeDriver: Platform.OS !== 'web' }).start();
+    Animated.timing(textFade,   { toValue: 1, duration: skipIntro ? 150 : 900, delay: skipIntro ? 0 : 400, useNativeDriver: Platform.OS !== 'web' }).start();
     const t = setTimeout(() => setSequenceDone(true), introDuration);
     return () => clearTimeout(t);
   }, []);
@@ -79,8 +79,8 @@ export function AppLoadingScreen({
   // Status messages + page checklist appear once sequence is done
   useEffect(() => {
     if (!sequenceDone) return;
-    Animated.timing(statusFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    Animated.timing(pagesFade,  { toValue: 1, duration: 500, delay: 150, useNativeDriver: true }).start();
+    Animated.timing(statusFade, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }).start();
+    Animated.timing(pagesFade,  { toValue: 1, duration: 500, delay: 150, useNativeDriver: Platform.OS !== 'web' }).start();
     const interval = setInterval(() => setStatusIdx(i => (i + 1) % STATUS_MESSAGES.length), 2400);
     // Checklist rows tick from spinner to checkmark one at a time — a
     // reassuring sense of progress. Not wired to per-tab load state (the
@@ -98,7 +98,7 @@ export function AppLoadingScreen({
     setStatusReady(true);
     setCheckedCount(PAGES.length); // never exit mid-spin on a row
     const t = setTimeout(() => {
-      Animated.timing(exitAnim, { toValue: 0, duration: 420, useNativeDriver: true })
+      Animated.timing(exitAnim, { toValue: 0, duration: 420, useNativeDriver: Platform.OS !== 'web' })
         .start(() => onFinished?.());
     }, 350);
     return () => clearTimeout(t);

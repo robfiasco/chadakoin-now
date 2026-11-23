@@ -1,7 +1,13 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RecyclingData, sideForDate, isWinterMonth } from '../hooks/useCivicData';
+
+// Importing expo-notifications runs its DevicePushTokenAutoRegistration side
+// effect, which adds a push-token listener — unsupported on web. Load it on
+// native only; every export below returns early on web before touching it.
+const Notifications = (Platform.OS === 'web'
+  ? null
+  : require('expo-notifications')) as typeof import('expo-notifications');
 
 export const RECYCLING_PREF_KEY = 'notif_recycling_enabled';
 export const PARKING_PREF_KEY = 'notif_parking_enabled';

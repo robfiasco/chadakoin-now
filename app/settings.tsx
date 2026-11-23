@@ -86,15 +86,15 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   function openDesc(t: Theme) {
     setDescTheme(t);
     Animated.parallel([
-      Animated.timing(slideAnim,   { toValue: 0, duration: 320, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
-      Animated.timing(backdropAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(slideAnim,   { toValue: 0, duration: 320, useNativeDriver: Platform.OS !== 'web', easing: Easing.out(Easing.cubic) }),
+      Animated.timing(backdropAnim, { toValue: 1, duration: 220, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   }
 
   function closeDesc() {
     Animated.parallel([
-      Animated.timing(slideAnim,   { toValue: 400, duration: 240, useNativeDriver: true, easing: Easing.in(Easing.ease) }),
-      Animated.timing(backdropAnim, { toValue: 0,   duration: 200, useNativeDriver: true }),
+      Animated.timing(slideAnim,   { toValue: 400, duration: 240, useNativeDriver: Platform.OS !== 'web', easing: Easing.in(Easing.ease) }),
+      Animated.timing(backdropAnim, { toValue: 0,   duration: 200, useNativeDriver: Platform.OS !== 'web' }),
     ]).start(() => setDescTheme(null));
   }
 

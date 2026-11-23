@@ -112,7 +112,7 @@ export default function OnboardingScreen({ onDone }: Props) {
 
   function pickRole(r: Role) {
     setRole(r);
-    Animated.timing(pickerAnim, { toValue: 0, duration: 220, useNativeDriver: true })
+    Animated.timing(pickerAnim, { toValue: 0, duration: 220, useNativeDriver: Platform.OS !== 'web' })
       .start(() => setPickerVisible(false));
   }
 
@@ -121,7 +121,7 @@ export default function OnboardingScreen({ onDone }: Props) {
     setSlide(0);
     slideAnim.setValue(0);
     pickerAnim.setValue(0);
-    Animated.timing(pickerAnim, { toValue: 1, duration: 220, useNativeDriver: true })
+    Animated.timing(pickerAnim, { toValue: 1, duration: 220, useNativeDriver: Platform.OS !== 'web' })
       .start(() => setRole(null));
   }
 
@@ -129,7 +129,7 @@ export default function OnboardingScreen({ onDone }: Props) {
     if (!isLast) {
       Animated.timing(slideAnim, {
         toValue: -(slide + 1) * containerWidth,
-        duration: 260, useNativeDriver: true,
+        duration: 260, useNativeDriver: Platform.OS !== 'web',
       }).start(() => setSlide(slide + 1));
     } else {
       onDone(dontShow);
@@ -140,7 +140,7 @@ export default function OnboardingScreen({ onDone }: Props) {
     if (slide > 0) {
       Animated.timing(slideAnim, {
         toValue: -(slide - 1) * containerWidth,
-        duration: 260, useNativeDriver: true,
+        duration: 260, useNativeDriver: Platform.OS !== 'web',
       }).start(() => setSlide(slide - 1));
     } else {
       goBackToPicker();

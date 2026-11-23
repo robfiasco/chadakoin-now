@@ -408,7 +408,7 @@ function TeamCard({
   const rot = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
 
   function toggle() {
-    Animated.timing(rot, { toValue: open ? 0 : 1, duration: 200, useNativeDriver: true, easing: Easing.out(Easing.ease) }).start();
+    Animated.timing(rot, { toValue: open ? 0 : 1, duration: 200, useNativeDriver: Platform.OS !== 'web', easing: Easing.out(Easing.ease) }).start();
     setOpen(v => !v);
   }
 

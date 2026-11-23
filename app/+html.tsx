@@ -26,6 +26,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="twitter:description" content="Whether you're here for the weekend or the rest of your life — your guide to Jamestown, NY." />
         <meta name="twitter:image" content="https://now.chadakoindigital.com/jamestown.jpg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Chadakoin Now" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="icon" type="image/png" href="/favicon.png" sizes="any" />

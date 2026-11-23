@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View, ViewStyle } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, View, ViewStyle } from 'react-native';
 
 interface Props {
   width?: number | string;
@@ -15,8 +15,8 @@ export function SkeletonPulse({ width = '100%', height = 16, borderRadius = 6, s
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.28, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(opacity, { toValue: 0.12, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(opacity, { toValue: 0.28, duration: 700, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(opacity, { toValue: 0.12, duration: 700, useNativeDriver: Platform.OS !== 'web', easing: Easing.inOut(Easing.ease) }),
       ])
     ).start();
   }, []);
