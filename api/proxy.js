@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { CITY_EVENTS_URL, withCityExtras } from './_cityExtras.js';
 
 // CORS proxy for RSS/JSON feeds.
 // Add new sources to ALLOWED_HOSTS when integrating new data feeds.
@@ -152,14 +153,19 @@ async function fetchFromRelay({ file, statusKey }) {
   }
 }
 
-function sendStale(res, entry) {
+// Only the city calendar gets extras; every other feed passes through as-is.
+function finalBody(target, body) {
+  return target === CITY_EVENTS_URL ? withCityExtras(body) : body;
+}
+
+function sendStale(res, entry, target) {
   res.setHeader('Content-Type', entry.contentType);
   res.setHeader('X-Proxy-Stale', '1');
   res.setHeader('X-Proxy-Stale-As-Of', String(entry.fetchedAt));
   // Short edge cache: spares every visitor the upstream timeout wait while
   // the host is down, but rechecks every few minutes.
   res.setHeader('Cache-Control', 'public, s-maxage=300');
-  return res.status(200).send(entry.body);
+  return res.status(200).send(finalBody(target, entry.body));
 }
 
 let lastCleanup = Date.now();
@@ -215,7 +221,7 @@ export default async function handler(req, res) {
       const fetchedAt = copy.asOf ?? Date.now();
       await saveLastGood(target, { body: copy.body, contentType: copy.contentType, fetchedAt });
       if (copy.asOf && Date.now() - copy.asOf > RELAY_STALE_AFTER_MS) {
-        return sendStale(res, { body: copy.body, contentType: copy.contentType, fetchedAt: copy.asOf });
+        return sendStale(res, { body: copy.body, contentType: copy.contentType, fetchedAt: copy.asOf }, target);
       }
       res.setHeader('Content-Type', copy.contentType);
       // Relay refreshes every 10 min — keep the edge copy short enough that
@@ -256,13 +262,13 @@ export default async function handler(req, res) {
     await saveLastGood(target, { body, contentType, fetchedAt: Date.now() });
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
-    return res.status(upstream.status).send(body);
+    return res.status(upstream.status).send(finalBody(target, body));
   }
 
   if (upstream) console.warn(`[proxy] ${parsed.hostname} final status ${upstream.status}`);
 
   const cached = await loadLastGood(target);
-  if (cached) return sendStale(res, cached);
+  if (cached) return sendStale(res, cached, target);
 
   // No good copy yet — pass through the upstream's own error status, or 502
   // when it never answered.
