@@ -30,6 +30,7 @@ export const FEATURED_SCARCITY_NOTE = FEATURED_SLOTS_FULL
   : `${FEATURED_SLOTS_AVAILABLE}/${FEATURED_SLOTS} slots available`;
 export const FEATURED_WAITLIST_NOTE =
   'Slots are first come, first served. If full, you’ll be added to the waitlist and notified within 48 hours when one opens.';
+export const PAYMENT_OPTIONS_NOTE = 'Local business? Pay in cash, trade, or a mix. Just ask.';
 // Public Featured only opens up once the Founding five are placed (or one
 // churns) — the two tiers aren't sold in parallel while Founding spots
 // remain.

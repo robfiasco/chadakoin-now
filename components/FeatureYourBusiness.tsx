@@ -6,6 +6,7 @@ import { dark } from '../lib/colors';
 import {
   FEATURED_FLAT_MONTHLY,
   FEATURED_ANNUAL_PRICE, FEATURED_ANNUAL_NOTE, FEATURED_WAITLIST_NOTE, FEATURED_SCARCITY_NOTE,
+  PAYMENT_OPTIONS_NOTE,
 } from '../lib/adPricing';
 
 const INCLUDES = [
@@ -134,6 +135,9 @@ export function FeatureYourBusiness({
       {/* ── Waitlist note ── */}
       <Text style={[s.waitlistNote, { color: `rgba(${accRGB},0.45)` }]}>
         {FEATURED_WAITLIST_NOTE}
+      </Text>
+      <Text style={[s.waitlistNote, { color: `rgba(${accRGB},0.45)`, marginTop: 4 }]}>
+        {PAYMENT_OPTIONS_NOTE}
       </Text>
 
       {onViewRateCard && (

@@ -7,7 +7,7 @@ import { useTheme } from '../lib/ThemeContext';
 import { dark } from '../lib/colors';
 import {
   FEATURED_SLOTS, FEATURED_FLAT_MONTHLY, FEATURED_ANNUAL_PRICE, FEATURED_SCARCITY_NOTE,
-  PUBLIC_FEATURED_AVAILABILITY_NOTE,
+  PUBLIC_FEATURED_AVAILABILITY_NOTE, PAYMENT_OPTIONS_NOTE,
   FOUNDING_ANNUAL_PRICE, FOUNDING_TERM_NOTE, FOUNDING_RENEWAL_NOTE,
   FOUNDING_ELIGIBILITY_NOTE, FOUNDING_SCARCITY_NOTE,
   VISIT_LIST_ELIGIBILITY_NOTE, EXTENDED_PROFILE_PRICE,
@@ -74,6 +74,7 @@ export default function RateCardScreen({ onClose }: { onClose: () => void }) {
           <Text style={s.subhead}>
             Straight pricing for Featured placement on Visit, plus the Founding offer for the first {FEATURED_SLOTS} partners.
           </Text>
+          <Text style={s.paymentNote}>{PAYMENT_OPTIONS_NOTE}</Text>
 
           {/* ── Founding Featured ── */}
           <View style={[s.card, { borderColor: `${acc}40`, backgroundColor: `${acc}0d` }]}>
@@ -293,6 +294,8 @@ const s = StyleSheet.create({
   },
   headline: { fontFamily: 'Syne', fontSize: 26, fontWeight: '700', color: '#fff', letterSpacing: -0.4 },
   subhead: { fontFamily: 'Outfit', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 19, marginTop: 8, marginBottom: 20 },
+  // Pulled up under the subhead (its marginBottom), keeping the same gap before the first card.
+  paymentNote: { fontFamily: 'Outfit', fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 17, textAlign: 'center', marginTop: -12, marginBottom: 20 },
 
   card: { borderWidth: 1, borderRadius: 18, padding: 18, marginBottom: 14, gap: 10 },
   sectionBadge: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
